@@ -1,0 +1,232 @@
+// CAPE Aprova — schema for the construction-approval platform.
+// See chats/ and project/AprovaCAPE.dc.html in the design handoff bundle for the source spec.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+enum Role {
+  CAPE_ANALISTA
+  SINDICO
+  PROPRIETARIO
+  RESPONSAVEL_TECNICO
+}
+
+enum VinculoStatus {
+  PENDENTE
+  APROVADO
+  RECUSADO
+}
+
+enum SolicitacaoTipo {
+  OBRA_NOVA
+  REFORMA
+  AMPLIACAO
+  DEMOLICAO
+  MURO
+}
+
+// Mirrors the ST map in the prototype's script block.
+enum SolicitacaoStatus {
+  RASCUNHO
+  ENVIADA
+  ANALISE
+  COMPLEMENTO
+  APROVADA
+  RESSALVAS
+  REPROVADA
+  EXECUCAO
+  CONCLUIDA
+}
+
+enum DocumentoTipo {
+  PROJETO_ARQUITETONICO
+  ART_RRT
+  MEMORIAL_DESCRITIVO
+  PROJETO_ESTRUTURAL
+  DOC_RESPONSAVEL_TECNICO
+}
+
+enum ChecklistItemStatus {
+  PENDENTE
+  APROVADO
+  REPROVADO
+}
+
+model User {
+  id            String        @id @default(cuid())
+  name          String
+  email         String        @unique
+  cpf           String        @unique
+  birthDate     DateTime
+  phone         String
+  passwordHash  String
+  role          Role
+  creaCau       String?
+  createdAt     DateTime      @default(now())
+
+  // Self-registration (proprietário / RT) vínculo review, done in parallel with access.
+  vinculoStatus     VinculoStatus?
+  vinculoLoteId     String?
+  vinculoLote       Lote?          @relation("VinculoLote", fields: [vinculoLoteId], references: [id])
+  vinculoComprovacao String?
+  vinculoRevisadoPorId String?
+  vinculoRevisadoEm    DateTime?
+
+  lotesComoProprietario Lote[]        @relation("LoteProprietario")
+  lotesComoRT           Lote[]        @relation("LoteRT")
+  solicitacoesCriadas   Solicitacao[] @relation("SolicitacaoCriadaPor")
+  historicoEventos      HistoricoEvento[]
+  empreendimentosSindico Empreendimento[] @relation("EmpreendimentoSindico")
+
+  @@index([role])
+}
+
+model Empreendimento {
+  id                String   @id @default(cuid())
+  nome              String
+  cidade            String
+  uf                String
+  numQuadras        Int
+  taxaAnaliseCent   Int      // R$ in cents
+  prazoDias         Int      @default(10)
+  reenviosSemTaxa   Int      @default(3)
+  taxaVisitaCent    Int      @default(0)
+  prazoComplementoDias Int   @default(180)
+  plantaImageUrl    String?
+  sindicoId         String?
+  sindico           User?    @relation("EmpreendimentoSindico", fields: [sindicoId], references: [id])
+  createdAt         DateTime @default(now())
+
+  quadras    Quadra[]
+  lotes      Lote[]
+  categorias ChecklistCategoria[]
+}
+
+model Quadra {
+  id               String   @id @default(cuid())
+  empreendimentoId String
+  empreendimento   Empreendimento @relation(fields: [empreendimentoId], references: [id])
+  nome             String   // "Q1"
+  totalLotes       Int
+
+  lotes Lote[]
+
+  @@unique([empreendimentoId, nome])
+}
+
+model Lote {
+  id               String   @id @default(cuid())
+  empreendimentoId String
+  empreendimento   Empreendimento @relation(fields: [empreendimentoId], references: [id])
+  quadraId         String
+  quadra           Quadra   @relation(fields: [quadraId], references: [id])
+  numero           String   // "04"
+  rua              String
+  areaM2           Float
+
+  // Position of the pin over the planta image, in percent (0-100).
+  posX Float?
+  posY Float?
+
+  proprietarioId String?
+  proprietario   User?   @relation("LoteProprietario", fields: [proprietarioId], references: [id])
+  rtId           String?
+  rt             User?   @relation("LoteRT", fields: [rtId], references: [id])
+
+  vinculosPendentes User[]        @relation("VinculoLote")
+  solicitacoes      Solicitacao[]
+
+  @@unique([empreendimentoId, quadraId, numero])
+}
+
+model ChecklistCategoria {
+  id               String   @id @default(cuid())
+  empreendimentoId String
+  empreendimento   Empreendimento @relation(fields: [empreendimentoId], references: [id])
+  nome             String
+  ordem            Int      @default(0)
+
+  itens ChecklistItem[]
+}
+
+model ChecklistItem {
+  id          String   @id @default(cuid())
+  categoriaId String
+  categoria   ChecklistCategoria @relation(fields: [categoriaId], references: [id])
+  texto       String
+  referencia  String
+  ordem       Int      @default(0)
+
+  resultados ChecklistResultado[]
+}
+
+model Solicitacao {
+  id               String            @id @default(cuid())
+  protocolo        String            @unique // "SOL-2026-041"
+  loteId           String
+  lote             Lote              @relation(fields: [loteId], references: [id])
+  tipo             SolicitacaoTipo
+  areaConstruida   Float
+  descricao        String
+  status           SolicitacaoStatus @default(ENVIADA)
+  prazoDias        Int
+  reenvios         Int               @default(0)
+  pago             Boolean           @default(false)
+  criadoPorId      String
+  criadoPor        User              @relation("SolicitacaoCriadaPor", fields: [criadoPorId], references: [id])
+  responsavelTecnicoNome String
+  responsavelTecnicoRegistro String
+  responsavelTecnicoEmail String
+  documentacaoValidada Boolean       @default(false)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  prazoAnaliseEm   DateTime?
+
+  documentos  SolicitacaoDocumento[]
+  resultados  ChecklistResultado[]
+  historico   HistoricoEvento[]
+}
+
+model SolicitacaoDocumento {
+  id             String        @id @default(cuid())
+  solicitacaoId  String
+  solicitacao    Solicitacao   @relation(fields: [solicitacaoId], references: [id])
+  tipo           DocumentoTipo
+  nomeArquivo    String
+  caminhoArquivo String
+  tamanhoBytes   Int
+  validado       Boolean       @default(false)
+  uploadedAt     DateTime      @default(now())
+
+  @@unique([solicitacaoId, tipo])
+}
+
+model ChecklistResultado {
+  id            String              @id @default(cuid())
+  solicitacaoId String
+  solicitacao   Solicitacao         @relation(fields: [solicitacaoId], references: [id])
+  itemId        String
+  item          ChecklistItem       @relation(fields: [itemId], references: [id])
+  status        ChecklistItemStatus @default(PENDENTE)
+  travado       Boolean             @default(false)
+  avaliadoEm    DateTime?
+
+  @@unique([solicitacaoId, itemId])
+}
+
+model HistoricoEvento {
+  id            String      @id @default(cuid())
+  solicitacaoId String
+  solicitacao   Solicitacao @relation(fields: [solicitacaoId], references: [id])
+  texto         String
+  cor           String      // hex used for the timeline dot, matches status semantics
+  autorId       String?
+  autor         User?       @relation(fields: [autorId], references: [id])
+  createdAt     DateTime    @default(now())
+}

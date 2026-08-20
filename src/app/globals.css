@@ -1,0 +1,41 @@
+@import "tailwindcss";
+
+@theme inline {
+  --font-sans: var(--font-plex-sans), system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), monospace;
+  --font-display: var(--font-barlow-condensed), sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: #f4f2ed;
+  font-family: var(--font-plex-sans), system-ui, sans-serif;
+  color: #0e1b24;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: #12455e;
+  text-decoration: none;
+}
+a:hover {
+  color: #b4711a;
+}
+
+button {
+  font-family: inherit;
+}
+input,
+select,
+textarea {
+  font-family: inherit;
+}
