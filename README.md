@@ -7,16 +7,21 @@ Implementação real (Next.js + banco de dados + autenticação + upload de arqu
 ## Stack
 
 - **Next.js 16** (App Router, Turbopack, React 19) + TypeScript
-- **Prisma 7** + SQLite (driver adapter `@prisma/adapter-better-sqlite3`) — troque para Postgres/MySQL em produção multi-instância trocando o `provider` no schema e o adapter em `src/lib/prisma.ts`
-- **Auth.js (NextAuth v5)** com provider de credenciais (e-mail/CPF + senha, sessão JWT)
-- Upload de arquivos em disco local: documentos de solicitação em `uploads/` (privado, servido só por `/api/files/[docId]` com checagem de sessão), plantas de loteamento em `public/plantas/`
+- **Prisma 7** + **Postgres** (Neon, via `@prisma/adapter-pg`) — `DATABASE_URL` configurado como variável de ambiente (local em `.env`/`.env.local`, em produção via integração Neon da Vercel)
+- **Auth.js (NextAuth v5)** com provider de credenciais (e-mail/CPF + senha, sessão JWT) — requer `AUTH_SECRET`
+- Upload de arquivos no **Vercel Blob** (store privado): documentos de solicitação servidos por `/api/files/[docId]`, plantas enviadas pelo analista servidas por `/api/plantas/[...path]` — ambos com checagem de sessão. A planta de demonstração (`quinta-da-primavera.webp`) continua estática em `public/plantas/`.
+
+## Deploy (Vercel)
+
+Projeto vinculado em `mfabianmarini-arts-projects/aprovacape`, com GitHub conectado (`mfabianmarini-art/aprovacape`, branch `main`) para deploy automático a cada push. Recursos provisionados: Postgres (Neon, integração de marketplace) e um Blob store privado (`aprovacape-uploads`) — variáveis `DATABASE_URL`, `BLOB_READ_WRITE_TOKEN` e `AUTH_SECRET` já configuradas em Production/Preview/Development no painel da Vercel.
 
 ## Rodando localmente
 
 ```bash
-npm install          # também roda `prisma generate` via postinstall
-npm run db:migrate    # cria/atualiza o banco (prisma/dev.db)
-npm run db:seed       # popula com o cenário do protótipo (Quinta da Primavera)
+npm install                # também roda `prisma generate` via postinstall
+vercel env pull .env.local # baixa DATABASE_URL, BLOB_READ_WRITE_TOKEN, AUTH_SECRET etc.
+npm run db:migrate         # aplica as migrations no Postgres
+npm run db:seed            # popula com o cenário do protótipo (Quinta da Primavera)
 npm run dev
 ```
 
@@ -50,7 +55,5 @@ Login por e-mail **ou** CPF. Novas contas de proprietário/RT são criadas por a
 ## Limitações conhecidas / próximos passos
 
 - **Sem envio de e-mail real.** Não há provedor de e-mail configurado. Confirmação de cadastro, convites de usuário interno (a senha temporária é mostrada uma vez na tela) e notificações de status não são enviados por e-mail — apenas persistidos no banco.
-- **Upload em disco local.** Adequado para uma única instância; para múltiplas instâncias/serverless, trocar `src/lib/upload.ts` e o upload de planta em `empreendimento-actions.ts` por um provedor de object storage (S3-compatível, Vercel Blob etc.).
-- **SQLite.** Escolhido pela simplicidade de rodar sem infraestrutura externa. Para produção com múltiplos usuários simultâneos, migrar para Postgres é recomendado (schema já é portável).
 - **"Aprovado com ressalvas" e "Reprovado" definitivo** existem como status e aparecem nos dados de exemplo, mas a única transição implementada pela tela de análise é aprovar (sem reprovas) ou devolver para complementação — reprovação definitiva e ressalvas ficariam a critério de uma extensão futura da tela de análise.
 - **CPF/telefone/data de nascimento não são validados com máscara ou dígito verificador**, apenas presença mínima.

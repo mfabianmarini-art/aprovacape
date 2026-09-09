@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { mkdir, writeFile } from "node:fs/promises";
+import { put } from "@vercel/blob";
 import path from "node:path";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
@@ -50,13 +50,11 @@ export async function uploadPlantaAction(empreendimentoId: string, _prev: unknow
   if (!file.type.startsWith("image/")) return { error: "Envie um arquivo de imagem." };
   if (file.size > 10 * 1024 * 1024) return { error: "Imagem maior que 10 MB." };
 
-  const dir = path.join(process.cwd(), "public", "plantas");
-  await mkdir(dir, { recursive: true });
   const ext = path.extname(file.name) || ".png";
   const filename = `${empreendimentoId}-${Date.now()}${ext}`;
-  await writeFile(path.join(dir, filename), Buffer.from(await file.arrayBuffer()));
+  await put(`plantas/${filename}`, file, { access: "private", contentType: file.type });
 
-  await prisma.empreendimento.update({ where: { id: empreendimentoId }, data: { plantaImageUrl: `/plantas/${filename}` } });
+  await prisma.empreendimento.update({ where: { id: empreendimentoId }, data: { plantaImageUrl: `/api/plantas/${filename}` } });
 
   revalidatePath("/empreendimentos");
   revalidatePath("/resumo");

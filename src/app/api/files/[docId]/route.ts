@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { readFile } from "node:fs/promises";
+import { get } from "@vercel/blob";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
@@ -22,15 +22,13 @@ export async function GET(_req: Request, { params }: { params: Promise<{ docId: 
     lote.rtId === session.user.id;
   if (!podeVer) return new NextResponse("Sem permissão.", { status: 403 });
 
-  try {
-    const buffer = await readFile(doc.caminhoArquivo);
-    return new NextResponse(new Uint8Array(buffer), {
-      headers: {
-        "Content-Type": "application/pdf",
-        "Content-Disposition": `inline; filename="${doc.nomeArquivo}"`,
-      },
-    });
-  } catch {
-    return new NextResponse("Arquivo indisponível.", { status: 404 });
-  }
+  const result = await get(doc.caminhoArquivo, { access: "private" }).catch(() => null);
+  if (!result) return new NextResponse("Arquivo indisponível.", { status: 404 });
+
+  return new NextResponse(result.stream, {
+    headers: {
+      "Content-Type": "application/pdf",
+      "Content-Disposition": `inline; filename="${doc.nomeArquivo}"`,
+    },
+  });
 }
