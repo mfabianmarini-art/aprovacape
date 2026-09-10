@@ -8,8 +8,7 @@ const labelTextStyle: React.CSSProperties = { fontSize: 11, letterSpacing: ".13e
 
 export function NovoInternoForm({ podeAtribuirAdmin }: { podeAtribuirAdmin: boolean }) {
   const [state, formAction, pending] = useActionState<NovoInternoState, FormData>(criarUsuarioInternoAction, null);
-  const [perfil, setPerfil] = useState<"ADMIN_CAPE" | "CAPE_ANALISTA" | "SINDICO">("CAPE_ANALISTA");
-  const tecnico = perfil === "CAPE_ANALISTA" || perfil === "ADMIN_CAPE";
+  const [perfil, setPerfil] = useState<"ADMIN_CAPE" | "CAPE_ANALISTA">("CAPE_ANALISTA");
 
   if (state?.ok) {
     return (
@@ -27,13 +26,12 @@ export function NovoInternoForm({ podeAtribuirAdmin }: { podeAtribuirAdmin: bool
 
   return (
     <form action={formAction} style={{ background: "#fff", border: "1px solid #DDD8CE", borderRadius: 4, padding: 18, display: "flex", flexDirection: "column", gap: 13 }}>
-      <div style={{ fontFamily: "var(--font-display)", fontSize: 17, fontWeight: 600, letterSpacing: ".04em", textTransform: "uppercase" }}>Usuário interno</div>
-      <div style={{ fontSize: 12, color: "#4A5563", lineHeight: 1.5 }}>Analistas da CAPE e síndicos são criados aqui — não há auto-cadastro para estes perfis.</div>
+      <div style={{ fontFamily: "var(--font-display)", fontSize: 17, fontWeight: 600, letterSpacing: ".04em", textTransform: "uppercase" }}>Novo membro</div>
+      <div style={{ fontSize: 12, color: "#4A5563", lineHeight: 1.5 }}>A equipe CAPE atende todos os empreendimentos — não há auto-cadastro para estes perfis.</div>
       <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         <span style={labelTextStyle}>Perfil</span>
         <select name="perfil" value={perfil} onChange={(e) => setPerfil(e.target.value as typeof perfil)} style={inputStyle}>
           <option value="CAPE_ANALISTA">Analista CAPE</option>
-          <option value="SINDICO">Síndico</option>
           {podeAtribuirAdmin && <option value="ADMIN_CAPE">Admin CAPE</option>}
         </select>
       </label>
@@ -45,18 +43,16 @@ export function NovoInternoForm({ podeAtribuirAdmin }: { podeAtribuirAdmin: bool
         <span style={labelTextStyle}>E-mail corporativo</span>
         <input name="email" required type="email" style={inputStyle} />
       </label>
-      {tecnico && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 12, padding: 14, border: "1px solid #B4711A", borderRadius: 4, background: "#FDF8EE" }}>
-          <div style={labelTextStyle}>Habilitação profissional obrigatória</div>
-          <div style={{ fontSize: 12.5, color: "#3B4653", lineHeight: 1.45 }}>
-            Perfis técnicos só são ativados com registro válido de engenheiro(a) ou arquiteto(a).
-          </div>
-          <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <span style={labelTextStyle}>Conselho e nº de registro</span>
-            <input name="registro" placeholder="CAU A000000-0 / CREA 0000000/D" style={inputStyle} />
-          </label>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12, padding: 14, border: "1px solid #B4711A", borderRadius: 4, background: "#FDF8EE" }}>
+        <div style={labelTextStyle}>Habilitação profissional obrigatória</div>
+        <div style={{ fontSize: 12.5, color: "#3B4653", lineHeight: 1.45 }}>
+          Perfis técnicos só são ativados com registro válido de engenheiro(a) ou arquiteto(a).
         </div>
-      )}
+        <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <span style={labelTextStyle}>Conselho e nº de registro</span>
+          <input name="registro" placeholder="CAU A000000-0 / CREA 0000000/D" style={inputStyle} />
+        </label>
+      </div>
       {state?.error && <div style={{ fontSize: 12, color: "#8C2B22" }}>{state.error}</div>}
       <button
         type="submit"

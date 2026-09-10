@@ -42,7 +42,7 @@ Senha para todas: **`cape2026!`**
 
 O seed cadastra dois empreendimentos (Quinta da Primavera e Alto da Serra) para demonstrar o uso multi-cliente.
 
-Login por e-mail **ou** CPF. Novas contas de proprietário/RT são criadas por auto-cadastro em `/login`; contas de analista CAPE/síndico são criadas na tela **Usuários** por um analista já logado.
+Login por e-mail **ou** CPF. Novas contas de proprietário/RT são criadas por auto-cadastro em `/login`; contas de analista CAPE e admin CAPE são criadas na tela **Equipe CAPE** por um analista já logado; o síndico é criado dentro do empreendimento que ele vai gerir (tela **Empreendimentos**), porque é esse vínculo que define o que ele enxerga.
 
 ## Telas
 
@@ -52,10 +52,10 @@ Login por e-mail **ou** CPF. Novas contas de proprietário/RT são criadas por a
 
 A plataforma atende vários empreendimentos (condomínios/loteamentos) ao mesmo tempo:
 
-- **Admin CAPE** (`ADMIN_CAPE`) cadastra novos empreendimentos pela tela **Empreendimentos** e cria outras contas internas (analistas, síndicos e outros admins). Tem acesso total, igual ao Analista CAPE.
+- **Admin CAPE** (`ADMIN_CAPE`) cadastra novos empreendimentos pela tela **Empreendimentos** e cria outras contas da equipe CAPE (analistas e outros admins) na tela **Equipe CAPE**. Tem acesso total, igual ao Analista CAPE.
 - **Analista CAPE** (`CAPE_ANALISTA`) enxerga todos os empreendimentos, mas não cria novos — só edita configuração, planta e check-list dos existentes.
 - As telas **Resumo**, **Check-lists** e **Empreendimentos** têm um seletor de empreendimento no topo quando há mais de um cadastrado; a **Fila de análise** reúne as solicitações de todos os empreendimentos, com filtro opcional para restringir a um deles.
-- **Síndico**: cada empreendimento tem um síndico vinculado (`Empreendimento.sindicoId`); o síndico só enxerga o(s) empreendimento(s) aos quais está vinculado.
+- **Síndico**: cada empreendimento tem no máximo um síndico vinculado (`Empreendimento.sindicoId`); o síndico só enxerga o(s) empreendimento(s) aos quais está vinculado. O vínculo é criado e trocado na seção "Usuários deste empreendimento" da tela Empreendimentos — criar um síndico por lá já o vincula, e um síndico existente pode ser vinculado ou desvinculado a qualquer momento.
 - **Proprietário / Responsável técnico**: o vínculo é por lote (`Lote.proprietarioId`/`Lote.rtId`), e o lote pertence a um empreendimento — o auto-cadastro em `/login` já pede para escolher o empreendimento, a quadra e o lote.
 
 Quadras são cadastradas pela tela Empreendimentos (na criação do empreendimento ou depois, em "Quadras e lotes"), com nome livre e quantidade de lotes independente por quadra — não precisam seguir sequência numérica nem ter a mesma quantidade entre si. Uma quadra com lotes já cadastrados não pode ser removida por lá. Clicando em uma quadra (▸), abre o cadastro dos lotes dela: o gestor CAPE cadastra só o **número** do lote (e, se a planta já foi enviada, sua posição no mapa, clicando nela). **Endereço e área do lote** ficam em branco até o proprietário/RT vinculado preenchê-los na primeira solicitação de obra desse lote (`/nova`, passo 1) — por isso `Lote.rua` e `Lote.areaM2` são opcionais no banco. Um lote com proprietário/RT vinculado não pode ser removido por lá.
@@ -67,7 +67,7 @@ Quadras são cadastradas pela tela Empreendimentos (na criação do empreendimen
 - **Validação documental → check-list**: o check-list técnico só libera depois que os 5 documentos são marcados como validados pelo analista.
 - **Reanálise parcial**: ao devolver uma solicitação (documentos ou check-list reprovado), os itens já aprovados ficam travados (`travado=true`) e só os reprovados reabrem para o próximo ciclo — implementado em `emitirParecerAction`/`devolverDocumentacaoAction` (`src/lib/actions/analise-actions.ts`).
 - **Reenvios e taxa**: contador de reenvios por solicitação; ao ultrapassar `reenviosSemTaxa` do empreendimento, a taxa é marcada como não paga novamente.
-- **Vínculo lote↔usuário**: proprietário/RT se cadastram sozinhos e já acessam a plataforma (podem abrir uma nova solicitação); o vínculo com o lote fica pendente até um analista CAPE aprovar/recusar em **Usuários**.
+- **Vínculo lote↔usuário**: proprietário/RT se cadastram sozinhos e já acessam a plataforma (podem abrir uma nova solicitação); o vínculo com o lote fica pendente até um analista CAPE aprovar/recusar em **Empreendimentos**, no painel "Vínculos a validar" do empreendimento correspondente.
 - **Mapa do loteamento**: pins posicionados por `posX`/`posY` (%) sobre a planta, coloridos pelo status da solicitação mais recente do lote; clique abre o histórico completo do lote.
 
 ## Limitações conhecidas / próximos passos
@@ -75,4 +75,4 @@ Quadras são cadastradas pela tela Empreendimentos (na criação do empreendimen
 - **Sem envio de e-mail real.** Não há provedor de e-mail configurado. Confirmação de cadastro, convites de usuário interno (a senha temporária é mostrada uma vez na tela) e notificações de status não são enviados por e-mail — apenas persistidos no banco.
 - **"Aprovado com ressalvas" e "Reprovado" definitivo** existem como status e aparecem nos dados de exemplo, mas a única transição implementada pela tela de análise é aprovar (sem reprovas) ou devolver para complementação — reprovação definitiva e ressalvas ficariam a critério de uma extensão futura da tela de análise.
 - **CPF/telefone/data de nascimento não são validados com máscara ou dígito verificador**, apenas presença mínima.
-- **Vínculo de proprietário/RT ao lote ainda depende do fluxo de autocadastro.** A tela de cadastro de lotes não atribui proprietário/RT na criação — isso continua acontecendo só quando a pessoa se cadastra em `/login` e a CAPE aprova o vínculo em Usuários.
+- **Vínculo de proprietário/RT ao lote ainda depende do fluxo de autocadastro.** A tela de cadastro de lotes não atribui proprietário/RT na criação — isso continua acontecendo só quando a pessoa se cadastra em `/login` e a CAPE aprova o vínculo em Empreendimentos.

@@ -23,7 +23,7 @@ export async function aprovarVinculoAction(userId: string) {
     }),
   ]);
 
-  revalidatePath("/usuarios");
+  revalidatePath("/empreendimentos");
 }
 
 export async function recusarVinculoAction(userId: string) {
@@ -32,11 +32,11 @@ export async function recusarVinculoAction(userId: string) {
     where: { id: userId },
     data: { vinculoStatus: "RECUSADO", vinculoRevisadoPorId: session.user.id, vinculoRevisadoEm: new Date() },
   });
-  revalidatePath("/usuarios");
+  revalidatePath("/empreendimentos");
 }
 
 const novoInternoSchema = z.object({
-  perfil: z.enum(["ADMIN_CAPE", "CAPE_ANALISTA", "SINDICO"]),
+  perfil: z.enum(["ADMIN_CAPE", "CAPE_ANALISTA"]),
   nome: z.string().min(3, "Informe o nome completo"),
   email: z.string().email("E-mail inválido"),
   registro: z.string().optional(),
@@ -55,9 +55,7 @@ export async function criarUsuarioInternoAction(_prev: NovoInternoState, formDat
     return { error: "Apenas um Admin CAPE pode criar outra conta de Admin CAPE." };
   }
 
-  if ((d.perfil === "CAPE_ANALISTA" || d.perfil === "ADMIN_CAPE") && !d.registro) {
-    return { error: "Informe o registro CAU/CREA." };
-  }
+  if (!d.registro) return { error: "Informe o registro CAU/CREA." };
 
   const existing = await prisma.user.findFirst({ where: { email: d.email } });
   if (existing) return { error: "Já existe uma conta com este e-mail." };
@@ -75,10 +73,69 @@ export async function criarUsuarioInternoAction(_prev: NovoInternoState, formDat
       phone: "",
       passwordHash,
       role: d.perfil,
-      creaCau: d.perfil === "CAPE_ANALISTA" || d.perfil === "ADMIN_CAPE" ? d.registro : null,
+      creaCau: d.registro,
     },
   });
 
   revalidatePath("/usuarios");
   return { ok: true, senhaTemp };
+}
+
+const novoSindicoSchema = z.object({
+  nome: z.string().min(3, "Informe o nome completo"),
+  email: z.string().email("E-mail inválido"),
+});
+
+// Cria o síndico já vinculado ao empreendimento — é esse vínculo que define o que ele enxerga.
+export async function criarSindicoAction(
+  empreendimentoId: string,
+  _prev: NovoInternoState,
+  formData: FormData,
+): Promise<NovoInternoState> {
+  await requireRole("ADMIN_CAPE", "CAPE_ANALISTA");
+  const parsed = novoSindicoSchema.safeParse(Object.fromEntries(formData.entries()));
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
+  const d = parsed.data;
+
+  const existing = await prisma.user.findFirst({ where: { email: d.email } });
+  if (existing) return { error: "Já existe uma conta com este e-mail." };
+
+  const senhaTemp = crypto.randomBytes(6).toString("base64url");
+  const passwordHash = await bcrypt.hash(senhaTemp, 10);
+
+  await prisma.$transaction(async (tx) => {
+    const sindico = await tx.user.create({
+      data: {
+        name: d.nome,
+        email: d.email,
+        cpf: `PEND-${crypto.randomUUID().slice(0, 12)}`,
+        birthDate: new Date("1990-01-01"),
+        phone: "",
+        passwordHash,
+        role: "SINDICO",
+      },
+    });
+    await tx.empreendimento.update({ where: { id: empreendimentoId }, data: { sindicoId: sindico.id } });
+  });
+
+  revalidatePath("/empreendimentos");
+  return { ok: true, senhaTemp };
+}
+
+export async function vincularSindicoAction(empreendimentoId: string, formData: FormData) {
+  await requireRole("ADMIN_CAPE", "CAPE_ANALISTA");
+  const sindicoId = formData.get("sindicoId");
+  if (typeof sindicoId !== "string" || !sindicoId) return;
+
+  const sindico = await prisma.user.findUnique({ where: { id: sindicoId } });
+  if (sindico?.role !== "SINDICO") return;
+
+  await prisma.empreendimento.update({ where: { id: empreendimentoId }, data: { sindicoId } });
+  revalidatePath("/empreendimentos");
+}
+
+export async function desvincularSindicoAction(empreendimentoId: string) {
+  await requireRole("ADMIN_CAPE", "CAPE_ANALISTA");
+  await prisma.empreendimento.update({ where: { id: empreendimentoId }, data: { sindicoId: null } });
+  revalidatePath("/empreendimentos");
 }

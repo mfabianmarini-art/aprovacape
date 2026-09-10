@@ -3,6 +3,7 @@ import { getUserDisplay } from "@/lib/user-display";
 import { getEmpreendimentoConfig } from "@/lib/queries/empreendimento";
 import { resolveEmpreendimentoAtual } from "@/lib/queries/empreendimentos-acesso";
 import { getDocumentosTecnicos } from "@/lib/queries/documentos-tecnicos";
+import { getUsuariosDoEmpreendimento, getVinculosPendentesDoEmpreendimento, getSindicos } from "@/lib/queries/usuarios";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { ScreenBody } from "@/components/ScreenBody";
 import { EmpreendimentoSwitcher } from "@/components/EmpreendimentoSwitcher";
@@ -12,6 +13,7 @@ import { NovoEmpreendimentoForm } from "./NovoEmpreendimentoForm";
 import { QuadrasManager } from "./QuadrasManager";
 import { DocumentosList } from "../documentos/DocumentosList";
 import { DocumentoUploadForm } from "../documentos/DocumentoUploadForm";
+import { UsuariosSection } from "./UsuariosSection";
 
 export default async function EmpreendimentosPage({ searchParams }: { searchParams: Promise<{ emp?: string }> }) {
   const session = await requireRole("ADMIN_CAPE", "CAPE_ANALISTA");
@@ -22,9 +24,15 @@ export default async function EmpreendimentosPage({ searchParams }: { searchPara
   ]);
   const isAdmin = session.user.role === "ADMIN_CAPE";
 
-  const [data, documentos] = atual
-    ? await Promise.all([getEmpreendimentoConfig(atual.id), getDocumentosTecnicos(atual.id)])
-    : [null, []];
+  const [data, documentos, usuarios, pendentes, sindicos] = atual
+    ? await Promise.all([
+        getEmpreendimentoConfig(atual.id),
+        getDocumentosTecnicos(atual.id),
+        getUsuariosDoEmpreendimento(atual.id),
+        getVinculosPendentesDoEmpreendimento(atual.id),
+        getSindicos(),
+      ])
+    : [null, [], [], [], []];
 
   if (!data) {
     return (
@@ -70,19 +78,15 @@ export default async function EmpreendimentosPage({ searchParams }: { searchPara
           </section>
           <aside style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <PlantaUpload empreendimentoId={emp.id} plantaImageUrl={emp.plantaImageUrl} />
-            <section style={{ background: "#fff", border: "1px solid #DDD8CE", borderRadius: 4, padding: "16px 17px", display: "flex", flexDirection: "column", gap: 9 }}>
-              <div style={{ fontSize: 11, letterSpacing: ".14em", textTransform: "uppercase", color: "#6B7480" }}>Síndico vinculado</div>
-              {emp.sindico ? (
-                <>
-                  <div style={{ fontSize: 13, fontWeight: 600 }}>{emp.sindico.name}</div>
-                  <div style={{ fontSize: 11.5, color: "#6B7480" }}>{emp.sindico.email} · acesso somente leitura</div>
-                </>
-              ) : (
-                <div style={{ fontSize: 12.5, color: "#6B7480" }}>Nenhum síndico vinculado.</div>
-              )}
-            </section>
           </aside>
         </div>
+        <UsuariosSection
+          empreendimentoId={emp.id}
+          usuarios={usuarios}
+          pendentes={pendentes}
+          sindicos={sindicos}
+          sindicoAtual={emp.sindico && { id: emp.sindico.id, name: emp.sindico.name, email: emp.sindico.email }}
+        />
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           <div style={{ fontSize: 11, letterSpacing: ".14em", textTransform: "uppercase", color: "#6B7480" }}>Documentos técnicos</div>
           <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 320px", gap: 20, alignItems: "start" }}>
