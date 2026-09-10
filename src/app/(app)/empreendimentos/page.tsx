@@ -60,7 +60,7 @@ export default async function EmpreendimentosPage({ searchParams }: { searchPara
               taxaVisitaCent={emp.taxaVisitaCent}
             />
             <div style={{ padding: "0 20px 20px" }}>
-              <QuadrasManager empreendimentoId={emp.id} quadras={quadrasCfg} />
+              <QuadrasManager empreendimentoId={emp.id} quadras={quadrasCfg} plantaImageUrl={emp.plantaImageUrl} />
             </div>
           </section>
           <aside style={{ display: "flex", flexDirection: "column", gap: 16 }}>

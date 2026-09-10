@@ -11,7 +11,11 @@ export async function getEmpreendimentoConfig(empreendimentoId: string) {
         include: {
           lotes: {
             orderBy: { numero: "asc" },
-            include: { solicitacoes: { orderBy: { createdAt: "desc" }, take: 1 } },
+            include: {
+              solicitacoes: { orderBy: { createdAt: "desc" }, take: 1 },
+              proprietario: { select: { name: true } },
+              rt: { select: { name: true } },
+            },
           },
         },
       },
@@ -27,7 +31,17 @@ export async function getEmpreendimentoConfig(empreendimentoId: string) {
     lotes: q.lotes.map((l) => {
       const atual = l.solicitacoes[0];
       const cor = atual ? STATUS_INFO[atual.status].bg : LIVRE_INFO.bg;
-      return { id: l.id, numero: l.numero, cor };
+      return {
+        id: l.id,
+        numero: l.numero,
+        rua: l.rua,
+        areaM2: l.areaM2,
+        posX: l.posX,
+        posY: l.posY,
+        proprietarioNome: l.proprietario?.name ?? null,
+        rtNome: l.rt?.name ?? null,
+        cor,
+      };
     }),
   }));
 

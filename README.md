@@ -58,7 +58,9 @@ A plataforma atende vários empreendimentos (condomínios/loteamentos) ao mesmo 
 - **Síndico**: cada empreendimento tem um síndico vinculado (`Empreendimento.sindicoId`); o síndico só enxerga o(s) empreendimento(s) aos quais está vinculado.
 - **Proprietário / Responsável técnico**: o vínculo é por lote (`Lote.proprietarioId`/`Lote.rtId`), e o lote pertence a um empreendimento — o auto-cadastro em `/login` já pede para escolher o empreendimento, a quadra e o lote.
 
-Quadras são cadastradas pela tela Empreendimentos (na criação do empreendimento ou depois, em "Quadras e lotes"), com nome livre e quantidade de lotes independente por quadra — não precisam seguir sequência numérica nem ter a mesma quantidade entre si. Uma quadra com lotes já cadastrados não pode ser removida por lá. Cadastro de lotes individuais (número, rua, área, posição no mapa) ainda não tem tela própria — hoje só é feito via `prisma/seed.ts` ou diretamente no banco.
+Quadras são cadastradas pela tela Empreendimentos (na criação do empreendimento ou depois, em "Quadras e lotes"), com nome livre e quantidade de lotes independente por quadra — não precisam seguir sequência numérica nem ter a mesma quantidade entre si. Uma quadra com lotes já cadastrados não pode ser removida por lá. Clicando em uma quadra (▸), abre o cadastro dos lotes individuais dela: número, rua, área e, se a planta já foi enviada, a posição do pin no mapa (clique na planta para marcar). Um lote com proprietário/RT vinculado não pode ser removido por lá.
+
+> **Nota:** o cadastro de lotes (esta última parte) foi construído em uma branch separada (`feature/cadastro-lotes`), só para teste local — ainda não foi mesclado em `main` nem enviado ao GitHub/Vercel.
 
 ## Lógica de negócio implementada
 
@@ -73,4 +75,4 @@ Quadras são cadastradas pela tela Empreendimentos (na criação do empreendimen
 - **Sem envio de e-mail real.** Não há provedor de e-mail configurado. Confirmação de cadastro, convites de usuário interno (a senha temporária é mostrada uma vez na tela) e notificações de status não são enviados por e-mail — apenas persistidos no banco.
 - **"Aprovado com ressalvas" e "Reprovado" definitivo** existem como status e aparecem nos dados de exemplo, mas a única transição implementada pela tela de análise é aprovar (sem reprovas) ou devolver para complementação — reprovação definitiva e ressalvas ficariam a critério de uma extensão futura da tela de análise.
 - **CPF/telefone/data de nascimento não são validados com máscara ou dígito verificador**, apenas presença mínima.
-- **Sem tela de cadastro de lotes individuais.** A tela Empreendimentos já permite cadastrar quadras com nome livre (A, B, A1, F2…) e uma quantidade de lotes própria por quadra, na criação do empreendimento ou depois. O que ainda falta é uma tela para cadastrar os lotes individualmente (número, rua, área, posição no mapa) — hoje isso só é feito via seed/banco.
+- **Vínculo de proprietário/RT ao lote ainda depende do fluxo de autocadastro.** A tela de cadastro de lotes (branch `feature/cadastro-lotes`) não atribui proprietário/RT na criação — isso continua acontecendo só quando a pessoa se cadastra em `/login` e a CAPE aprova o vínculo em Usuários.
