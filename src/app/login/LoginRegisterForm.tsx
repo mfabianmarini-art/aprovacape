@@ -331,12 +331,27 @@ export function LoginRegisterForm({ empreendimentos }: { empreendimentos: Empree
                 <span style={{ ...labelTextStyle, fontSize: 10.5 }}>
                   {cadTipo === "rt" ? "Autorização do proprietário" : "Matrícula do lote ou código de convite"}
                 </span>
-                <input
-                  name="comprovacao"
-                  required
-                  placeholder={cadTipo === "rt" ? "Anexar procuração ou contrato" : "000.000 / CONV-0000"}
-                  style={{ ...inputStyle, background: "#fff" }}
-                />
+                {cadTipo === "rt" ? (
+                  <>
+                    <input
+                      name="autorizacao"
+                      type="file"
+                      required
+                      accept=".pdf,.doc,.docx,image/png,image/jpeg,image/webp"
+                      style={{ ...inputStyle, background: "#fff", fontSize: 12.5 }}
+                    />
+                    <span style={{ fontSize: 11.5, color: "#6B7480" }}>
+                      Procuração ou contrato assinado pelo proprietário — PDF, Word ou imagem, até 10 MB.
+                    </span>
+                  </>
+                ) : (
+                  <input
+                    name="comprovacao"
+                    required
+                    placeholder="000.000 / CONV-0000"
+                    style={{ ...inputStyle, background: "#fff" }}
+                  />
+                )}
               </label>
               <div style={{ fontSize: 12, lineHeight: 1.5, color: "#4A5563" }}>
                 {cadTipo === "rt"

@@ -89,13 +89,27 @@ export function UsuariosSection({
                     ["Telefone", p.phone],
                     ["CPF", p.cpf],
                     ["Nascimento", formatDate(p.birthDate)],
-                    ["Comprovação", p.vinculoComprovacao ?? "—"],
                   ].map(([k, v]) => (
                     <div key={k} style={{ display: "grid", gridTemplateColumns: "88px 1fr", gap: 8, fontSize: 11.5 }}>
                       <span style={{ color: "#6B7480", letterSpacing: ".06em", textTransform: "uppercase", fontSize: 10, paddingTop: 2 }}>{k}</span>
                       <span style={{ fontFamily: "var(--font-mono)", color: "#3B4653" }}>{v}</span>
                     </div>
                   ))}
+                  <div style={{ display: "grid", gridTemplateColumns: "88px 1fr", gap: 8, fontSize: 11.5 }}>
+                    <span style={{ color: "#6B7480", letterSpacing: ".06em", textTransform: "uppercase", fontSize: 10, paddingTop: 2 }}>Comprovação</span>
+                    {p.vinculoArquivoCaminho ? (
+                      <a
+                        href={`/api/vinculo-autorizacao/${p.id}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{ fontSize: 11.5, fontWeight: 600, color: "#12455E" }}
+                      >
+                        {p.vinculoArquivoNome ?? "Autorização do proprietário"}
+                      </a>
+                    ) : (
+                      <span style={{ fontFamily: "var(--font-mono)", color: "#3B4653" }}>{p.vinculoComprovacao ?? "—"}</span>
+                    )}
+                  </div>
                 </div>
                 <div style={{ display: "flex", gap: 7 }}>
                   <form action={aprovarVinculoAction.bind(null, p.id)} style={{ flex: 1 }}>

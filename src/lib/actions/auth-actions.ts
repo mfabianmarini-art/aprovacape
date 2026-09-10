@@ -7,6 +7,17 @@ import { prisma } from "@/lib/prisma";
 import { signIn, signOut } from "@/lib/auth";
 import { homeForRole } from "@/lib/nav";
 import { UF_REGEX } from "@/lib/registro-profissional";
+import { saveUploadedFile } from "@/lib/upload";
+
+const MAX_AUTORIZACAO_BYTES = 10 * 1024 * 1024;
+const TIPOS_AUTORIZACAO = new Set([
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "image/png",
+  "image/jpeg",
+  "image/webp",
+]);
 
 export type LoginState = { error?: string; redirectTo?: string } | null;
 
@@ -41,8 +52,12 @@ const registerSchema = z
     senha: z.string().min(8, "Mínimo 8 caracteres"),
     confirmarSenha: z.string(),
     loteId: z.string().min(1, "Selecione o lote"),
-    comprovacao: z.string().min(1, "Informe a comprovação de vínculo"),
+    comprovacao: z.string().optional(),
     aceite: z.literal("on", { message: "É necessário aceitar os termos" }),
+  })
+  .refine((d) => d.tipo !== "prop" || (d.comprovacao && d.comprovacao.length > 0), {
+    message: "Informe a matrícula do lote ou o código de convite",
+    path: ["comprovacao"],
   })
   .refine((d) => d.senha === d.confirmarSenha, { message: "As senhas não coincidem", path: ["confirmarSenha"] })
   .refine((d) => d.tipo !== "rt" || d.conselho, { message: "Selecione o conselho (CREA ou CAU)", path: ["conselho"] })
@@ -70,6 +85,17 @@ export async function registerAction(_prev: RegisterState, formData: FormData): 
     return { error: "Já existe uma conta com este e-mail ou CPF." };
   }
 
+  // O RT anexa a autorização do proprietário. Este formulário é público, então o
+  // arquivo só sobe depois das demais validações, e com tipo e tamanho restritos.
+  let autorizacao: Awaited<ReturnType<typeof saveUploadedFile>> | null = null;
+  if (d.tipo === "rt") {
+    const file = formData.get("autorizacao");
+    if (!(file instanceof File) || file.size === 0) return { error: "Anexe a autorização do proprietário." };
+    if (!TIPOS_AUTORIZACAO.has(file.type)) return { error: "Envie um PDF, Word (.doc/.docx) ou imagem (PNG/JPG/WEBP)." };
+    if (file.size > MAX_AUTORIZACAO_BYTES) return { error: "Arquivo maior que 10 MB." };
+    autorizacao = await saveUploadedFile(file, "vinculos");
+  }
+
   const passwordHash = await bcrypt.hash(d.senha, 10);
   await prisma.user.create({
     data: {
@@ -85,7 +111,10 @@ export async function registerAction(_prev: RegisterState, formData: FormData): 
       registroUf: d.tipo === "rt" ? d.registroUf : null,
       vinculoStatus: "PENDENTE",
       vinculoLoteId: d.loteId,
-      vinculoComprovacao: d.comprovacao,
+      vinculoComprovacao: d.comprovacao ?? null,
+      vinculoArquivoNome: autorizacao?.nomeArquivo ?? null,
+      vinculoArquivoCaminho: autorizacao?.caminhoArquivo ?? null,
+      vinculoArquivoTamanho: autorizacao?.tamanhoBytes ?? null,
     },
   });
 
