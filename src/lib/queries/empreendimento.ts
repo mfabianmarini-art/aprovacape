@@ -21,6 +21,7 @@ export async function getEmpreendimentoConfig(empreendimentoId: string) {
   if (!emp) return null;
 
   const quadrasCfg = emp.quadras.map((q) => ({
+    id: q.id,
     nome: q.nome,
     total: q.totalLotes,
     lotes: q.lotes.map((l) => {

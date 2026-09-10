@@ -167,7 +167,7 @@ export function ResumoMapa({ data, podeAnalisar }: { data: Data; podeAnalisar: b
               >
                 <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
                   <div style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 600, letterSpacing: ".03em", lineHeight: 1 }}>
-                    Quadra {lote.quadra.nome.replace("Q", "")} · Lote {lote.numero}
+                    Quadra {lote.quadra.nome} · Lote {lote.numero}
                   </div>
                   <div style={{ fontSize: 11.5, color: "#8FB0BF" }}>{lote.rua}</div>
                 </div>

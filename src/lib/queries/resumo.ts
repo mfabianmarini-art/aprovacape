@@ -76,7 +76,7 @@ export async function getResumoData(empreendimentoId: string) {
       .filter((b) => b.cor !== LIVRE_INFO.bg)
       .map((b) => ({ cor: b.cor, w: `${((b.n / q.totalLotes) * 100).toFixed(1)}%` }));
     return {
-      nome: `Quadra ${q.nome.replace("Q", "")}`,
+      nome: `Quadra ${q.nome}`,
       resumo: `${q.totalLotes} lotes${emAndamento ? ` · ${emAndamento} em andamento` : ""}`,
       barras,
     };

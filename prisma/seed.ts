@@ -441,8 +441,10 @@ async function main() {
     }
   }
 
-  const quadraAltoQ1 = await prisma.quadra.create({ data: { empreendimentoId: empAltoDaSerra.id, nome: "Q1", totalLotes: 10 } });
-  const quadraAltoQ2 = await prisma.quadra.create({ data: { empreendimentoId: empAltoDaSerra.id, nome: "Q2", totalLotes: 8 } });
+  // Nomes de quadra não seguem uma sequência numérica fixa — e a quantidade de lotes
+  // varia livremente de uma quadra para outra.
+  const quadraAltoQ1 = await prisma.quadra.create({ data: { empreendimentoId: empAltoDaSerra.id, nome: "A", totalLotes: 10 } });
+  const quadraAltoQ2 = await prisma.quadra.create({ data: { empreendimentoId: empAltoDaSerra.id, nome: "B1", totalLotes: 22 } });
 
   const patricia = await prisma.user.create({
     data: {

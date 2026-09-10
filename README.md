@@ -58,7 +58,7 @@ A plataforma atende vários empreendimentos (condomínios/loteamentos) ao mesmo 
 - **Síndico**: cada empreendimento tem um síndico vinculado (`Empreendimento.sindicoId`); o síndico só enxerga o(s) empreendimento(s) aos quais está vinculado.
 - **Proprietário / Responsável técnico**: o vínculo é por lote (`Lote.proprietarioId`/`Lote.rtId`), e o lote pertence a um empreendimento — o auto-cadastro em `/login` já pede para escolher o empreendimento, a quadra e o lote.
 
-Cadastro de quadras e lotes de um novo empreendimento ainda não tem tela própria — hoje só é feito via `prisma/seed.ts` ou diretamente no banco (mesma limitação que já existia para o empreendimento único).
+Quadras são cadastradas pela tela Empreendimentos (na criação do empreendimento ou depois, em "Quadras e lotes"), com nome livre e quantidade de lotes independente por quadra — não precisam seguir sequência numérica nem ter a mesma quantidade entre si. Uma quadra com lotes já cadastrados não pode ser removida por lá. Cadastro de lotes individuais (número, rua, área, posição no mapa) ainda não tem tela própria — hoje só é feito via `prisma/seed.ts` ou diretamente no banco.
 
 ## Lógica de negócio implementada
 
@@ -73,4 +73,4 @@ Cadastro de quadras e lotes de um novo empreendimento ainda não tem tela própr
 - **Sem envio de e-mail real.** Não há provedor de e-mail configurado. Confirmação de cadastro, convites de usuário interno (a senha temporária é mostrada uma vez na tela) e notificações de status não são enviados por e-mail — apenas persistidos no banco.
 - **"Aprovado com ressalvas" e "Reprovado" definitivo** existem como status e aparecem nos dados de exemplo, mas a única transição implementada pela tela de análise é aprovar (sem reprovas) ou devolver para complementação — reprovação definitiva e ressalvas ficariam a critério de uma extensão futura da tela de análise.
 - **CPF/telefone/data de nascimento não são validados com máscara ou dígito verificador**, apenas presença mínima.
-- **Sem tela de cadastro de quadras/lotes.** Um novo empreendimento é criado com os dados básicos (nome, cidade, taxa, prazo); quadras e lotes ainda precisam ser inseridos via seed/banco.
+- **Sem tela de cadastro de lotes individuais.** A tela Empreendimentos já permite cadastrar quadras com nome livre (A, B, A1, F2…) e uma quantidade de lotes própria por quadra, na criação do empreendimento ou depois. O que ainda falta é uma tela para cadastrar os lotes individualmente (número, rua, área, posição no mapa) — hoje isso só é feito via seed/banco.

@@ -5,7 +5,7 @@ import { resolveEmpreendimentoAtual } from "@/lib/queries/empreendimentos-acesso
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { ScreenBody } from "@/components/ScreenBody";
 import { EmpreendimentoSwitcher } from "@/components/EmpreendimentoSwitcher";
-import { EditableField } from "./EditableField";
+import { EditableField } from "@/components/EditableField";
 import {
   renameCategoriaAction,
   updateItemAction,

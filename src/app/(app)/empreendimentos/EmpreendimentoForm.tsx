@@ -12,14 +12,12 @@ function centsToBRL(cents: number) {
 
 export function EmpreendimentoForm({
   id,
-  numQuadras,
   taxaAnaliseCent,
   prazoDias,
   reenviosSemTaxa,
   taxaVisitaCent,
 }: {
   id: string;
-  numQuadras: number;
   taxaAnaliseCent: number;
   prazoDias: number;
   reenviosSemTaxa: number;
@@ -30,10 +28,6 @@ export function EmpreendimentoForm({
   return (
     <form action={formAction} style={{ padding: 20, display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 16 }}>
       <input type="hidden" name="empreendimentoId" value={id} />
-      <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <span style={labelTextStyle}>Nº de quadras</span>
-        <input name="numQuadras" defaultValue={numQuadras} type="number" min={1} style={inputStyle} />
-      </label>
       <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         <span style={labelTextStyle}>Taxa de análise (R$)</span>
         <input name="taxaAnalise" defaultValue={centsToBRL(taxaAnaliseCent)} style={{ ...inputStyle, border: "1px solid #B4711A" }} />

@@ -8,6 +8,7 @@ import { EmpreendimentoSwitcher } from "@/components/EmpreendimentoSwitcher";
 import { EmpreendimentoForm } from "./EmpreendimentoForm";
 import { PlantaUpload } from "./PlantaUpload";
 import { NovoEmpreendimentoForm } from "./NovoEmpreendimentoForm";
+import { QuadrasManager } from "./QuadrasManager";
 
 export default async function EmpreendimentosPage({ searchParams }: { searchParams: Promise<{ emp?: string }> }) {
   const session = await requireRole("ADMIN_CAPE", "CAPE_ANALISTA");
@@ -53,28 +54,13 @@ export default async function EmpreendimentosPage({ searchParams }: { searchPara
             </div>
             <EmpreendimentoForm
               id={emp.id}
-              numQuadras={emp.numQuadras}
               taxaAnaliseCent={emp.taxaAnaliseCent}
               prazoDias={emp.prazoDias}
               reenviosSemTaxa={emp.reenviosSemTaxa}
               taxaVisitaCent={emp.taxaVisitaCent}
             />
-            <div style={{ padding: "0 20px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
-              <div style={{ fontSize: 11, letterSpacing: ".14em", textTransform: "uppercase", color: "#6B7480" }}>Quadras e lotes</div>
-              {quadrasCfg.map((q) => (
-                <div
-                  key={q.nome}
-                  style={{ display: "grid", gridTemplateColumns: "70px 1fr 150px", alignItems: "center", gap: 14, border: "1px solid #EDE9E1", borderRadius: 4, padding: "11px 14px" }}
-                >
-                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 600 }}>{q.nome}</div>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
-                    {q.lotes.map((l) => (
-                      <span key={l.id} title={`L${l.numero}`} style={{ width: 17, height: 17, borderRadius: 2, background: l.cor, display: "block" }} />
-                    ))}
-                  </div>
-                  <div style={{ fontSize: 11.5, color: "#6B7480", textAlign: "right", fontFamily: "var(--font-mono)" }}>{q.total} lotes</div>
-                </div>
-              ))}
+            <div style={{ padding: "0 20px 20px" }}>
+              <QuadrasManager empreendimentoId={emp.id} quadras={quadrasCfg} />
             </div>
           </section>
           <aside style={{ display: "flex", flexDirection: "column", gap: 16 }}>
