@@ -4,6 +4,7 @@ import { getEquipeCape } from "@/lib/queries/usuarios";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { ScreenBody } from "@/components/ScreenBody";
 import { ROLE_LABEL, ROLE_COLOR } from "@/lib/nav";
+import { formatRegistro } from "@/lib/registro-profissional";
 import { NovoInternoForm } from "./NovoInternoForm";
 
 export default async function UsuariosPage() {
@@ -32,7 +33,7 @@ export default async function UsuariosPage() {
                   <div>
                     <span style={{ display: "inline-block", padding: "4px 9px", borderRadius: 3, fontSize: 11.5, fontWeight: 600, background: cor.bg, color: cor.fg }}>{ROLE_LABEL[u.role]}</span>
                   </div>
-                  <div style={{ fontSize: 12, color: "#4A5563", fontFamily: "var(--font-mono)" }}>{u.creaCau ?? "—"}</div>
+                  <div style={{ fontSize: 12, color: "#4A5563", fontFamily: "var(--font-mono)" }}>{formatRegistro(u) ?? "—"}</div>
                 </div>
               );
             })}

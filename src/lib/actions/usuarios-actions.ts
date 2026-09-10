@@ -6,6 +6,7 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/require-role";
+import { UF_REGEX } from "@/lib/registro-profissional";
 
 export async function aprovarVinculoAction(userId: string) {
   const session = await requireRole("ADMIN_CAPE", "CAPE_ANALISTA");
@@ -39,7 +40,9 @@ const novoInternoSchema = z.object({
   perfil: z.enum(["ADMIN_CAPE", "CAPE_ANALISTA"]),
   nome: z.string().min(3, "Informe o nome completo"),
   email: z.string().email("E-mail inválido"),
-  registro: z.string().optional(),
+  conselho: z.enum(["CREA", "CAU"]),
+  registroNumero: z.string().trim().optional(),
+  registroUf: z.string().trim().toUpperCase().optional(),
 });
 
 export type NovoInternoState = { error?: string; ok?: boolean; senhaTemp?: string } | null;
@@ -55,7 +58,8 @@ export async function criarUsuarioInternoAction(_prev: NovoInternoState, formDat
     return { error: "Apenas um Admin CAPE pode criar outra conta de Admin CAPE." };
   }
 
-  if (!d.registro) return { error: "Informe o registro CAU/CREA." };
+  if (!d.registroNumero) return { error: "Informe o número do registro no conselho." };
+  if (!UF_REGEX.test(d.registroUf ?? "")) return { error: "Informe a UF emissora do registro (ex.: SP)." };
 
   const existing = await prisma.user.findFirst({ where: { email: d.email } });
   if (existing) return { error: "Já existe uma conta com este e-mail." };
@@ -73,7 +77,9 @@ export async function criarUsuarioInternoAction(_prev: NovoInternoState, formDat
       phone: "",
       passwordHash,
       role: d.perfil,
-      creaCau: d.registro,
+      conselho: d.conselho,
+      registroNumero: d.registroNumero,
+      registroUf: d.registroUf,
     },
   });
 

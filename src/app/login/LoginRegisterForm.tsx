@@ -246,15 +246,34 @@ export function LoginRegisterForm({ empreendimentos }: { empreendimentos: Empree
                 <input name="email" required type="email" style={inputStyle} />
               </label>
               {cadTipo === "rt" && (
-                <label style={{ display: "flex", flexDirection: "column", gap: 6, gridColumn: "1/-1" }}>
-                  <span style={labelTextStyle}>Registro CAU ou CREA</span>
-                  <input
-                    name="creaCau"
-                    required
-                    placeholder="CAU A000000-0 / CREA 0000000/D"
-                    style={{ ...inputStyle, border: "1px solid #B4711A", fontFamily: "var(--font-mono)" }}
-                  />
-                </label>
+                <div style={{ display: "grid", gridTemplateColumns: "110px minmax(0,1fr) 90px", gap: 10, gridColumn: "1/-1" }}>
+                  <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <span style={labelTextStyle}>Conselho</span>
+                    <select name="conselho" required defaultValue="CREA" style={{ ...inputStyle, border: "1px solid #B4711A" }}>
+                      <option value="CREA">CREA</option>
+                      <option value="CAU">CAU</option>
+                    </select>
+                  </label>
+                  <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <span style={labelTextStyle}>Número do registro</span>
+                    <input
+                      name="registroNumero"
+                      required
+                      placeholder="5069874/D"
+                      style={{ ...inputStyle, border: "1px solid #B4711A", fontFamily: "var(--font-mono)" }}
+                    />
+                  </label>
+                  <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <span style={labelTextStyle}>UF emissora</span>
+                    <input
+                      name="registroUf"
+                      required
+                      maxLength={2}
+                      placeholder="SP"
+                      style={{ ...inputStyle, border: "1px solid #B4711A", fontFamily: "var(--font-mono)", textTransform: "uppercase" }}
+                    />
+                  </label>
+                </div>
               )}
               <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 <span style={labelTextStyle}>Senha</span>

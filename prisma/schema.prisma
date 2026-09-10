@@ -24,6 +24,11 @@ enum VinculoStatus {
   RECUSADO
 }
 
+enum Conselho {
+  CREA
+  CAU
+}
+
 enum SolicitacaoTipo {
   OBRA_NOVA
   REFORMA
@@ -68,7 +73,10 @@ model User {
   phone         String
   passwordHash  String
   role          Role
-  creaCau       String?
+  // Habilitação profissional (RT e equipe técnica da CAPE): conselho, número e UF emissora.
+  conselho       Conselho?
+  registroNumero String?
+  registroUf     String?
   createdAt     DateTime      @default(now())
 
   // Self-registration (proprietário / RT) vínculo review, done in parallel with access.

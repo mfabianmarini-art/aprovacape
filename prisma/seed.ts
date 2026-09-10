@@ -3,7 +3,7 @@
 // showing the exact scenario the design was reviewed against.
 import bcrypt from "bcryptjs";
 import { prisma } from "../src/lib/prisma";
-import type { DocumentoTipo, SolicitacaoStatus, SolicitacaoTipo } from "../src/generated/prisma/enums";
+import type { Conselho, DocumentoTipo, SolicitacaoStatus, SolicitacaoTipo } from "../src/generated/prisma/enums";
 
 const DEMO_PASSWORD = "cape2026!";
 
@@ -32,7 +32,7 @@ async function main() {
       phone: "(11) 98888-1001",
       passwordHash,
       role: "ADMIN_CAPE",
-      creaCau: "CREA 5069874/D",
+      conselho: "CREA", registroNumero: "5069874/D", registroUf: "SP",
     },
   });
 
@@ -45,7 +45,7 @@ async function main() {
       phone: "(11) 98888-1002",
       passwordHash,
       role: "CAPE_ANALISTA",
-      creaCau: "CAU A889021-3",
+      conselho: "CAU", registroNumero: "A889021-3", registroUf: "SP",
     },
   });
 
@@ -96,16 +96,16 @@ async function main() {
       phone: "(11) 96666-3001",
       passwordHash,
       role: "RESPONSAVEL_TECNICO",
-      creaCau: "CAU A123456-7",
+      conselho: "CAU", registroNumero: "A123456-7", registroUf: "SP",
       vinculoStatus: "APROVADO",
     },
   });
 
-  const outrosProfissionais: Record<string, { nome: string; email: string; cau: string }> = {
-    "Marina Duarte": { nome: "Marina Duarte", email: "marina.duarte@estudio.arq.br", cau: "CAU A223456-1" },
-    "Célia Andrade": { nome: "Célia Andrade", email: "celia.andrade@estudio.arq.br", cau: "CAU A323456-2" },
-    "Tiago Serra": { nome: "Tiago Serra", email: "tiago.serra@estudio.arq.br", cau: "CREA 6011234/D" },
-    "Paulo Nardini": { nome: "Paulo Nardini", email: "paulo.nardini@estudio.arq.br", cau: "CAU A423456-3" },
+  const outrosProfissionais: Record<string, { nome: string; email: string; conselho: Conselho; numero: string; uf: string }> = {
+    "Marina Duarte": { nome: "Marina Duarte", email: "marina.duarte@estudio.arq.br", conselho: "CAU", numero: "A223456-1", uf: "SP" },
+    "Célia Andrade": { nome: "Célia Andrade", email: "celia.andrade@estudio.arq.br", conselho: "CAU", numero: "A323456-2", uf: "SP" },
+    "Tiago Serra": { nome: "Tiago Serra", email: "tiago.serra@estudio.arq.br", conselho: "CREA", numero: "6011234/D", uf: "MG" },
+    "Paulo Nardini": { nome: "Paulo Nardini", email: "paulo.nardini@estudio.arq.br", conselho: "CAU", numero: "A423456-3", uf: "SP" },
   };
   const rts: Record<string, { id: string }> = { "Ana Beltrão": ana };
   for (const [key, v] of Object.entries(outrosProfissionais)) {
@@ -118,7 +118,9 @@ async function main() {
         phone: "(11) 96666-0000",
         passwordHash,
         role: "RESPONSAVEL_TECNICO",
-        creaCau: v.cau,
+        conselho: v.conselho,
+        registroNumero: v.numero,
+        registroUf: v.uf,
         vinculoStatus: "APROVADO",
       },
     });
@@ -148,7 +150,7 @@ async function main() {
       phone: "(11) 99304-1187",
       passwordHash,
       role: "RESPONSAVEL_TECNICO",
-      creaCau: "CAU A552108-4",
+      conselho: "CAU", registroNumero: "A552108-4", registroUf: "SP",
       vinculoStatus: "PENDENTE",
       vinculoComprovacao: "CAU A552108-4 · procuração anexa",
     },
@@ -467,7 +469,7 @@ async function main() {
       phone: "(11) 93333-6001",
       passwordHash,
       role: "RESPONSAVEL_TECNICO",
-      creaCau: "CAU A667788-9",
+      conselho: "CAU", registroNumero: "A667788-9", registroUf: "SP",
       vinculoStatus: "APROVADO",
     },
   });

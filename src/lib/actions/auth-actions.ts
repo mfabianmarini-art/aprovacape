@@ -6,6 +6,7 @@ import { AuthError } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { signIn, signOut } from "@/lib/auth";
 import { homeForRole } from "@/lib/nav";
+import { UF_REGEX } from "@/lib/registro-profissional";
 
 export type LoginState = { error?: string; redirectTo?: string } | null;
 
@@ -34,7 +35,9 @@ const registerSchema = z
     nascimento: z.string().min(1, "Informe a data de nascimento"),
     telefone: z.string().min(8, "Informe o telefone"),
     email: z.string().email("E-mail inválido"),
-    creaCau: z.string().optional(),
+    conselho: z.enum(["CREA", "CAU"]).optional(),
+    registroNumero: z.string().trim().optional(),
+    registroUf: z.string().trim().toUpperCase().optional(),
     senha: z.string().min(8, "Mínimo 8 caracteres"),
     confirmarSenha: z.string(),
     loteId: z.string().min(1, "Selecione o lote"),
@@ -42,9 +45,14 @@ const registerSchema = z
     aceite: z.literal("on", { message: "É necessário aceitar os termos" }),
   })
   .refine((d) => d.senha === d.confirmarSenha, { message: "As senhas não coincidem", path: ["confirmarSenha"] })
-  .refine((d) => d.tipo !== "rt" || (d.creaCau && d.creaCau.length > 3), {
-    message: "Informe o registro CAU/CREA",
-    path: ["creaCau"],
+  .refine((d) => d.tipo !== "rt" || d.conselho, { message: "Selecione o conselho (CREA ou CAU)", path: ["conselho"] })
+  .refine((d) => d.tipo !== "rt" || (d.registroNumero && d.registroNumero.length >= 3), {
+    message: "Informe o número do registro",
+    path: ["registroNumero"],
+  })
+  .refine((d) => d.tipo !== "rt" || UF_REGEX.test(d.registroUf ?? ""), {
+    message: "Informe a UF emissora do registro (ex.: SP)",
+    path: ["registroUf"],
   });
 
 export type RegisterState = { error?: string; ok?: boolean; identifier?: string; password?: string } | null;
@@ -72,7 +80,9 @@ export async function registerAction(_prev: RegisterState, formData: FormData): 
       phone: d.telefone,
       passwordHash,
       role: d.tipo === "rt" ? "RESPONSAVEL_TECNICO" : "PROPRIETARIO",
-      creaCau: d.tipo === "rt" ? d.creaCau : null,
+      conselho: d.tipo === "rt" ? d.conselho : null,
+      registroNumero: d.tipo === "rt" ? d.registroNumero : null,
+      registroUf: d.tipo === "rt" ? d.registroUf : null,
       vinculoStatus: "PENDENTE",
       vinculoLoteId: d.loteId,
       vinculoComprovacao: d.comprovacao,

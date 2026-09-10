@@ -48,9 +48,27 @@ export function NovoInternoForm({ podeAtribuirAdmin }: { podeAtribuirAdmin: bool
         <div style={{ fontSize: 12.5, color: "#3B4653", lineHeight: 1.45 }}>
           Perfis técnicos só são ativados com registro válido de engenheiro(a) ou arquiteto(a).
         </div>
+        <div style={{ display: "grid", gridTemplateColumns: "100px minmax(0,1fr)", gap: 9 }}>
+          <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <span style={labelTextStyle}>Conselho</span>
+            <select name="conselho" defaultValue="CREA" style={inputStyle}>
+              <option value="CREA">CREA</option>
+              <option value="CAU">CAU</option>
+            </select>
+          </label>
+          <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <span style={labelTextStyle}>Número</span>
+            <input name="registroNumero" placeholder="5069874/D" style={{ ...inputStyle, fontFamily: "var(--font-mono)" }} />
+          </label>
+        </div>
         <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <span style={labelTextStyle}>Conselho e nº de registro</span>
-          <input name="registro" placeholder="CAU A000000-0 / CREA 0000000/D" style={inputStyle} />
+          <span style={labelTextStyle}>UF emissora</span>
+          <input
+            name="registroUf"
+            maxLength={2}
+            placeholder="SP"
+            style={{ ...inputStyle, fontFamily: "var(--font-mono)", textTransform: "uppercase" }}
+          />
         </label>
       </div>
       {state?.error && <div style={{ fontSize: 12, color: "#8C2B22" }}>{state.error}</div>}
