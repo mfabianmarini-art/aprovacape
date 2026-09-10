@@ -392,9 +392,6 @@ export function LoginRegisterForm({ empreendimentos }: { empreendimentos: Empree
             >
               {registerPending ? "Enviando…" : "Criar conta"}
             </button>
-            <div style={{ fontSize: 12, color: "#6B7480", lineHeight: 1.5, textAlign: "center" }}>
-              Analistas da CAPE e síndicos não se cadastram por aqui: são criados internamente pela CAPE.
-            </div>
           </form>
         )}
       </div>
