@@ -60,8 +60,6 @@ A plataforma atende vários empreendimentos (condomínios/loteamentos) ao mesmo 
 
 Quadras são cadastradas pela tela Empreendimentos (na criação do empreendimento ou depois, em "Quadras e lotes"), com nome livre e quantidade de lotes independente por quadra — não precisam seguir sequência numérica nem ter a mesma quantidade entre si. Uma quadra com lotes já cadastrados não pode ser removida por lá. Clicando em uma quadra (▸), abre o cadastro dos lotes individuais dela: número, rua, área e, se a planta já foi enviada, a posição do pin no mapa (clique na planta para marcar). Um lote com proprietário/RT vinculado não pode ser removido por lá.
 
-> **Nota:** o cadastro de lotes (esta última parte) foi construído em uma branch separada (`feature/cadastro-lotes`), só para teste local — ainda não foi mesclado em `main` nem enviado ao GitHub/Vercel.
-
 ## Lógica de negócio implementada
 
 - **Validação documental → check-list**: o check-list técnico só libera depois que os 5 documentos são marcados como validados pelo analista.
@@ -75,4 +73,4 @@ Quadras são cadastradas pela tela Empreendimentos (na criação do empreendimen
 - **Sem envio de e-mail real.** Não há provedor de e-mail configurado. Confirmação de cadastro, convites de usuário interno (a senha temporária é mostrada uma vez na tela) e notificações de status não são enviados por e-mail — apenas persistidos no banco.
 - **"Aprovado com ressalvas" e "Reprovado" definitivo** existem como status e aparecem nos dados de exemplo, mas a única transição implementada pela tela de análise é aprovar (sem reprovas) ou devolver para complementação — reprovação definitiva e ressalvas ficariam a critério de uma extensão futura da tela de análise.
 - **CPF/telefone/data de nascimento não são validados com máscara ou dígito verificador**, apenas presença mínima.
-- **Vínculo de proprietário/RT ao lote ainda depende do fluxo de autocadastro.** A tela de cadastro de lotes (branch `feature/cadastro-lotes`) não atribui proprietário/RT na criação — isso continua acontecendo só quando a pessoa se cadastra em `/login` e a CAPE aprova o vínculo em Usuários.
+- **Vínculo de proprietário/RT ao lote ainda depende do fluxo de autocadastro.** A tela de cadastro de lotes não atribui proprietário/RT na criação — isso continua acontecendo só quando a pessoa se cadastra em `/login` e a CAPE aprova o vínculo em Usuários.
