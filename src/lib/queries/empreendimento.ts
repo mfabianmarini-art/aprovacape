@@ -1,8 +1,9 @@
 import { prisma } from "@/lib/prisma";
 import { STATUS_INFO, LIVRE_INFO } from "@/lib/status";
 
-export async function getEmpreendimentoConfig() {
-  const emp = await prisma.empreendimento.findFirst({
+export async function getEmpreendimentoConfig(empreendimentoId: string) {
+  const emp = await prisma.empreendimento.findUnique({
+    where: { id: empreendimentoId },
     include: {
       sindico: true,
       quadras: {

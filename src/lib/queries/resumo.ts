@@ -9,8 +9,9 @@ function diasDesde(d: Date) {
   return Math.floor((Date.now() - d.getTime()) / 86_400_000);
 }
 
-export async function getResumoData() {
-  const emp = await prisma.empreendimento.findFirst({
+export async function getResumoData(empreendimentoId: string) {
+  const emp = await prisma.empreendimento.findUnique({
+    where: { id: empreendimentoId },
     include: {
       quadras: { orderBy: { nome: "asc" } },
       lotes: {

@@ -21,6 +21,8 @@ async function main() {
 
   const passwordHash = await bcrypt.hash(DEMO_PASSWORD, 10);
 
+  // Admin CAPE: mesma equipe interna, com acesso extra para cadastrar novos
+  // empreendimentos e criar outras contas internas (analistas, síndicos, admins).
   await prisma.user.create({
     data: {
       name: "Eng. Denise Yamamoto",
@@ -29,7 +31,7 @@ async function main() {
       birthDate: new Date("1985-04-12"),
       phone: "(11) 98888-1001",
       passwordHash,
-      role: "CAPE_ANALISTA",
+      role: "ADMIN_CAPE",
       creaCau: "CREA 5069874/D",
     },
   });
@@ -401,6 +403,150 @@ async function main() {
     }
   }
 
+  // Second empreendimento (no síndico assigned yet) — demonstrates the app being multi-cliente:
+  // the CAPE team switches between developments, and each proprietário/RT/síndico only sees
+  // the empreendimento(s) they're actually linked to.
+  const empAltoDaSerra = await prisma.empreendimento.create({
+    data: {
+      nome: "Alto da Serra",
+      cidade: "Atibaia",
+      uf: "SP",
+      numQuadras: 2,
+      taxaAnaliseCent: 250000,
+      prazoDias: 12,
+      reenviosSemTaxa: 3,
+      taxaVisitaCent: 50000,
+      prazoComplementoDias: 180,
+    },
+  });
+
+  const CATS_ALTO_DA_SERRA: Array<[string, Array<[string, string]>]> = [
+    ["Recuos e afastamentos", [
+      ["Recuo frontal mínimo de 4,00 m atendido", "Art. 9º — Normativa do residencial"],
+      ["Recuos laterais mínimos de 1,50 m em ambas as divisas", "Art. 9º §2º"],
+    ]],
+    ["Ocupação e permeabilidade", [
+      ["Taxa de ocupação ≤ 55% da área do lote", "Art. 14"],
+      ["Área permeável ≥ 15% da área do lote", "Art. 15"],
+    ]],
+  ];
+  let ordemAlto = 0;
+  for (const [nome, itens] of CATS_ALTO_DA_SERRA) {
+    const cat = await prisma.checklistCategoria.create({
+      data: { empreendimentoId: empAltoDaSerra.id, nome, ordem: ordemAlto++ },
+    });
+    let itemOrdemAlto = 0;
+    for (const [texto, referencia] of itens) {
+      await prisma.checklistItem.create({ data: { categoriaId: cat.id, texto, referencia, ordem: itemOrdemAlto++ } });
+    }
+  }
+
+  const quadraAltoQ1 = await prisma.quadra.create({ data: { empreendimentoId: empAltoDaSerra.id, nome: "Q1", totalLotes: 10 } });
+  const quadraAltoQ2 = await prisma.quadra.create({ data: { empreendimentoId: empAltoDaSerra.id, nome: "Q2", totalLotes: 8 } });
+
+  const patricia = await prisma.user.create({
+    data: {
+      name: "Patrícia Salgado Nogueira",
+      email: "patricia.salgado@gmail.com",
+      cpf: "888.888.888-88",
+      birthDate: new Date("1979-05-22"),
+      phone: "(11) 94444-5001",
+      passwordHash,
+      role: "PROPRIETARIO",
+      vinculoStatus: "APROVADO",
+    },
+  });
+  const igor = await prisma.user.create({
+    data: {
+      name: "Igor Matte",
+      email: "igor.matte@estudio.arq.br",
+      cpf: "999.999.999-99",
+      birthDate: new Date("1986-07-14"),
+      phone: "(11) 93333-6001",
+      passwordHash,
+      role: "RESPONSAVEL_TECNICO",
+      creaCau: "CAU A667788-9",
+      vinculoStatus: "APROVADO",
+    },
+  });
+
+  const loteAlto1 = await prisma.lote.create({
+    data: {
+      empreendimentoId: empAltoDaSerra.id,
+      quadraId: quadraAltoQ1.id,
+      numero: "03",
+      rua: "Rua das Grevíleas, 40",
+      areaM2: 420,
+      proprietarioId: patricia.id,
+      rtId: igor.id,
+    },
+  });
+  const loteAlto2 = await prisma.lote.create({
+    data: {
+      empreendimentoId: empAltoDaSerra.id,
+      quadraId: quadraAltoQ2.id,
+      numero: "10",
+      rua: "Rua dos Pinheirais, 12",
+      areaM2: 380,
+      proprietarioId: patricia.id,
+    },
+  });
+
+  const solAlto1 = await prisma.solicitacao.create({
+    data: {
+      protocolo: "SOL-2026-050",
+      loteId: loteAlto1.id,
+      tipo: "OBRA_NOVA",
+      areaConstruida: 58,
+      descricao: "Obra nova 210 m² protocolada.",
+      status: "ANALISE",
+      prazoDias: empAltoDaSerra.prazoDias,
+      pago: true,
+      criadoPorId: patricia.id,
+      responsavelTecnicoNome: igor.name,
+      responsavelTecnicoRegistro: "CAU A667788-9",
+      responsavelTecnicoEmail: igor.email,
+      documentacaoValidada: true,
+    },
+  });
+  await prisma.historicoEvento.create({
+    data: { solicitacaoId: solAlto1.id, texto: "Obra nova 210 m² protocolada.", cor: "#8FB0BF" },
+  });
+  await prisma.historicoEvento.create({
+    data: { solicitacaoId: solAlto1.id, texto: "Documentação validada, análise técnica iniciada.", cor: "#12455E" },
+  });
+  for (const tipo of DOC_ORDER) {
+    await prisma.solicitacaoDocumento.create({
+      data: { solicitacaoId: solAlto1.id, tipo, nomeArquivo: `${tipo}.pdf`, caminhoArquivo: "", tamanhoBytes: 500_000, validado: true },
+    });
+  }
+
+  const solAlto2 = await prisma.solicitacao.create({
+    data: {
+      protocolo: "SOL-2026-051",
+      loteId: loteAlto2.id,
+      tipo: "REFORMA",
+      areaConstruida: 22,
+      descricao: "Reforma de fachada protocolada. Taxa de análise a pagar.",
+      status: "ENVIADA",
+      prazoDias: empAltoDaSerra.prazoDias,
+      pago: false,
+      criadoPorId: patricia.id,
+      responsavelTecnicoNome: patricia.name,
+      responsavelTecnicoRegistro: "—",
+      responsavelTecnicoEmail: patricia.email,
+      documentacaoValidada: false,
+    },
+  });
+  await prisma.historicoEvento.create({
+    data: { solicitacaoId: solAlto2.id, texto: "Reforma de fachada protocolada. Taxa de análise a pagar.", cor: "#8FB0BF" },
+  });
+  for (const tipo of DOC_ORDER) {
+    await prisma.solicitacaoDocumento.create({
+      data: { solicitacaoId: solAlto2.id, tipo, nomeArquivo: `${tipo}.pdf`, caminhoArquivo: "", tamanhoBytes: 500_000, validado: false },
+    });
+  }
+
   // Pending vínculos reference lotes that exist but aren't the pending users' own yet.
   const q2l14 = await prisma.lote.findFirstOrThrow({ where: { quadra: { nome: "Q2" }, numero: "14" } });
   const q5l21 = await prisma.lote.findFirstOrThrow({ where: { quadra: { nome: "Q5" }, numero: "21" } });
@@ -409,10 +555,12 @@ async function main() {
 
   console.log("Seed concluído.");
   console.log(`Senha de demonstração para todos os usuários: ${DEMO_PASSWORD}`);
-  console.log("Login CAPE: denise@cape.eng.br");
-  console.log("Login Síndico: sindico@quintadaprimavera.com.br");
-  console.log("Login Proprietário: marcos.prado@gmail.com");
-  console.log("Login RT: ana.beltrao@estudio.arq.br");
+  console.log("Login Admin CAPE: denise@cape.eng.br");
+  console.log("Login Analista CAPE: rafael@cape.eng.br");
+  console.log("Login Síndico (Quinta da Primavera): sindico@quintadaprimavera.com.br");
+  console.log("Login Proprietário (Quinta da Primavera): marcos.prado@gmail.com");
+  console.log("Login RT (Quinta da Primavera): ana.beltrao@estudio.arq.br");
+  console.log("Login Proprietária (Alto da Serra): patricia.salgado@gmail.com");
 }
 
 const DOC_ORDER: DocumentoTipo[] = [

@@ -6,7 +6,7 @@ import { ScreenBody } from "@/components/ScreenBody";
 import { FilaTable } from "./FilaTable";
 
 export default async function FilaPage() {
-  const session = await requireRole("CAPE_ANALISTA");
+  const session = await requireRole("ADMIN_CAPE", "CAPE_ANALISTA");
   const [user, fila] = await Promise.all([getUserDisplay(session.user.id, session.user.role), getFila()]);
 
   return (

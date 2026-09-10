@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { put } from "@vercel/blob";
 import path from "node:path";
 import { z } from "zod";
@@ -22,8 +23,44 @@ const schema = z.object({
   taxaVisita: z.string().min(1),
 });
 
+const createSchema = z.object({
+  nome: z.string().min(2, "Informe o nome do empreendimento"),
+  cidade: z.string().min(2, "Informe a cidade"),
+  uf: z.string().length(2, "Use a sigla da UF (ex.: SP)"),
+  numQuadras: z.coerce.number().int().positive(),
+  taxaAnalise: z.string().min(1),
+  prazoDias: z.coerce.number().int().positive(),
+});
+
+export type CreateEmpreendimentoState = { error?: string } | null;
+
+// Só Admin CAPE cria novos empreendimentos — analistas comuns apenas editam os já existentes.
+export async function createEmpreendimentoAction(
+  _prev: CreateEmpreendimentoState,
+  formData: FormData,
+): Promise<CreateEmpreendimentoState> {
+  await requireRole("ADMIN_CAPE");
+  const parsed = createSchema.safeParse(Object.fromEntries(formData.entries()));
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
+  const d = parsed.data;
+
+  const emp = await prisma.empreendimento.create({
+    data: {
+      nome: d.nome,
+      cidade: d.cidade,
+      uf: d.uf.toUpperCase(),
+      numQuadras: d.numQuadras,
+      taxaAnaliseCent: parseBRL(d.taxaAnalise),
+      prazoDias: d.prazoDias,
+    },
+  });
+
+  revalidatePath("/empreendimentos");
+  redirect(`/empreendimentos?emp=${emp.id}`);
+}
+
 export async function updateEmpreendimentoAction(_prev: unknown, formData: FormData) {
-  await requireRole("CAPE_ANALISTA");
+  await requireRole("ADMIN_CAPE", "CAPE_ANALISTA");
   const parsed = schema.safeParse(Object.fromEntries(formData.entries()));
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
   const d = parsed.data;
@@ -44,7 +81,7 @@ export async function updateEmpreendimentoAction(_prev: unknown, formData: FormD
 }
 
 export async function uploadPlantaAction(empreendimentoId: string, _prev: unknown, formData: FormData) {
-  await requireRole("CAPE_ANALISTA");
+  await requireRole("ADMIN_CAPE", "CAPE_ANALISTA");
   const file = formData.get("planta");
   if (!(file instanceof File) || file.size === 0) return { error: "Selecione uma imagem." };
   if (!file.type.startsWith("image/")) return { error: "Envie um arquivo de imagem." };

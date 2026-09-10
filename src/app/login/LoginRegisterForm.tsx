@@ -32,7 +32,7 @@ const labelTextStyle: React.CSSProperties = {
 };
 
 export function LoginRegisterForm({ empreendimentos }: { empreendimentos: Empreendimento[] }) {
-  const [aba, setAba] = useState<"cadastro" | "login">("cadastro");
+  const [aba, setAba] = useState<"cadastro" | "login">("login");
   const [cadTipo, setCadTipo] = useState<"prop" | "rt">("prop");
   const [empId, setEmpId] = useState(empreendimentos[0]?.id ?? "");
   const emp = empreendimentos.find((e) => e.id === empId) ?? empreendimentos[0];
@@ -124,8 +124,8 @@ export function LoginRegisterForm({ empreendimentos }: { empreendimentos: Empree
         <div style={{ display: "flex", borderBottom: "1px solid #EDE9E1" }}>
           {(
             [
-              ["cadastro", "Criar conta"],
               ["login", "Já tenho conta"],
+              ["cadastro", "Criar conta"],
             ] as const
           ).map(([id, label]) => (
             <button

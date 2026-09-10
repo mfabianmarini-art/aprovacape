@@ -1,8 +1,10 @@
 import { requireRole } from "@/lib/require-role";
 import { getUserDisplay } from "@/lib/user-display";
 import { prisma } from "@/lib/prisma";
+import { resolveEmpreendimentoAtual } from "@/lib/queries/empreendimentos-acesso";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { ScreenBody } from "@/components/ScreenBody";
+import { EmpreendimentoSwitcher } from "@/components/EmpreendimentoSwitcher";
 import { EditableField } from "./EditableField";
 import {
   renameCategoriaAction,
@@ -13,14 +15,20 @@ import {
   deleteCategoriaAction,
 } from "@/lib/actions/checklist-actions";
 
-export default async function ChecklistsPage() {
-  const session = await requireRole("CAPE_ANALISTA");
-  const [user, emp] = await Promise.all([
+export default async function ChecklistsPage({ searchParams }: { searchParams: Promise<{ emp?: string }> }) {
+  const session = await requireRole("ADMIN_CAPE", "CAPE_ANALISTA");
+  const { emp: empParam } = await searchParams;
+  const [user, { atual, opcoes }] = await Promise.all([
     getUserDisplay(session.user.id, session.user.role),
-    prisma.empreendimento.findFirst({
-      include: { categorias: { orderBy: { ordem: "asc" }, include: { itens: { orderBy: { ordem: "asc" } } } } },
-    }),
+    resolveEmpreendimentoAtual(session.user.id, session.user.role, empParam),
   ]);
+
+  const emp = atual
+    ? await prisma.empreendimento.findUnique({
+        where: { id: atual.id },
+        include: { categorias: { orderBy: { ordem: "asc" }, include: { itens: { orderBy: { ordem: "asc" } } } } },
+      })
+    : null;
 
   if (!emp) {
     return (
@@ -39,6 +47,7 @@ export default async function ChecklistsPage() {
     <>
       <ScreenHeader crumb="Configuração" title="Check-lists por empreendimento" {...user} />
       <ScreenBody>
+        <EmpreendimentoSwitcher atualId={emp.id} opcoes={opcoes} />
         <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 300px", gap: 20, alignItems: "start" }}>
           <section style={{ background: "#fff", border: "1px solid #DDD8CE", borderRadius: 4 }}>
             <div style={{ padding: "15px 18px", borderBottom: "1px solid #EDE9E1", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>

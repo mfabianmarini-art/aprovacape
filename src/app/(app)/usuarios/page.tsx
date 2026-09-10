@@ -10,6 +10,7 @@ import { formatDate } from "@/lib/status";
 import type { Role } from "@/generated/prisma/enums";
 
 const ROLE_COLOR: Record<Role, { bg: string; fg: string }> = {
+  ADMIN_CAPE: { bg: "#0B2E3F", fg: "#FFFFFF" },
   CAPE_ANALISTA: { bg: "#12455E", fg: "#FFFFFF" },
   SINDICO: { bg: "#DEDCF0", fg: "#3B3486" },
   RESPONSAVEL_TECNICO: { bg: "#DCE9F2", fg: "#12455E" },
@@ -17,7 +18,7 @@ const ROLE_COLOR: Record<Role, { bg: string; fg: string }> = {
 };
 
 export default async function UsuariosPage() {
-  const session = await requireRole("CAPE_ANALISTA");
+  const session = await requireRole("ADMIN_CAPE", "CAPE_ANALISTA");
   const [user, usuarios, pendentes] = await Promise.all([
     getUserDisplay(session.user.id, session.user.role),
     getUsuarios(),
@@ -42,8 +43,10 @@ export default async function UsuariosPage() {
               const vinculo = lotes.length
                 ? lotes.map((l) => `${l.quadra.nome} L${l.numero}`).join(", ") + ` · ${lotes[0].empreendimento.nome}`
                 : u.role === "SINDICO"
-                  ? "Quinta da Primavera"
-                  : "Todos os empreendimentos";
+                  ? u.empreendimentosSindico.length
+                    ? u.empreendimentosSindico.map((e) => e.nome).join(", ")
+                    : "Nenhum empreendimento vinculado"
+                  : "Equipe CAPE · todos os empreendimentos";
               return (
                 <div key={u.id} style={{ display: "grid", gridTemplateColumns: "1fr 165px 190px 120px", alignItems: "center", padding: "13px 18px", borderBottom: "1px solid #F1EEE7" }}>
                   <div style={{ display: "flex", flexDirection: "column", gap: 2, paddingRight: 14 }}>
@@ -106,7 +109,7 @@ export default async function UsuariosPage() {
                 </div>
               ))}
             </section>
-            <NovoInternoForm />
+            <NovoInternoForm podeAtribuirAdmin={session.user.role === "ADMIN_CAPE"} />
           </aside>
         </div>
       </ScreenBody>

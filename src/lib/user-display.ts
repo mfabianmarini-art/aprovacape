@@ -13,7 +13,8 @@ export async function getUserDisplay(userId: string, role: Role) {
     .toUpperCase();
 
   let papel = ROLE_LABEL[role];
-  if (role === "CAPE_ANALISTA") papel += " · acesso total";
+  if (role === "ADMIN_CAPE") papel += " · acesso total";
+  else if (role === "CAPE_ANALISTA") papel += " · acesso total";
   else if (role === "SINDICO") papel += " · somente leitura";
   else if (role === "RESPONSAVEL_TECNICO" && user.creaCau) papel += ` · ${user.creaCau}`;
   else if (role === "PROPRIETARIO") {

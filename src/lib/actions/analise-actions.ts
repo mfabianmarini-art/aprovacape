@@ -21,7 +21,7 @@ function revalidateAll(protocolo: string) {
 }
 
 export async function toggleDocumentoAction(solicitacaoId: string, tipo: DocumentoTipo) {
-  await requireRole("CAPE_ANALISTA");
+  await requireRole("ADMIN_CAPE", "CAPE_ANALISTA");
   const sol = await loadSolicitacao(solicitacaoId);
   const doc = sol.documentos.find((d) => d.tipo === tipo);
   if (!doc) return;
@@ -36,7 +36,7 @@ export async function toggleDocumentoAction(solicitacaoId: string, tipo: Documen
 }
 
 export async function devolverDocumentacaoAction(solicitacaoId: string) {
-  const session = await requireRole("CAPE_ANALISTA");
+  const session = await requireRole("ADMIN_CAPE", "CAPE_ANALISTA");
   const sol = await loadSolicitacao(solicitacaoId);
   const reenvios = sol.reenvios + 1;
 
@@ -64,7 +64,7 @@ export async function devolverDocumentacaoAction(solicitacaoId: string) {
 }
 
 export async function decidirItemAction(solicitacaoId: string, itemId: string, decisao: "APROVADO" | "REPROVADO") {
-  await requireRole("CAPE_ANALISTA");
+  await requireRole("ADMIN_CAPE", "CAPE_ANALISTA");
   const sol = await prisma.solicitacao.findUniqueOrThrow({ where: { id: solicitacaoId } });
 
   const existing = await prisma.checklistResultado.findUnique({
@@ -86,7 +86,7 @@ export async function decidirItemAction(solicitacaoId: string, itemId: string, d
 }
 
 export async function emitirParecerAction(solicitacaoId: string) {
-  const session = await requireRole("CAPE_ANALISTA");
+  const session = await requireRole("ADMIN_CAPE", "CAPE_ANALISTA");
   const sol = await prisma.solicitacao.findUniqueOrThrow({
     where: { id: solicitacaoId },
     include: { lote: { include: { empreendimento: true } }, resultados: true },
@@ -139,7 +139,7 @@ export async function emitirParecerAction(solicitacaoId: string) {
 }
 
 export async function togglePagoAction(solicitacaoId: string) {
-  await requireRole("CAPE_ANALISTA");
+  await requireRole("ADMIN_CAPE", "CAPE_ANALISTA");
   const sol = await prisma.solicitacao.findUniqueOrThrow({ where: { id: solicitacaoId } });
   await prisma.solicitacao.update({ where: { id: solicitacaoId }, data: { pago: !sol.pago } });
   revalidateAll(sol.protocolo);

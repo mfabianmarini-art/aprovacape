@@ -12,12 +12,40 @@ const FILTROS = ["Todas", "Enviada", "Em análise técnica", "Aguardando complem
 
 export function FilaTable({ fila }: { fila: Fila }) {
   const [filtro, setFiltro] = useState<(typeof FILTROS)[number]>("Todas");
+  const [empreendimentoFiltro, setEmpreendimentoFiltro] = useState("Todos");
   const router = useRouter();
 
-  const linhas = fila.filter((s) => filtro === "Todas" || STATUS_INFO[s.status].label === filtro);
+  const empreendimentos = Array.from(new Set(fila.map((s) => s.lote.empreendimento.nome))).sort();
+
+  const linhas = fila.filter(
+    (s) =>
+      (filtro === "Todas" || STATUS_INFO[s.status].label === filtro) &&
+      (empreendimentoFiltro === "Todos" || s.lote.empreendimento.nome === empreendimentoFiltro),
+  );
 
   return (
     <section style={{ background: "#fff", border: "1px solid #DDD8CE", borderRadius: 4, overflow: "hidden" }}>
+      {empreendimentos.length > 1 && (
+        <div style={{ display: "flex", gap: 8, padding: "13px 18px", borderBottom: "1px solid #EDE9E1", flexWrap: "wrap" }}>
+          {["Todos", ...empreendimentos].map((e) => (
+            <button
+              key={e}
+              onClick={() => setEmpreendimentoFiltro(e)}
+              style={{
+                border: `1px solid ${empreendimentoFiltro === e ? "#B4711A" : "#DDD8CE"}`,
+                background: empreendimentoFiltro === e ? "#B4711A" : "#FFFFFF",
+                color: empreendimentoFiltro === e ? "#FFFFFF" : "#4A5563",
+                borderRadius: 20,
+                padding: "6px 13px",
+                fontSize: 12,
+                cursor: "pointer",
+              }}
+            >
+              {e}
+            </button>
+          ))}
+        </div>
+      )}
       <div style={{ display: "flex", gap: 8, padding: "13px 18px", borderBottom: "1px solid #EDE9E1", flexWrap: "wrap" }}>
         {FILTROS.map((f) => (
           <button
@@ -40,7 +68,7 @@ export function FilaTable({ fila }: { fila: Fila }) {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "120px 1fr 190px 150px 128px 96px",
+          gridTemplateColumns: "120px 150px 1fr 190px 150px 128px 96px",
           padding: "10px 18px",
           background: "#FAF9F6",
           borderBottom: "1px solid #EDE9E1",
@@ -51,6 +79,7 @@ export function FilaTable({ fila }: { fila: Fila }) {
         }}
       >
         <div>Protocolo</div>
+        <div>Empreendimento</div>
         <div>Lote / obra</div>
         <div>Situação</div>
         <div>Prazo</div>
@@ -67,13 +96,14 @@ export function FilaTable({ fila }: { fila: Fila }) {
             key={s.id}
             style={{
               display: "grid",
-              gridTemplateColumns: "120px 1fr 190px 150px 128px 96px",
+              gridTemplateColumns: "120px 150px 1fr 190px 150px 128px 96px",
               alignItems: "center",
               padding: "14px 18px",
               borderBottom: "1px solid #F1EEE7",
             }}
           >
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 600 }}>{s.protocolo}</div>
+            <div style={{ fontSize: 12, color: "#4A5563", paddingRight: 10 }}>{s.lote.empreendimento.nome}</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 3, paddingRight: 16 }}>
               <div style={{ fontSize: 13.5, fontWeight: 600 }}>
                 {s.lote.quadra.nome} L{s.lote.numero}

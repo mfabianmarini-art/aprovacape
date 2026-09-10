@@ -16,6 +16,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ docId: 
 
   const { lote } = doc.solicitacao;
   const podeVer =
+    session.user.role === "ADMIN_CAPE" ||
     session.user.role === "CAPE_ANALISTA" ||
     session.user.role === "SINDICO" ||
     lote.proprietarioId === session.user.id ||

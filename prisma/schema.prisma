@@ -11,6 +11,7 @@ datasource db {
 }
 
 enum Role {
+  ADMIN_CAPE
   CAPE_ANALISTA
   SINDICO
   PROPRIETARIO

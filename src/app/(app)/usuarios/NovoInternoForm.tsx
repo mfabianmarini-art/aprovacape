@@ -6,10 +6,10 @@ import { criarUsuarioInternoAction, type NovoInternoState } from "@/lib/actions/
 const inputStyle: React.CSSProperties = { border: "1px solid #DDD8CE", borderRadius: 4, padding: "10px 11px", fontSize: 13.5, background: "#fff" };
 const labelTextStyle: React.CSSProperties = { fontSize: 11, letterSpacing: ".13em", textTransform: "uppercase", color: "#6B7480" };
 
-export function NovoInternoForm() {
+export function NovoInternoForm({ podeAtribuirAdmin }: { podeAtribuirAdmin: boolean }) {
   const [state, formAction, pending] = useActionState<NovoInternoState, FormData>(criarUsuarioInternoAction, null);
-  const [perfil, setPerfil] = useState<"CAPE_ANALISTA" | "SINDICO">("CAPE_ANALISTA");
-  const tecnico = perfil === "CAPE_ANALISTA";
+  const [perfil, setPerfil] = useState<"ADMIN_CAPE" | "CAPE_ANALISTA" | "SINDICO">("CAPE_ANALISTA");
+  const tecnico = perfil === "CAPE_ANALISTA" || perfil === "ADMIN_CAPE";
 
   if (state?.ok) {
     return (
@@ -34,6 +34,7 @@ export function NovoInternoForm() {
         <select name="perfil" value={perfil} onChange={(e) => setPerfil(e.target.value as typeof perfil)} style={inputStyle}>
           <option value="CAPE_ANALISTA">Analista CAPE</option>
           <option value="SINDICO">Síndico</option>
+          {podeAtribuirAdmin && <option value="ADMIN_CAPE">Admin CAPE</option>}
         </select>
       </label>
       <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>

@@ -17,7 +17,7 @@ const EDITAVEL = new Set(["ENVIADA", "ANALISE", "COMPLEMENTO"]);
 
 export default async function AnalisePage({ params }: { params: Promise<{ protocolo: string }> }) {
   const { protocolo } = await params;
-  const session = await requireRole("CAPE_ANALISTA");
+  const session = await requireRole("ADMIN_CAPE", "CAPE_ANALISTA");
   const [user, result] = await Promise.all([
     getUserDisplay(session.user.id, session.user.role),
     getAnalise(protocolo),

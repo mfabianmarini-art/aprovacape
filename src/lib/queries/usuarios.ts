@@ -7,6 +7,7 @@ export async function getUsuarios() {
     include: {
       lotesComoProprietario: { include: { quadra: true, empreendimento: true } },
       lotesComoRT: { include: { quadra: true, empreendimento: true } },
+      empreendimentosSindico: { select: { nome: true } },
     },
   });
 }

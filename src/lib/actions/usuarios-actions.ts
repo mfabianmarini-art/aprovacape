@@ -8,7 +8,7 @@ import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/require-role";
 
 export async function aprovarVinculoAction(userId: string) {
-  const session = await requireRole("CAPE_ANALISTA");
+  const session = await requireRole("ADMIN_CAPE", "CAPE_ANALISTA");
   const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
   if (!user.vinculoLoteId) return;
 
@@ -27,7 +27,7 @@ export async function aprovarVinculoAction(userId: string) {
 }
 
 export async function recusarVinculoAction(userId: string) {
-  const session = await requireRole("CAPE_ANALISTA");
+  const session = await requireRole("ADMIN_CAPE", "CAPE_ANALISTA");
   await prisma.user.update({
     where: { id: userId },
     data: { vinculoStatus: "RECUSADO", vinculoRevisadoPorId: session.user.id, vinculoRevisadoEm: new Date() },
@@ -36,7 +36,7 @@ export async function recusarVinculoAction(userId: string) {
 }
 
 const novoInternoSchema = z.object({
-  perfil: z.enum(["CAPE_ANALISTA", "SINDICO"]),
+  perfil: z.enum(["ADMIN_CAPE", "CAPE_ANALISTA", "SINDICO"]),
   nome: z.string().min(3, "Informe o nome completo"),
   email: z.string().email("E-mail inválido"),
   registro: z.string().optional(),
@@ -45,12 +45,17 @@ const novoInternoSchema = z.object({
 export type NovoInternoState = { error?: string; ok?: boolean; senhaTemp?: string } | null;
 
 export async function criarUsuarioInternoAction(_prev: NovoInternoState, formData: FormData): Promise<NovoInternoState> {
-  await requireRole("CAPE_ANALISTA");
+  const session = await requireRole("ADMIN_CAPE", "CAPE_ANALISTA");
   const parsed = novoInternoSchema.safeParse(Object.fromEntries(formData.entries()));
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
   const d = parsed.data;
 
-  if (d.perfil === "CAPE_ANALISTA" && !d.registro) {
+  // Só um Admin CAPE já existente pode criar outro Admin CAPE.
+  if (d.perfil === "ADMIN_CAPE" && session.user.role !== "ADMIN_CAPE") {
+    return { error: "Apenas um Admin CAPE pode criar outra conta de Admin CAPE." };
+  }
+
+  if ((d.perfil === "CAPE_ANALISTA" || d.perfil === "ADMIN_CAPE") && !d.registro) {
     return { error: "Informe o registro CAU/CREA." };
   }
 
@@ -70,7 +75,7 @@ export async function criarUsuarioInternoAction(_prev: NovoInternoState, formDat
       phone: "",
       passwordHash,
       role: d.perfil,
-      creaCau: d.perfil === "CAPE_ANALISTA" ? d.registro : null,
+      creaCau: d.perfil === "CAPE_ANALISTA" || d.perfil === "ADMIN_CAPE" ? d.registro : null,
     },
   });
 
