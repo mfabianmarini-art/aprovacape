@@ -169,7 +169,7 @@ export function ResumoMapa({ data, podeAnalisar }: { data: Data; podeAnalisar: b
                   <div style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 600, letterSpacing: ".03em", lineHeight: 1 }}>
                     Quadra {lote.quadra.nome} · Lote {lote.numero}
                   </div>
-                  <div style={{ fontSize: 11.5, color: "#8FB0BF" }}>{lote.rua}</div>
+                  <div style={{ fontSize: 11.5, color: "#8FB0BF" }}>{lote.rua ?? "Endereço não informado"}</div>
                 </div>
                 <button
                   onClick={() => setLoteSel(null)}
@@ -203,7 +203,9 @@ export function ResumoMapa({ data, podeAnalisar }: { data: Data; podeAnalisar: b
                   >
                     {lote.statusInfo.label}
                   </span>
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 11.5, color: "#6B7480" }}>{lote.areaM2.toLocaleString("pt-BR")} m²</span>
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 11.5, color: "#6B7480" }}>
+                    {lote.areaM2 != null ? `${lote.areaM2.toLocaleString("pt-BR")} m²` : "área não informada"}
+                  </span>
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                   {[

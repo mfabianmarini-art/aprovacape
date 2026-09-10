@@ -5,10 +5,11 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/require-role";
 
+// O gestor CAPE cadastra só a quadra e o número do lote (e, opcionalmente, sua posição no
+// mapa). Endereço e área são preenchidos pelo proprietário/RT na primeira solicitação de
+// obra do lote — ver criarRascunhoAction em nova-actions.ts.
 const loteSchema = z.object({
   numero: z.string().trim().min(1, "Informe o número do lote"),
-  rua: z.string().trim().min(1, "Informe a rua/endereço do lote"),
-  areaM2: z.coerce.number().positive("Informe a área do lote"),
   posX: z.string().optional(),
   posY: z.string().optional(),
 });
@@ -40,8 +41,6 @@ export async function addLoteAction(
       empreendimentoId,
       quadraId,
       numero: d.numero,
-      rua: d.rua,
-      areaM2: d.areaM2,
       posX: parsePos(d.posX),
       posY: parsePos(d.posY),
     },
@@ -53,17 +52,11 @@ export async function addLoteAction(
   return { error: undefined, ok: true };
 }
 
-export async function updateLoteAction(loteId: string, field: "numero" | "rua" | "areaM2", value: string) {
+export async function updateLoteAction(loteId: string, field: "numero", value: string) {
   await requireRole("ADMIN_CAPE", "CAPE_ANALISTA");
-  if (field === "areaM2") {
-    const n = Number(value.replace(",", "."));
-    if (!Number.isFinite(n) || n <= 0) return;
-    await prisma.lote.update({ where: { id: loteId }, data: { areaM2: n } });
-  } else {
-    const v = value.trim();
-    if (!v) return;
-    await prisma.lote.update({ where: { id: loteId }, data: { [field]: v } });
-  }
+  const v = value.trim();
+  if (!v) return;
+  await prisma.lote.update({ where: { id: loteId }, data: { [field]: v } });
   revalidatePath("/empreendimentos");
   revalidatePath("/resumo");
 }

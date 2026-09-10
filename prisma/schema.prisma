@@ -128,8 +128,10 @@ model Lote {
   quadraId         String
   quadra           Quadra   @relation(fields: [quadraId], references: [id])
   numero           String   // "04"
-  rua              String
-  areaM2           Float
+  // Endereço e área são preenchidos pelo proprietário/RT na primeira solicitação de obra
+  // do lote, não pelo gestor CAPE no cadastro — por isso ficam nulos até lá.
+  rua              String?
+  areaM2           Float?
 
   // Position of the pin over the planta image, in percent (0-100).
   posX Float?

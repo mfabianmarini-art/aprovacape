@@ -14,8 +14,8 @@ import { PlantaPinPicker, type Posicao } from "@/components/PlantaPinPicker";
 type LoteCfg = {
   id: string;
   numero: string;
-  rua: string;
-  areaM2: number;
+  rua: string | null;
+  areaM2: number | null;
   posX: number | null;
   posY: number | null;
   proprietarioNome: string | null;
@@ -55,14 +55,11 @@ export function LotesManager({
         const vinculado = !!(l.proprietarioNome || l.rtNome);
         return (
           <div key={l.id} style={{ border: "1px solid #EDE9E1", borderRadius: 4, padding: "8px 10px", display: "flex", flexDirection: "column", gap: 6 }}>
-            <div style={{ display: "grid", gridTemplateColumns: "60px 1fr 80px 28px", gap: 8, alignItems: "center" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "60px 1fr 28px", gap: 8, alignItems: "center" }}>
               <EditableField defaultValue={l.numero} onSave={updateLoteAction.bind(null, l.id, "numero")} style={{ ...campoStyle, fontFamily: "var(--font-mono)", fontWeight: 600 }} />
-              <EditableField defaultValue={l.rua} onSave={updateLoteAction.bind(null, l.id, "rua")} style={campoStyle} />
-              <EditableField
-                defaultValue={String(l.areaM2)}
-                onSave={updateLoteAction.bind(null, l.id, "areaM2")}
-                style={{ ...campoStyle, fontFamily: "var(--font-mono)", textAlign: "right" }}
-              />
+              <span style={{ fontSize: 11.5, color: l.rua ? "#4A5563" : "#8B939C", fontStyle: l.rua ? "normal" : "italic" }}>
+                {l.rua ? `${l.rua} · ${l.areaM2?.toLocaleString("pt-BR")} m²` : "endereço e área: preenchidos pelo proprietário/RT na solicitação"}
+              </span>
               <form action={deleteLoteAction.bind(null, l.id)}>
                 <button
                   type="submit"
@@ -110,19 +107,10 @@ export function LotesManager({
 
       <form action={formAction} style={{ display: "flex", flexDirection: "column", gap: 8, border: "1px dashed #C9C2B4", borderRadius: 4, padding: 12 }}>
         <div style={{ fontSize: 10.5, letterSpacing: ".13em", textTransform: "uppercase", color: "#6B7480" }}>Novo lote</div>
-        <div style={{ display: "grid", gridTemplateColumns: "80px 1fr 90px", gap: 8 }}>
-          <input name="numero" placeholder="Número" required style={{ border: "1px solid #DDD8CE", borderRadius: 4, padding: "8px 9px", fontSize: 13, fontFamily: "var(--font-mono)" }} />
-          <input name="rua" placeholder="Rua / endereço" required style={{ border: "1px solid #DDD8CE", borderRadius: 4, padding: "8px 9px", fontSize: 13 }} />
-          <input
-            name="areaM2"
-            type="number"
-            step="0.1"
-            min={1}
-            placeholder="Área m²"
-            required
-            style={{ border: "1px solid #DDD8CE", borderRadius: 4, padding: "8px 9px", fontSize: 13, fontFamily: "var(--font-mono)" }}
-          />
+        <div style={{ fontSize: 11, color: "#6B7480" }}>
+          Endereço e área ficam a cargo do proprietário/RT, na primeira solicitação de obra deste lote.
         </div>
+        <input name="numero" placeholder="Número" required style={{ border: "1px solid #DDD8CE", borderRadius: 4, padding: "8px 9px", fontSize: 13, fontFamily: "var(--font-mono)" }} />
         <PlantaPinPicker plantaImageUrl={plantaImageUrl} value={novaPos} onChange={setNovaPos} />
         <input type="hidden" name="posX" value={novaPos?.x ?? ""} />
         <input type="hidden" name="posY" value={novaPos?.y ?? ""} />

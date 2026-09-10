@@ -12,8 +12,8 @@ type QuadraCfg = {
   lotes: {
     id: string;
     numero: string;
-    rua: string;
-    areaM2: number;
+    rua: string | null;
+    areaM2: number | null;
     posX: number | null;
     posY: number | null;
     proprietarioNome: string | null;
