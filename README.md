@@ -13,7 +13,7 @@ Implementação real (Next.js + banco de dados + autenticação + upload de arqu
 
 ## Deploy (Vercel)
 
-Projeto vinculado em `mfabianmarini-arts-projects/aprovacape`, com GitHub conectado (`mfabianmarini-art/aprovacape`, branch `main`) para deploy automático a cada push. Recursos provisionados: Postgres (Neon, integração de marketplace) e um Blob store privado (`aprovacape-uploads`) — variáveis `DATABASE_URL`, `BLOB_READ_WRITE_TOKEN` e `AUTH_SECRET` já configuradas em Production/Preview/Development no painel da Vercel.
+Projeto vinculado em `mfabianmarini-arts-projects/aprovacape`, com GitHub conectado (`mfabianmarini-art/aprovacape`, branch `main`) para deploy automático a cada push. Recursos provisionados: Postgres (Neon, integração de marketplace) e um Blob store privado (`aprovacape-uploads`) — variáveis `DATABASE_URL`, `BLOB_READ_WRITE_TOKEN` e `AUTH_SECRET` já configuradas em Production/Preview/Development no painel da Vercel. O script `build` roda `prisma migrate deploy` antes de `next build`, então toda migration commitada em `prisma/migrations` é aplicada automaticamente no banco de produção a cada deploy.
 
 ## Rodando localmente
 
