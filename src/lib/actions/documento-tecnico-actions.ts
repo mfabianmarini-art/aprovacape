@@ -28,11 +28,7 @@ export async function uploadDocumentoTecnicoAction(
   _prev: DocumentoTecnicoState,
   formData: FormData,
 ): Promise<DocumentoTecnicoState> {
-  const session = await requireRole("ADMIN_CAPE", "CAPE_ANALISTA", "SINDICO");
-  if (session.user.role === "SINDICO") {
-    const emp = await prisma.empreendimento.findUnique({ where: { id: empreendimentoId } });
-    if (emp?.sindicoId !== session.user.id) return { error: "Este empreendimento não está sob sua gestão." };
-  }
+  const session = await requireRole("ADMIN_CAPE", "CAPE_ANALISTA");
 
   const parsed = uploadSchema.safeParse(Object.fromEntries(formData.entries()));
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
@@ -55,17 +51,14 @@ export async function uploadDocumentoTecnicoAction(
   });
 
   revalidatePath("/documentos");
+  revalidatePath("/empreendimentos");
   return { error: undefined, ok: true };
 }
 
 export async function deleteDocumentoTecnicoAction(documentoId: string) {
-  const session = await requireRole("ADMIN_CAPE", "CAPE_ANALISTA", "SINDICO");
-  const doc = await prisma.documentoTecnico.findUniqueOrThrow({ where: { id: documentoId } });
-  if (session.user.role === "SINDICO") {
-    const emp = await prisma.empreendimento.findUnique({ where: { id: doc.empreendimentoId } });
-    if (emp?.sindicoId !== session.user.id) return;
-  }
+  await requireRole("ADMIN_CAPE", "CAPE_ANALISTA");
 
   await prisma.documentoTecnico.delete({ where: { id: documentoId } });
   revalidatePath("/documentos");
+  revalidatePath("/empreendimentos");
 }

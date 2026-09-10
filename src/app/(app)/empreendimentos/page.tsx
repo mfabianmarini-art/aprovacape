@@ -2,6 +2,7 @@ import { requireRole } from "@/lib/require-role";
 import { getUserDisplay } from "@/lib/user-display";
 import { getEmpreendimentoConfig } from "@/lib/queries/empreendimento";
 import { resolveEmpreendimentoAtual } from "@/lib/queries/empreendimentos-acesso";
+import { getDocumentosTecnicos } from "@/lib/queries/documentos-tecnicos";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { ScreenBody } from "@/components/ScreenBody";
 import { EmpreendimentoSwitcher } from "@/components/EmpreendimentoSwitcher";
@@ -9,6 +10,8 @@ import { EmpreendimentoForm } from "./EmpreendimentoForm";
 import { PlantaUpload } from "./PlantaUpload";
 import { NovoEmpreendimentoForm } from "./NovoEmpreendimentoForm";
 import { QuadrasManager } from "./QuadrasManager";
+import { DocumentosList } from "../documentos/DocumentosList";
+import { DocumentoUploadForm } from "../documentos/DocumentoUploadForm";
 
 export default async function EmpreendimentosPage({ searchParams }: { searchParams: Promise<{ emp?: string }> }) {
   const session = await requireRole("ADMIN_CAPE", "CAPE_ANALISTA");
@@ -19,7 +22,9 @@ export default async function EmpreendimentosPage({ searchParams }: { searchPara
   ]);
   const isAdmin = session.user.role === "ADMIN_CAPE";
 
-  const data = atual ? await getEmpreendimentoConfig(atual.id) : null;
+  const [data, documentos] = atual
+    ? await Promise.all([getEmpreendimentoConfig(atual.id), getDocumentosTecnicos(atual.id)])
+    : [null, []];
 
   if (!data) {
     return (
@@ -77,6 +82,13 @@ export default async function EmpreendimentosPage({ searchParams }: { searchPara
               )}
             </section>
           </aside>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ fontSize: 11, letterSpacing: ".14em", textTransform: "uppercase", color: "#6B7480" }}>Documentos técnicos</div>
+          <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 320px", gap: 20, alignItems: "start" }}>
+            <DocumentosList documentos={documentos} podeGerenciar />
+            <DocumentoUploadForm empreendimentoId={emp.id} />
+          </div>
         </div>
       </ScreenBody>
     </>
