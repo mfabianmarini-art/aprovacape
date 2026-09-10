@@ -18,13 +18,15 @@ export const SCREENS: Array<{ id: ScreenId; label: string; path: string; roles: 
   { id: "empreendimentos", label: "Empreendimentos", path: "/empreendimentos", roles: ["ADMIN_CAPE", "CAPE_ANALISTA"] },
   { id: "checklists", label: "Check-lists", path: "/checklists", roles: ["ADMIN_CAPE", "CAPE_ANALISTA"] },
   { id: "usuarios", label: "Usuários", path: "/usuarios", roles: ["ADMIN_CAPE", "CAPE_ANALISTA"] },
+  // Só para quem apenas consulta a biblioteca: Admin/Analista CAPE cadastram e
+  // veem os documentos dentro de Empreendimentos, então a aba seria redundante.
   // Fica por último em SCREENS de propósito: não deve virar a home de nenhum papel
   // (homeForRole usa o primeiro item da lista filtrada por papel).
   {
     id: "documentos",
     label: "Documentos técnicos",
     path: "/documentos",
-    roles: ["ADMIN_CAPE", "CAPE_ANALISTA", "SINDICO", "PROPRIETARIO", "RESPONSAVEL_TECNICO"],
+    roles: ["SINDICO", "PROPRIETARIO", "RESPONSAVEL_TECNICO"],
   },
 ];
 
