@@ -252,6 +252,7 @@ model DocumentoTecnico {
   empreendimento   Empreendimento            @relation(fields: [empreendimentoId], references: [id])
   categoria        DocumentoTecnicoCategoria @default(OUTRO)
   titulo           String
+  descricao        String?
   nomeArquivo      String
   caminhoArquivo   String
   tamanhoBytes     Int

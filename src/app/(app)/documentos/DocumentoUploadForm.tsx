@@ -35,6 +35,16 @@ export function DocumentoUploadForm({ empreendimentoId }: { empreendimentoId: st
         <input name="titulo" required placeholder="Ex.: Manual do proprietário 2026" style={inputStyle} />
       </label>
       <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <span style={labelTextStyle}>Descrição (opcional)</span>
+        <textarea
+          name="descricao"
+          rows={3}
+          maxLength={600}
+          placeholder="Do que trata este documento e o que o proprietário/RT deve observar nele."
+          style={{ ...inputStyle, resize: "vertical", fontFamily: "inherit", lineHeight: 1.45 }}
+        />
+      </label>
+      <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         <span style={labelTextStyle}>Arquivo (PDF, Word ou imagem, até 20 MB)</span>
         <input name="arquivo" type="file" required accept=".pdf,.doc,.docx,image/png,image/jpeg,image/webp" style={{ fontSize: 12.5 }} />
       </label>

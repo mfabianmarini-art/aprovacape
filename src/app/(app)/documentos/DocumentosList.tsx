@@ -51,6 +51,9 @@ export function DocumentosList({ documentos, podeGerenciar }: { documentos: Docu
               </span>
               <span style={{ fontSize: 13.5, fontWeight: 600, color: "#12455E" }}>{d.titulo}</span>
             </div>
+            {d.descricao && (
+              <div style={{ fontSize: 12.5, color: "#3B4653", lineHeight: 1.45, whiteSpace: "pre-line" }}>{d.descricao}</div>
+            )}
             <div style={{ fontSize: 11.5, color: "#6B7480" }}>
               {d.nomeArquivo} · {formatKB(d.tamanhoBytes)} · enviado por {d.enviadoPor.name} em {formatDate(d.createdAt)}
             </div>

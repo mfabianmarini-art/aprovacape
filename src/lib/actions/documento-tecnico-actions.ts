@@ -19,16 +19,27 @@ const TIPOS_ACEITOS = new Set([
 const uploadSchema = z.object({
   titulo: z.string().trim().min(2, "Informe um título para o documento"),
   categoria: z.enum(["MANUAL_PROPRIETARIO", "CONVENCAO_CONDOMINIO", "REGULAMENTO", "OUTRO"]),
+  descricao: z.string().trim().max(600, "Descrição muito longa (máx. 600 caracteres)").optional(),
 });
 
 export type DocumentoTecnicoState = { error?: string; ok?: boolean } | null;
+
+// Equipe CAPE gerencia qualquer empreendimento; o síndico, só o que ele administra.
+async function podeGerirDocumentos(role: string, userId: string, empreendimentoId: string) {
+  if (role !== "SINDICO") return true;
+  const emp = await prisma.empreendimento.findUnique({ where: { id: empreendimentoId } });
+  return emp?.sindicoId === userId;
+}
 
 export async function uploadDocumentoTecnicoAction(
   empreendimentoId: string,
   _prev: DocumentoTecnicoState,
   formData: FormData,
 ): Promise<DocumentoTecnicoState> {
-  const session = await requireRole("ADMIN_CAPE", "CAPE_ANALISTA");
+  const session = await requireRole("ADMIN_CAPE", "CAPE_ANALISTA", "SINDICO");
+  if (!(await podeGerirDocumentos(session.user.role, session.user.id, empreendimentoId))) {
+    return { error: "Este empreendimento não está sob sua gestão." };
+  }
 
   const parsed = uploadSchema.safeParse(Object.fromEntries(formData.entries()));
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
@@ -45,6 +56,7 @@ export async function uploadDocumentoTecnicoAction(
       empreendimentoId,
       categoria: parsed.data.categoria,
       titulo: parsed.data.titulo,
+      descricao: parsed.data.descricao || null,
       enviadoPorId: session.user.id,
       ...saved,
     },
@@ -56,7 +68,9 @@ export async function uploadDocumentoTecnicoAction(
 }
 
 export async function deleteDocumentoTecnicoAction(documentoId: string) {
-  await requireRole("ADMIN_CAPE", "CAPE_ANALISTA");
+  const session = await requireRole("ADMIN_CAPE", "CAPE_ANALISTA", "SINDICO");
+  const doc = await prisma.documentoTecnico.findUniqueOrThrow({ where: { id: documentoId } });
+  if (!(await podeGerirDocumentos(session.user.role, session.user.id, doc.empreendimentoId))) return;
 
   await prisma.documentoTecnico.delete({ where: { id: documentoId } });
   revalidatePath("/documentos");
