@@ -46,7 +46,7 @@ Login por e-mail **ou** CPF. Novas contas de proprietário/RT são criadas por a
 
 ## Telas
 
-`/login` (cadastro + login) · `/resumo` · `/fila` · `/analise/[protocolo]` · `/requerimentos` · `/nova` (wizard de 3 passos) · `/empreendimentos` · `/checklists` · `/usuarios` — visibilidade e navegação por papel definidas em `src/lib/nav.ts`.
+`/login` (cadastro + login) · `/resumo` · `/fila` · `/analise/[protocolo]` · `/requerimentos` · `/nova` (wizard de 3 passos) · `/empreendimentos` · `/checklists` · `/usuarios` · `/documentos` — visibilidade e navegação por papel definidas em `src/lib/nav.ts`.
 
 ## Multi-cliente (múltiplos empreendimentos)
 
@@ -59,6 +59,8 @@ A plataforma atende vários empreendimentos (condomínios/loteamentos) ao mesmo 
 - **Proprietário / Responsável técnico**: o vínculo é por lote (`Lote.proprietarioId`/`Lote.rtId`), e o lote pertence a um empreendimento — o auto-cadastro em `/login` já pede para escolher o empreendimento, a quadra e o lote.
 
 Quadras são cadastradas pela tela Empreendimentos (na criação do empreendimento ou depois, em "Quadras e lotes"), com nome livre e quantidade de lotes independente por quadra — não precisam seguir sequência numérica nem ter a mesma quantidade entre si. Uma quadra com lotes já cadastrados não pode ser removida por lá. Clicando em uma quadra (▸), abre o cadastro dos lotes dela: o gestor CAPE cadastra só o **número** do lote (e, se a planta já foi enviada, sua posição no mapa, clicando nela). **Endereço e área do lote** ficam em branco até o proprietário/RT vinculado preenchê-los na primeira solicitação de obra desse lote (`/nova`, passo 1) — por isso `Lote.rua` e `Lote.areaM2` são opcionais no banco. Um lote com proprietário/RT vinculado não pode ser removido por lá.
+
+**Documentos técnicos** (`/documentos`, model `DocumentoTecnico`): biblioteca de referência por empreendimento — manual do proprietário, convenção do condomínio, regulamentos e outros materiais que ajudam o proprietário/RT a elaborar o projeto. Upload liberado para Admin CAPE, Analista CAPE e Síndico (o síndico só no(s) empreendimento(s) que gerencia); leitura liberada também para Proprietário e Responsável técnico, restrita ao(s) empreendimento(s) onde eles têm lote. Arquivos aceitos: PDF, Word ou imagem, até 20 MB, guardados no Vercel Blob e servidos por `/api/documentos-tecnicos/[docId]` com checagem de permissão.
 
 ## Lógica de negócio implementada
 

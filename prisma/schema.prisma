@@ -84,6 +84,7 @@ model User {
   solicitacoesCriadas   Solicitacao[] @relation("SolicitacaoCriadaPor")
   historicoEventos      HistoricoEvento[]
   empreendimentosSindico Empreendimento[] @relation("EmpreendimentoSindico")
+  documentosTecnicosEnviados DocumentoTecnico[] @relation("DocumentoTecnicoEnviadoPor")
 
   @@index([role])
 }
@@ -107,6 +108,7 @@ model Empreendimento {
   quadras    Quadra[]
   lotes      Lote[]
   categorias ChecklistCategoria[]
+  documentosTecnicos DocumentoTecnico[]
 }
 
 model Quadra {
@@ -232,4 +234,28 @@ model HistoricoEvento {
   autorId       String?
   autor         User?       @relation(fields: [autorId], references: [id])
   createdAt     DateTime    @default(now())
+}
+
+enum DocumentoTecnicoCategoria {
+  MANUAL_PROPRIETARIO
+  CONVENCAO_CONDOMINIO
+  REGULAMENTO
+  OUTRO
+}
+
+// Material de referência do empreendimento (manual do proprietário, convenção do
+// condomínio, regulamentos etc.) — enviado por gestores CAPE ou pelo síndico, consultado
+// por proprietários e responsáveis técnicos para elaborar o projeto de obra.
+model DocumentoTecnico {
+  id               String                    @id @default(cuid())
+  empreendimentoId String
+  empreendimento   Empreendimento            @relation(fields: [empreendimentoId], references: [id])
+  categoria        DocumentoTecnicoCategoria @default(OUTRO)
+  titulo           String
+  nomeArquivo      String
+  caminhoArquivo   String
+  tamanhoBytes     Int
+  enviadoPorId     String
+  enviadoPor       User                      @relation("DocumentoTecnicoEnviadoPor", fields: [enviadoPorId], references: [id])
+  createdAt        DateTime                  @default(now())
 }

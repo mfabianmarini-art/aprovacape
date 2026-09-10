@@ -7,7 +7,8 @@ export type ScreenId =
   | "nova"
   | "empreendimentos"
   | "checklists"
-  | "usuarios";
+  | "usuarios"
+  | "documentos";
 
 export const SCREENS: Array<{ id: ScreenId; label: string; path: string; roles: Role[] }> = [
   { id: "resumo", label: "Resumo do loteamento", path: "/resumo", roles: ["ADMIN_CAPE", "CAPE_ANALISTA", "SINDICO"] },
@@ -17,6 +18,14 @@ export const SCREENS: Array<{ id: ScreenId; label: string; path: string; roles: 
   { id: "empreendimentos", label: "Empreendimentos", path: "/empreendimentos", roles: ["ADMIN_CAPE", "CAPE_ANALISTA"] },
   { id: "checklists", label: "Check-lists", path: "/checklists", roles: ["ADMIN_CAPE", "CAPE_ANALISTA"] },
   { id: "usuarios", label: "Usuários", path: "/usuarios", roles: ["ADMIN_CAPE", "CAPE_ANALISTA"] },
+  // Fica por último em SCREENS de propósito: não deve virar a home de nenhum papel
+  // (homeForRole usa o primeiro item da lista filtrada por papel).
+  {
+    id: "documentos",
+    label: "Documentos técnicos",
+    path: "/documentos",
+    roles: ["ADMIN_CAPE", "CAPE_ANALISTA", "SINDICO", "PROPRIETARIO", "RESPONSAVEL_TECNICO"],
+  },
 ];
 
 export function screensForRole(role: Role) {

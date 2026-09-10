@@ -5,10 +5,18 @@ export type EmpreendimentoOpcao = { id: string; nome: string };
 
 // CAPE_ANALISTA/ADMIN_CAPE operam a CAPE inteira e enxergam todos os empreendimentos.
 // SINDICO só enxerga o(s) empreendimento(s) ao qual está vinculado como síndico.
+// PROPRIETARIO/RESPONSAVEL_TECNICO só enxergam o(s) empreendimento(s) onde têm algum lote.
 export async function listEmpreendimentosAcessiveis(userId: string, role: Role): Promise<EmpreendimentoOpcao[]> {
   if (role === "SINDICO") {
     return prisma.empreendimento.findMany({
       where: { sindicoId: userId },
+      orderBy: { nome: "asc" },
+      select: { id: true, nome: true },
+    });
+  }
+  if (role === "PROPRIETARIO" || role === "RESPONSAVEL_TECNICO") {
+    return prisma.empreendimento.findMany({
+      where: { lotes: { some: { OR: [{ proprietarioId: userId }, { rtId: userId }] } } },
       orderBy: { nome: "asc" },
       select: { id: true, nome: true },
     });

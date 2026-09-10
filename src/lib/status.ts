@@ -1,4 +1,4 @@
-import type { SolicitacaoStatus, DocumentoTipo, SolicitacaoTipo } from "@/generated/prisma/enums";
+import type { SolicitacaoStatus, DocumentoTipo, SolicitacaoTipo, DocumentoTecnicoCategoria } from "@/generated/prisma/enums";
 
 export const STATUS_INFO: Record<SolicitacaoStatus, { label: string; bg: string; fg: string }> = {
   RASCUNHO: { label: "Rascunho", bg: "#E7E5DF", fg: "#5A6270" },
@@ -36,6 +36,13 @@ export const TIPO_LABEL: Record<SolicitacaoTipo, string> = {
   AMPLIACAO: "Ampliação",
   DEMOLICAO: "Demolição",
   MURO: "Muro / fechamento",
+};
+
+export const CATEGORIA_DOC_TECNICO_LABEL: Record<DocumentoTecnicoCategoria, string> = {
+  MANUAL_PROPRIETARIO: "Manual do proprietário",
+  CONVENCAO_CONDOMINIO: "Convenção do condomínio",
+  REGULAMENTO: "Regulamento",
+  OUTRO: "Outro",
 };
 
 export function formatBRL(cents: number): string {

@@ -24,6 +24,7 @@ export async function getNavCounts(role: Role, userId: string): Promise<Record<S
     empreendimentos: String(empreendimentos),
     checklists: String(empreendimentos),
     usuarios: String(usuarios),
+    documentos: "",
   };
 }
 
