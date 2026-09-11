@@ -131,7 +131,7 @@ export function FilaTable({ fila }: { fila: Fila }) {
               {prazoTexto(s)}
             </div>
             <div style={{ fontSize: 12, color: "#4A5563", fontFamily: "var(--font-mono)" }}>
-              {s.reenvios} / 3
+              {s.reenvios} / {s.lote.empreendimento.reenviosSemTaxa}
             </div>
             <div>
               <button

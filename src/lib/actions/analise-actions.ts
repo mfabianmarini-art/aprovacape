@@ -79,17 +79,14 @@ export async function salvarObservacaoItemAction(solicitacaoId: string, itemId: 
 export async function devolverDocumentacaoAction(solicitacaoId: string) {
   const session = await requireRole("ADMIN_CAPE", "CAPE_ANALISTA");
   const sol = await loadSolicitacao(solicitacaoId);
-  const reenvios = sol.reenvios + 1;
+  // Já devolvida: devolver de novo não é um novo ciclo, e um clique repetido não
+  // deve render outro evento no histórico.
+  if (sol.status === "COMPLEMENTO") return;
 
   await prisma.$transaction([
     prisma.solicitacao.update({
       where: { id: solicitacaoId },
-      data: {
-        status: "COMPLEMENTO",
-        reenvios,
-        documentacaoValidada: false,
-        pago: reenvios > sol.lote.empreendimento.reenviosSemTaxa ? false : sol.pago,
-      },
+      data: { status: "COMPLEMENTO", documentacaoValidada: false },
     }),
     prisma.historicoEvento.create({
       data: {
@@ -144,11 +141,10 @@ export async function emitirParecerAction(solicitacaoId: string) {
   const reprovados = sol.resultados.filter((r) => r.status === "REPROVADO");
 
   if (reprovados.length > 0) {
-    const reenvios = sol.reenvios + 1;
     await prisma.$transaction([
       prisma.solicitacao.update({
         where: { id: solicitacaoId },
-        data: { status: "COMPLEMENTO", reenvios, pago: reenvios > sol.lote.empreendimento.reenviosSemTaxa ? false : sol.pago },
+        data: { status: "COMPLEMENTO" },
       }),
       ...sol.resultados
         .filter((r) => r.status === "APROVADO")
@@ -157,7 +153,7 @@ export async function emitirParecerAction(solicitacaoId: string) {
       prisma.historicoEvento.create({
         data: {
           solicitacaoId,
-          texto: `Devolvida com ${reprovados.length} pendência(s) no check-list técnico. Reenvio ${reenvios} de ${sol.lote.empreendimento.reenviosSemTaxa}.`,
+          texto: `Devolvida com ${reprovados.length} pendência(s) no check-list técnico.`,
           cor: "#B4711A",
           autorId: session.user.id,
         },

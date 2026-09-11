@@ -16,13 +16,26 @@ export async function reenviarComplementacaoAction(solicitacaoId: string) {
   const sol = await loadOwnedSolicitacao(session, solicitacaoId);
   if (sol.status !== "COMPLEMENTO") return;
 
+  // O reenvio é contado aqui, quando a documentação nova chega de fato. Contar na
+  // devolução fazia cada clique do analista consumir uma das tentativas gratuitas.
+  const emp = await prisma.empreendimento.findUniqueOrThrow({ where: { id: sol.lote.empreendimentoId } });
+  const reenvios = sol.reenvios + 1;
+
   await prisma.$transaction([
-    prisma.solicitacao.update({ where: { id: sol.id }, data: { status: "ENVIADA", documentacaoValidada: false } }),
+    prisma.solicitacao.update({
+      where: { id: sol.id },
+      data: {
+        status: "ENVIADA",
+        documentacaoValidada: false,
+        reenvios,
+        pago: reenvios > emp.reenviosSemTaxa ? false : sol.pago,
+      },
+    }),
     prisma.solicitacaoDocumento.updateMany({ where: { solicitacaoId: sol.id }, data: { validado: false } }),
     prisma.historicoEvento.create({
       data: {
         solicitacaoId: sol.id,
-        texto: `Reenvio ${sol.reenvios} de ${(await prisma.empreendimento.findUniqueOrThrow({ where: { id: sol.lote.empreendimentoId } })).reenviosSemTaxa} recebido. Aguardando nova validação documental.`,
+        texto: `Reenvio ${reenvios} de ${emp.reenviosSemTaxa} recebido. Aguardando nova validação documental.`,
         cor: "#8FB0BF",
         autorId: session.user.id,
       },
