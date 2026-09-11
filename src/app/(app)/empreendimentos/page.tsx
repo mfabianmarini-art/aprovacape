@@ -3,7 +3,7 @@ import { getUserDisplay } from "@/lib/user-display";
 import { getEmpreendimentoConfig } from "@/lib/queries/empreendimento";
 import { resolveEmpreendimentoAtual } from "@/lib/queries/empreendimentos-acesso";
 import { getDocumentosTecnicos } from "@/lib/queries/documentos-tecnicos";
-import { getUsuariosDoEmpreendimento, getVinculosPendentesDoEmpreendimento, getSindicos } from "@/lib/queries/usuarios";
+import { getUsuariosDoEmpreendimento, countVinculosPendentesDoEmpreendimento, getSindicos } from "@/lib/queries/usuarios";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { ScreenBody } from "@/components/ScreenBody";
 import { EmpreendimentoSwitcher } from "@/components/EmpreendimentoSwitcher";
@@ -29,10 +29,10 @@ export default async function EmpreendimentosPage({ searchParams }: { searchPara
         getEmpreendimentoConfig(atual.id),
         getDocumentosTecnicos(atual.id),
         getUsuariosDoEmpreendimento(atual.id),
-        getVinculosPendentesDoEmpreendimento(atual.id),
+        countVinculosPendentesDoEmpreendimento(atual.id),
         getSindicos(),
       ])
-    : [null, [], [], [], []];
+    : [null, [], [], 0, []];
 
   if (!data) {
     return (

@@ -24,6 +24,7 @@ export async function aprovarVinculoAction(userId: string) {
     }),
   ]);
 
+  revalidatePath("/vinculos");
   revalidatePath("/empreendimentos");
 }
 
@@ -33,6 +34,7 @@ export async function recusarVinculoAction(userId: string) {
     where: { id: userId },
     data: { vinculoStatus: "RECUSADO", vinculoRevisadoPorId: session.user.id, vinculoRevisadoEm: new Date() },
   });
+  revalidatePath("/vinculos");
   revalidatePath("/empreendimentos");
 }
 

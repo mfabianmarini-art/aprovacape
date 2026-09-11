@@ -3,9 +3,10 @@ import type { Role } from "@/generated/prisma/enums";
 import { SCREENS, type ScreenId } from "@/lib/nav";
 
 export async function getNavCounts(role: Role, userId: string): Promise<Record<ScreenId, string>> {
-  const [lotes, fila, meusPedidos, empreendimentos, equipeCape] = await Promise.all([
+  const [lotes, fila, vinculos, meusPedidos, empreendimentos, equipeCape] = await Promise.all([
     prisma.lote.count(),
     prisma.solicitacao.count({ where: { status: { not: "CONCLUIDA" } } }),
+    prisma.user.count({ where: { vinculoStatus: "PENDENTE" } }),
     prisma.solicitacao.count({
       where: {
         lote: { OR: [{ proprietarioId: userId }, { rtId: userId }] },
@@ -19,6 +20,7 @@ export async function getNavCounts(role: Role, userId: string): Promise<Record<S
   return {
     resumo: String(lotes),
     fila: String(fila),
+    vinculos: String(vinculos),
     requerimentos: String(meusPedidos),
     nova: "",
     empreendimentos: String(empreendimentos),

@@ -3,6 +3,7 @@ import type { Role } from "@/generated/prisma/enums";
 export type ScreenId =
   | "resumo"
   | "fila"
+  | "vinculos"
   | "requerimentos"
   | "nova"
   | "empreendimentos"
@@ -13,6 +14,7 @@ export type ScreenId =
 export const SCREENS: Array<{ id: ScreenId; label: string; path: string; roles: Role[] }> = [
   { id: "resumo", label: "Resumo do loteamento", path: "/resumo", roles: ["ADMIN_CAPE", "CAPE_ANALISTA", "SINDICO"] },
   { id: "fila", label: "Fila de análise", path: "/fila", roles: ["ADMIN_CAPE", "CAPE_ANALISTA"] },
+  { id: "vinculos", label: "Vínculos a validar", path: "/vinculos", roles: ["ADMIN_CAPE", "CAPE_ANALISTA"] },
   { id: "requerimentos", label: "Meus requerimentos", path: "/requerimentos", roles: ["PROPRIETARIO", "RESPONSAVEL_TECNICO"] },
   { id: "nova", label: "Nova solicitação", path: "/nova", roles: ["PROPRIETARIO", "RESPONSAVEL_TECNICO"] },
   { id: "empreendimentos", label: "Empreendimentos", path: "/empreendimentos", roles: ["ADMIN_CAPE", "CAPE_ANALISTA"] },

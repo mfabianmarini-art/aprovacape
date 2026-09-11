@@ -48,7 +48,7 @@ Login por e-mail **ou** CPF. Novas contas de proprietário/RT são criadas por a
 
 ## Telas
 
-`/login` (cadastro + login) · `/resumo` · `/fila` · `/analise/[protocolo]` · `/requerimentos` · `/nova` (wizard de 3 passos) · `/empreendimentos` · `/checklists` · `/usuarios` · `/documentos` — visibilidade e navegação por papel definidas em `src/lib/nav.ts`.
+`/login` (cadastro + login) · `/resumo` · `/fila` · `/vinculos` · `/analise/[protocolo]` · `/requerimentos` · `/nova` (wizard de 3 passos) · `/empreendimentos` · `/checklists` · `/usuarios` · `/documentos` — visibilidade e navegação por papel definidas em `src/lib/nav.ts`.
 
 ## Multi-cliente (múltiplos empreendimentos)
 
@@ -71,7 +71,7 @@ Quadras são cadastradas pela tela Empreendimentos (na criação do empreendimen
 - **Validação documental → check-list**: o check-list técnico só libera depois que os 5 documentos são marcados como validados pelo analista.
 - **Reanálise parcial**: ao devolver uma solicitação (documentos ou check-list reprovado), os itens já aprovados ficam travados (`travado=true`) e só os reprovados reabrem para o próximo ciclo — implementado em `emitirParecerAction`/`devolverDocumentacaoAction` (`src/lib/actions/analise-actions.ts`).
 - **Reenvios e taxa**: contador de reenvios por solicitação; ao ultrapassar `reenviosSemTaxa` do empreendimento, a taxa é marcada como não paga novamente.
-- **Vínculo lote↔usuário**: proprietário/RT se cadastram sozinhos e já acessam a plataforma (podem abrir uma nova solicitação); o vínculo com o lote fica pendente até um analista CAPE aprovar/recusar em **Empreendimentos**, no painel "Vínculos a validar" do empreendimento correspondente. O **proprietário** comprova por texto (matrícula do lote ou código de convite, em `vinculoComprovacao`); o **RT anexa a autorização assinada pelo proprietário** (PDF, Word ou imagem, até 10 MB, guardada no Vercel Blob e servida por `/api/vinculo-autorizacao/[userId]`, aberta só para a equipe CAPE e para o próprio autor do envio).
+- **Vínculo lote↔usuário**: proprietário/RT se cadastram sozinhos e já acessam a plataforma (podem abrir uma nova solicitação); o vínculo com o lote fica pendente até um analista CAPE aprovar/recusar em **Vínculos a validar** (`/vinculos`), tela própria no menu da equipe CAPE que reúne os pedidos de todos os empreendimentos — uma linha por pedido, no formato da fila de análise (empreendimento, quadra/lote, solicitante), que se expande ao clique com todos os dados informados, a comprovação e os botões de aprovar e reprovar. O contador no menu mostra quantos aguardam. A tela Empreendimentos só avisa quantos pedidos são daquele empreendimento e aponta para lá. O **proprietário** comprova por texto (matrícula do lote ou código de convite, em `vinculoComprovacao`); o **RT anexa a autorização assinada pelo proprietário** (PDF, Word ou imagem, até 10 MB, guardada no Vercel Blob e servida por `/api/vinculo-autorizacao/[userId]`, aberta só para a equipe CAPE e para o próprio autor do envio).
 - **Mapa do loteamento**: pins posicionados por `posX`/`posY` (%) sobre a planta, coloridos pelo status da solicitação mais recente do lote; clique abre o histórico completo do lote.
 
 ## Limitações conhecidas / próximos passos

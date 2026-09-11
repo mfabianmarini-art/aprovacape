@@ -1,11 +1,9 @@
+import Link from "next/link";
 import { ROLE_LABEL, ROLE_COLOR } from "@/lib/nav";
-import { formatDate } from "@/lib/status";
-import { aprovarVinculoAction, recusarVinculoAction } from "@/lib/actions/usuarios-actions";
-import type { getUsuariosDoEmpreendimento, getVinculosPendentesDoEmpreendimento, getSindicos } from "@/lib/queries/usuarios";
+import type { getUsuariosDoEmpreendimento, getSindicos } from "@/lib/queries/usuarios";
 import { SindicoManager } from "./SindicoManager";
 
 type Usuarios = Awaited<ReturnType<typeof getUsuariosDoEmpreendimento>>;
-type Pendentes = Awaited<ReturnType<typeof getVinculosPendentesDoEmpreendimento>>;
 type Sindicos = Awaited<ReturnType<typeof getSindicos>>;
 
 export function UsuariosSection({
@@ -17,7 +15,7 @@ export function UsuariosSection({
 }: {
   empreendimentoId: string;
   usuarios: Usuarios;
-  pendentes: Pendentes;
+  pendentes: number;
   sindicos: Sindicos;
   sindicoAtual: { id: string; name: string; email: string } | null;
 }) {
@@ -66,66 +64,15 @@ export function UsuariosSection({
         <aside style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <SindicoManager empreendimentoId={empreendimentoId} atual={sindicoAtual} disponiveis={sindicos} />
 
-          <section style={{ background: "#fff", border: "1px solid #DDD8CE", borderTop: "3px solid #B4711A", borderRadius: 4, padding: 18, display: "flex", flexDirection: "column", gap: 13 }}>
-            <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 10 }}>
-              <div style={{ fontFamily: "var(--font-display)", fontSize: 17, fontWeight: 600, letterSpacing: ".04em", textTransform: "uppercase" }}>Vínculos a validar</div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "#6B7480" }}>{pendentes.length} pendente(s)</div>
-            </div>
-            <div style={{ fontSize: 12, color: "#4A5563", lineHeight: 1.5 }}>
-              Proprietários e responsáveis técnicos se cadastram sozinhos e já acessam a plataforma. A CAPE confere o vínculo com o lote em paralelo e entra em contato se a comprovação não corresponder.
-            </div>
-            {pendentes.length === 0 && <div style={{ fontSize: 12.5, color: "#6B7480" }}>Nenhum vínculo pendente.</div>}
-            {pendentes.map((p) => (
-              <div key={p.id} style={{ border: "1px solid #EDE9E1", borderRadius: 4, padding: "13px 14px", display: "flex", flexDirection: "column", gap: 9 }}>
-                <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600 }}>{p.name}</div>
-                  <div style={{ fontSize: 11.5, color: "#6B7480" }}>
-                    {ROLE_LABEL[p.role]} · {p.vinculoLote ? `${p.vinculoLote.quadra.nome} L${p.vinculoLote.numero}` : "—"}
-                  </div>
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  {[
-                    ["E-mail", p.email],
-                    ["Telefone", p.phone],
-                    ["CPF", p.cpf],
-                    ["Nascimento", formatDate(p.birthDate)],
-                  ].map(([k, v]) => (
-                    <div key={k} style={{ display: "grid", gridTemplateColumns: "88px 1fr", gap: 8, fontSize: 11.5 }}>
-                      <span style={{ color: "#6B7480", letterSpacing: ".06em", textTransform: "uppercase", fontSize: 10, paddingTop: 2 }}>{k}</span>
-                      <span style={{ fontFamily: "var(--font-mono)", color: "#3B4653" }}>{v}</span>
-                    </div>
-                  ))}
-                  <div style={{ display: "grid", gridTemplateColumns: "88px 1fr", gap: 8, fontSize: 11.5 }}>
-                    <span style={{ color: "#6B7480", letterSpacing: ".06em", textTransform: "uppercase", fontSize: 10, paddingTop: 2 }}>Comprovação</span>
-                    {p.vinculoArquivoCaminho ? (
-                      <a
-                        href={`/api/vinculo-autorizacao/${p.id}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        style={{ fontSize: 11.5, fontWeight: 600, color: "#12455E" }}
-                      >
-                        {p.vinculoArquivoNome ?? "Autorização do proprietário"}
-                      </a>
-                    ) : (
-                      <span style={{ fontFamily: "var(--font-mono)", color: "#3B4653" }}>{p.vinculoComprovacao ?? "—"}</span>
-                    )}
-                  </div>
-                </div>
-                <div style={{ display: "flex", gap: 7 }}>
-                  <form action={aprovarVinculoAction.bind(null, p.id)} style={{ flex: 1 }}>
-                    <button type="submit" style={{ width: "100%", border: "1px solid #C6DAC9", background: "#FFFFFF", color: "#24603A", borderRadius: 4, padding: "8px 10px", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
-                      Aprovar vínculo
-                    </button>
-                  </form>
-                  <form action={recusarVinculoAction.bind(null, p.id)}>
-                    <button type="submit" style={{ border: "1px solid #DDD8CE", background: "#fff", color: "#8C2B22", borderRadius: 4, padding: "8px 11px", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
-                      Recusar
-                    </button>
-                  </form>
-                </div>
-              </div>
-            ))}
-          </section>
+          {pendentes > 0 && (
+            <section style={{ background: "#FDF8EE", border: "1px solid #E8D7B4", borderRadius: 4, padding: "16px 17px", fontSize: 12.5, color: "#6B4A11", lineHeight: 1.5 }}>
+              {pendentes} vínculo(s) deste empreendimento aguardando validação. A análise é feita em{" "}
+              <Link href="/vinculos" style={{ color: "#6B4A11", fontWeight: 600 }}>
+                Vínculos a validar
+              </Link>
+              , que reúne os pedidos de todos os empreendimentos.
+            </section>
+          )}
         </aside>
       </div>
     </div>

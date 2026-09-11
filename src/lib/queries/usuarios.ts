@@ -27,12 +27,18 @@ export async function getUsuariosDoEmpreendimento(empreendimentoId: string) {
   });
 }
 
-export async function getVinculosPendentesDoEmpreendimento(empreendimentoId: string) {
+// Fila de vínculos de todos os empreendimentos, para a tela própria da equipe CAPE.
+export async function getVinculosPendentes() {
   return prisma.user.findMany({
-    where: { vinculoStatus: "PENDENTE", vinculoLote: { empreendimentoId } },
+    where: { vinculoStatus: "PENDENTE" },
     orderBy: { createdAt: "asc" },
-    include: { vinculoLote: { include: { quadra: true } } },
+    include: { vinculoLote: { include: { quadra: true, empreendimento: true } } },
   });
+}
+
+// A análise acontece na tela /vinculos; aqui só o aviso de que há pedidos deste empreendimento.
+export async function countVinculosPendentesDoEmpreendimento(empreendimentoId: string) {
+  return prisma.user.count({ where: { vinculoStatus: "PENDENTE", vinculoLote: { empreendimentoId } } });
 }
 
 // Síndicos já cadastrados, para vincular um existente a este empreendimento.
