@@ -179,6 +179,63 @@ export async function emitirParecerAction(solicitacaoId: string) {
   revalidateAll(sol.protocolo);
 }
 
+export async function aceitarAlvaraAction(solicitacaoId: string) {
+  const session = await requireRole("ADMIN_CAPE", "CAPE_ANALISTA");
+  const sol = await prisma.solicitacao.findUniqueOrThrow({ where: { id: solicitacaoId } });
+  if (sol.status !== "ALVARA_CONFERENCIA") return;
+
+  await prisma.$transaction([
+    prisma.solicitacao.update({
+      where: { id: solicitacaoId },
+      data: { status: "EXECUCAO", statusAntesAlvara: null, alvaraRecusa: null },
+    }),
+    prisma.historicoEvento.create({
+      data: {
+        solicitacaoId,
+        texto: "Alvará de execução conferido e aceito pela CAPE. Obra liberada para início.",
+        cor: "#3B3486",
+        autorId: session.user.id,
+      },
+    }),
+  ]);
+
+  revalidateAll(sol.protocolo);
+}
+
+export async function recusarAlvaraAction(solicitacaoId: string, formData: FormData) {
+  const session = await requireRole("ADMIN_CAPE", "CAPE_ANALISTA");
+  const sol = await prisma.solicitacao.findUniqueOrThrow({ where: { id: solicitacaoId } });
+  if (sol.status !== "ALVARA_CONFERENCIA") return;
+
+  const motivo = normalizarObservacao(String(formData.get("motivo") ?? ""));
+
+  await prisma.$transaction([
+    prisma.solicitacao.update({
+      where: { id: solicitacaoId },
+      data: {
+        // Volta ao ponto em que estava antes do envio, para o proprietário anexar de novo.
+        status: sol.statusAntesAlvara ?? "APROVADA",
+        statusAntesAlvara: null,
+        alvaraNome: null,
+        alvaraCaminho: null,
+        alvaraTamanho: null,
+        alvaraEnviadoEm: null,
+        alvaraRecusa: motivo,
+      },
+    }),
+    prisma.historicoEvento.create({
+      data: {
+        solicitacaoId,
+        texto: motivo ? `Alvará recusado pela CAPE: ${motivo}` : "Alvará recusado pela CAPE. Envie o documento correto.",
+        cor: "#8C2B22",
+        autorId: session.user.id,
+      },
+    }),
+  ]);
+
+  revalidateAll(sol.protocolo);
+}
+
 export async function togglePagoAction(solicitacaoId: string) {
   await requireRole("ADMIN_CAPE", "CAPE_ANALISTA");
   const sol = await prisma.solicitacao.findUniqueOrThrow({ where: { id: solicitacaoId } });

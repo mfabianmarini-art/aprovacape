@@ -4,14 +4,16 @@ import { getMeusRequerimentos } from "@/lib/queries/requerimentos";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { ScreenBody } from "@/components/ScreenBody";
 import { STATUS_INFO, DOC_LABEL, formatDate } from "@/lib/status";
-import { reenviarComplementacaoAction, enviarAlvaraAction } from "@/lib/actions/requerimento-actions";
+import { reenviarComplementacaoAction } from "@/lib/actions/requerimento-actions";
 import { SubstituirDocumentos } from "./SubstituirDocumentos";
+import { EnviarAlvara } from "./EnviarAlvara";
 
 const MENSAGEM_PADRAO: Record<string, string> = {
   ENVIADA: "Aguardando validação documental pela CAPE.",
   ANALISE: "Documentação validada. O projeto está em análise técnica pela CAPE.",
-  APROVADA: "Projeto aprovado. Apresente o alvará de execução da Prefeitura para liberar o início da obra.",
-  RESSALVAS: "Projeto aprovado com ressalvas. Apresente o alvará de execução da Prefeitura para liberar o início da obra.",
+  APROVADA: "Projeto aprovado. Envie o alvará de execução da Prefeitura para a CAPE conferir e liberar o início da obra.",
+  RESSALVAS: "Projeto aprovado com ressalvas. Envie o alvará de execução da Prefeitura para a CAPE conferir e liberar o início da obra.",
+  ALVARA_CONFERENCIA: "Alvará de execução em conferência pela CAPE.",
   REPROVADA: "Solicitação reprovada. Uma nova análise exige nova taxa.",
   EXECUCAO: "Obra em execução.",
   CONCLUIDA: "Solicitação concluída.",
@@ -144,17 +146,19 @@ export default async function RequerimentosPage() {
                         </button>
                       </form>
                     )}
-                    {(s.status === "APROVADA" || s.status === "RESSALVAS") && (
-                      <form action={enviarAlvaraAction.bind(null, s.id)}>
-                        <button
-                          type="submit"
-                          style={{ border: "1px solid #12455E", background: "#12455E", color: "#fff", borderRadius: 4, padding: "9px 14px", fontSize: 12.5, fontWeight: 600, cursor: "pointer" }}
-                        >
-                          Enviar alvará de execução
-                        </button>
-                      </form>
-                    )}
                   </div>
+                  {(s.status === "APROVADA" || s.status === "RESSALVAS") && (
+                    <EnviarAlvara solicitacaoId={s.id} recusa={s.alvaraRecusa} />
+                  )}
+                  {s.status === "ALVARA_CONFERENCIA" && (
+                    <div style={{ fontSize: 12.5, color: "#4B3A7A", background: "#F3F0F9", border: "1px solid #D9D1EC", borderRadius: 4, padding: "12px 14px", lineHeight: 1.45 }}>
+                      Alvará enviado{s.alvaraEnviadoEm ? ` em ${formatDate(s.alvaraEnviadoEm)}` : ""} e em conferência
+                      pela CAPE. A obra pode começar assim que ele for aceito.{" "}
+                      <a href={`/api/alvara/${s.id}`} target="_blank" rel="noreferrer" style={{ color: "#4B3A7A", fontWeight: 600 }}>
+                        Ver arquivo enviado
+                      </a>
+                    </div>
+                  )}
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 0, borderLeft: "1px solid #EDE9E1", paddingLeft: 20 }}>
                   {etapas.map((e, i) => (

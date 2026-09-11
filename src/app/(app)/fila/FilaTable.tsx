@@ -8,7 +8,14 @@ import type { getFila } from "@/lib/queries/fila";
 
 type Fila = Awaited<ReturnType<typeof getFila>>;
 
-const FILTROS = ["Todas", "Enviada", "Em análise técnica", "Aguardando complementação", "Reprovada"] as const;
+const FILTROS = [
+  "Todas",
+  "Enviada",
+  "Em análise técnica",
+  "Aguardando complementação",
+  "Alvará em conferência",
+  "Reprovada",
+] as const;
 
 export function FilaTable({ fila }: { fila: Fila }) {
   const [filtro, setFiltro] = useState<(typeof FILTROS)[number]>("Todas");

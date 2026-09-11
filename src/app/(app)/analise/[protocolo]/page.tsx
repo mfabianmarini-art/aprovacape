@@ -13,6 +13,8 @@ import {
   togglePagoAction,
   salvarObservacaoDocumentoAction,
   salvarObservacaoItemAction,
+  aceitarAlvaraAction,
+  recusarAlvaraAction,
 } from "@/lib/actions/analise-actions";
 import { ObservacaoField } from "@/components/ObservacaoField";
 
@@ -91,6 +93,54 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
     <>
       <ScreenHeader crumb={`CAPE · ${sol.protocolo}`} title="Análise de projeto" {...user} />
       <ScreenBody>
+        {sol.status === "ALVARA_CONFERENCIA" && (
+          <section style={{ background: "#fff", border: "1px solid #D9D1EC", borderTop: "3px solid #4B3A7A", borderRadius: 4, padding: 18, display: "flex", flexDirection: "column", gap: 13 }}>
+            <div style={{ fontFamily: "var(--font-display)", fontSize: 17, fontWeight: 600, letterSpacing: ".04em", textTransform: "uppercase" }}>
+              Alvará de execução em conferência
+            </div>
+            <div style={{ fontSize: 12.5, color: "#4A5563", lineHeight: 1.5 }}>
+              O proprietário anexou o alvará da Prefeitura{sol.alvaraEnviadoEm ? ` em ${formatDateTime(sol.alvaraEnviadoEm)}` : ""}.
+              A obra só é liberada depois que a CAPE aceitar o documento.
+            </div>
+            <a
+              href={`/api/alvara/${sol.id}`}
+              target="_blank"
+              rel="noreferrer"
+              style={{ fontSize: 13, fontWeight: 600, color: "#4B3A7A" }}
+            >
+              Abrir {sol.alvaraNome ?? "alvará"}
+            </a>
+            <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) auto", gap: 12, alignItems: "end" }}>
+              <form action={recusarAlvaraAction.bind(null, sol.id)} style={{ display: "flex", gap: 9, alignItems: "flex-end", flexWrap: "wrap" }}>
+                <label style={{ display: "flex", flexDirection: "column", gap: 5, flex: 1, minWidth: 260 }}>
+                  <span style={{ fontSize: 10.5, letterSpacing: ".1em", textTransform: "uppercase", color: "#6B7480" }}>
+                    Motivo, se for recusar
+                  </span>
+                  <input
+                    name="motivo"
+                    maxLength={1000}
+                    placeholder="Ex.: alvará de outro lote, ou fora da validade."
+                    style={{ border: "1px solid #DDD8CE", borderRadius: 4, padding: "9px 11px", fontSize: 12.5 }}
+                  />
+                </label>
+                <button
+                  type="submit"
+                  style={{ border: "1px solid #8C2B22", background: "#fff", color: "#8C2B22", borderRadius: 4, padding: "9px 14px", fontSize: 12.5, fontWeight: 600, cursor: "pointer" }}
+                >
+                  Recusar alvará
+                </button>
+              </form>
+              <form action={aceitarAlvaraAction.bind(null, sol.id)}>
+                <button
+                  type="submit"
+                  style={{ border: "1px solid #3B3486", background: "#3B3486", color: "#fff", borderRadius: 4, padding: "9px 16px", fontSize: 12.5, fontWeight: 600, cursor: "pointer" }}
+                >
+                  Aceitar e liberar início da obra
+                </button>
+              </form>
+            </div>
+          </section>
+        )}
         <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 300px", gap: 20, alignItems: "start" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
             {/* Step 1 — Validação documental */}

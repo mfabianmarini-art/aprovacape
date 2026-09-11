@@ -8,6 +8,7 @@ export const STATUS_INFO: Record<SolicitacaoStatus, { label: string; bg: string;
   APROVADA: { label: "Aprovada", bg: "#D8E9DA", fg: "#24603A" },
   RESSALVAS: { label: "Aprovada com ressalvas", bg: "#E4EBD3", fg: "#4C6321" },
   REPROVADA: { label: "Reprovada", bg: "#F3DAD6", fg: "#8C2B22" },
+  ALVARA_CONFERENCIA: { label: "Alvará em conferência", bg: "#E4DCF0", fg: "#4B3A7A" },
   EXECUCAO: { label: "Obra em execução", bg: "#DEDCF0", fg: "#3B3486" },
   CONCLUIDA: { label: "Concluída / habite-se", bg: "#0E1B24", fg: "#FFFFFF" },
 };

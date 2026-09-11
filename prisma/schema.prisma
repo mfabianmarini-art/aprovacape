@@ -46,6 +46,9 @@ enum SolicitacaoStatus {
   APROVADA
   RESSALVAS
   REPROVADA
+  // Alvará da Prefeitura enviado pelo proprietário, aguardando conferência da CAPE.
+  // Só a aceitação libera o início da obra.
+  ALVARA_CONFERENCIA
   EXECUCAO
   CONCLUIDA
 }
@@ -210,6 +213,17 @@ model Solicitacao {
   responsavelTecnicoRegistro String
   responsavelTecnicoEmail String
   documentacaoValidada Boolean       @default(false)
+
+  // Alvará de execução da Prefeitura. O arquivo vive no Blob como os demais; o status
+  // anterior é guardado para a recusa devolver a solicitação ao ponto certo (APROVADA
+  // ou RESSALVAS), sem achatar a distinção entre os dois.
+  alvaraNome       String?
+  alvaraCaminho    String?
+  alvaraTamanho    Int?
+  alvaraEnviadoEm  DateTime?
+  alvaraRecusa     String?
+  statusAntesAlvara SolicitacaoStatus?
+
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
   prazoAnaliseEm   DateTime?

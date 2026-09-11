@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/require-role";
+import { saveUploadedFile } from "@/lib/upload";
+import { extensaoDe } from "@/lib/upload-documento";
 
 async function loadOwnedSolicitacao(session: Awaited<ReturnType<typeof requireRole>>, solicitacaoId: string) {
   const sol = await prisma.solicitacao.findUniqueOrThrow({ where: { id: solicitacaoId }, include: { lote: true } });
@@ -61,23 +63,50 @@ export async function reenviarComplementacaoAction(solicitacaoId: string) {
   revalidatePath(`/analise/${sol.protocolo}`);
 }
 
-export async function enviarAlvaraAction(solicitacaoId: string) {
+const MAX_ALVARA_BYTES = 5 * 1024 * 1024;
+
+// O alvará é documento da Prefeitura: o proprietário anexa, mas quem libera o início da
+// obra é a CAPE, depois de conferir. Antes disto o clique do proprietário já colocava a
+// obra em execução sozinho.
+export async function enviarAlvaraAction(solicitacaoId: string, _prev: unknown, formData: FormData) {
   const session = await requireRole("PROPRIETARIO", "RESPONSAVEL_TECNICO");
   const sol = await loadOwnedSolicitacao(session, solicitacaoId);
-  if (sol.status !== "RESSALVAS" && sol.status !== "APROVADA") return;
+  if (sol.status !== "RESSALVAS" && sol.status !== "APROVADA") {
+    return { error: "Esta solicitação não está aguardando o alvará." };
+  }
+
+  const file = formData.get("alvara");
+  if (!(file instanceof File) || file.size === 0) return { error: "Selecione o arquivo do alvará." };
+  if (extensaoDe(file.name) !== ".pdf") return { error: "Envie o alvará em PDF." };
+  if (file.size > MAX_ALVARA_BYTES) return { error: "Arquivo maior que 5 MB." };
+
+  const saved = await saveUploadedFile(file, `alvaras/${sol.id}`);
 
   await prisma.$transaction([
-    prisma.solicitacao.update({ where: { id: sol.id }, data: { status: "EXECUCAO" } }),
+    prisma.solicitacao.update({
+      where: { id: sol.id },
+      data: {
+        status: "ALVARA_CONFERENCIA",
+        statusAntesAlvara: sol.status,
+        alvaraNome: saved.nomeArquivo,
+        alvaraCaminho: saved.caminhoArquivo,
+        alvaraTamanho: saved.tamanhoBytes,
+        alvaraEnviadoEm: new Date(),
+        alvaraRecusa: null,
+      },
+    }),
     prisma.historicoEvento.create({
       data: {
         solicitacaoId: sol.id,
-        texto: "Alvará de execução da Prefeitura apresentado. Obra liberada para início.",
-        cor: "#3B3486",
+        texto: "Alvará de execução enviado. Aguardando conferência da CAPE para liberar o início da obra.",
+        cor: "#4B3A7A",
         autorId: session.user.id,
       },
     }),
   ]);
 
   revalidatePath("/requerimentos");
-  revalidatePath("/resumo");
+  revalidatePath("/fila");
+  revalidatePath(`/analise/${sol.protocolo}`);
+  return { error: undefined };
 }
