@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { get } from "@vercel/blob";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { contentTypeDe } from "@/lib/upload-documento";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ docId: string }> }) {
   const session = await auth();
@@ -26,10 +27,15 @@ export async function GET(_req: Request, { params }: { params: Promise<{ docId: 
   const result = await get(doc.caminhoArquivo, { access: "private" }).catch(() => null);
   if (!result) return new NextResponse("Arquivo indisponível.", { status: 404 });
 
+  // Tipo derivado da extensão validada no upload, nunca do que o navegador declarou —
+  // servir um Content-Type escolhido por quem envia viraria XSS na origem do app.
+  const contentType = contentTypeDe(doc.nomeArquivo);
+  const disposicao = contentType === "application/pdf" ? "inline" : "attachment";
+
   return new NextResponse(result.stream, {
     headers: {
-      "Content-Type": "application/pdf",
-      "Content-Disposition": `inline; filename="${doc.nomeArquivo}"`,
+      "Content-Type": contentType,
+      "Content-Disposition": `${disposicao}; filename="${doc.nomeArquivo}"`,
     },
   });
 }

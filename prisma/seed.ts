@@ -572,7 +572,6 @@ const DOC_ORDER: DocumentoTipo[] = [
   "ART_RRT",
   "MEMORIAL_DESCRITIVO",
   "PROJETO_ESTRUTURAL",
-  "DOC_RESPONSAVEL_TECNICO",
 ];
 
 main()

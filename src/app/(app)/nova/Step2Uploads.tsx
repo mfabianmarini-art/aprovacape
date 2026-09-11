@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 import { uploadDocumentoAction } from "@/lib/actions/nova-actions";
-import { DOC_LABEL, DOC_ORDER } from "@/lib/status";
+import { DOC_LABEL, DOC_ORDER, DOC_REGRAS, formatosAceitos } from "@/lib/status";
 import type { DocumentoTipo } from "@/generated/prisma/enums";
 
 type Rascunho = {
@@ -15,7 +15,6 @@ const DICAS: Record<DocumentoTipo, string> = {
   ART_RRT: "Anotação de responsabilidade técnica quitada",
   MEMORIAL_DESCRITIVO: "Materiais, acabamentos e sistema construtivo",
   PROJETO_ESTRUTURAL: "Fundações, arrimos e estrutura, assinado pelo RT",
-  DOC_RESPONSAVEL_TECNICO: "Registro CAU/CREA e documento de identidade",
 };
 
 function UploadRow({ solicitacaoId, tipo, existente }: { solicitacaoId: string; tipo: DocumentoTipo; existente?: { nomeArquivo: string } }) {
@@ -38,13 +37,26 @@ function UploadRow({ solicitacaoId, tipo, existente }: { solicitacaoId: string; 
       }}
     >
       <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-        <div style={{ fontSize: 13.5, fontWeight: 600 }}>{DOC_LABEL[tipo].nome}</div>
+        <div style={{ fontSize: 13.5, fontWeight: 600 }}>
+          {DOC_LABEL[tipo].nome}{" "}
+          <span style={{ fontSize: 11.5, fontWeight: 400, color: "#6B7480", fontFamily: "var(--font-mono)" }}>
+            {formatosAceitos(tipo)}
+          </span>
+        </div>
         <div style={{ fontSize: 11.5, color: "#6B7480" }}>{existente ? existente.nomeArquivo : DICAS[tipo]}</div>
         {state?.error && <div style={{ fontSize: 11.5, color: "#8C2B22" }}>{state.error}</div>}
       </div>
       <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 10 }}>
         <span style={{ fontSize: 11.5, fontFamily: "var(--font-mono)", color: ok ? "#24603A" : "#8A5210" }}>{ok ? "enviado" : "pendente"}</span>
-        <input type="file" name="arquivo" accept="application/pdf" required style={{ display: "none" }} id={`file-${tipo}`} onChange={(e) => e.currentTarget.form?.requestSubmit()} />
+        <input
+          type="file"
+          name="arquivo"
+          accept={DOC_REGRAS[tipo].extensoes.join(",")}
+          required
+          style={{ display: "none" }}
+          id={`file-${tipo}`}
+          onChange={(e) => e.currentTarget.form?.requestSubmit()}
+        />
         <label
           htmlFor={`file-${tipo}`}
           style={{ border: "1px solid #DDD8CE", background: "#fff", color: "#12455E", borderRadius: 4, padding: "7px 11px", fontSize: 12, fontWeight: 600, cursor: pending ? "wait" : "pointer" }}
@@ -67,7 +79,9 @@ export function Step2Uploads({ rascunho }: { rascunho: Rascunho }) {
       ))}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 14, flexWrap: "wrap", borderTop: "1px solid #EDE9E1", paddingTop: 16 }}>
         <div style={{ fontSize: 12.5, color: "#4A5563" }}>
-          {pendentes === 0 ? "Todos os documentos do check-list foram anexados." : `${pendentes} documento(s) pendente(s). Arquivos em PDF, até 15 MB.`}
+          {pendentes === 0
+            ? "Todos os documentos do check-list foram anexados."
+            : `${pendentes} documento(s) pendente(s). Projetos aceitam DWG salvo em AutoCAD 2010; os demais, PDF.`}
         </div>
         <div style={{ display: "flex", gap: 9 }}>
           <a

@@ -15,11 +15,10 @@ export const STATUS_INFO: Record<SolicitacaoStatus, { label: string; bg: string;
 export const LIVRE_INFO = { label: "Sem solicitação", bg: "#EDE9E1", fg: "#6B7480" };
 
 export const DOC_LABEL: Record<DocumentoTipo, { nome: string }> = {
-  PROJETO_ARQUITETONICO: { nome: "Projeto arquitetônico (PDF)" },
+  PROJETO_ARQUITETONICO: { nome: "Projeto arquitetônico" },
   ART_RRT: { nome: "ART / RRT do responsável técnico" },
   MEMORIAL_DESCRITIVO: { nome: "Memorial descritivo" },
   PROJETO_ESTRUTURAL: { nome: "Projeto estrutural" },
-  DOC_RESPONSAVEL_TECNICO: { nome: "Documento do responsável técnico" },
 };
 
 export const DOC_ORDER: DocumentoTipo[] = [
@@ -27,8 +26,22 @@ export const DOC_ORDER: DocumentoTipo[] = [
   "ART_RRT",
   "MEMORIAL_DESCRITIVO",
   "PROJETO_ESTRUTURAL",
-  "DOC_RESPONSAVEL_TECNICO",
 ];
+
+// Formato e tamanho aceitos por documento. Projetos podem vir em DWG para a CAPE
+// conferir no CAD; ART e memorial são leitura, então só PDF.
+export const DOC_REGRAS: Record<DocumentoTipo, { extensoes: readonly string[]; maxMB: number }> = {
+  PROJETO_ARQUITETONICO: { extensoes: [".pdf", ".dwg"], maxMB: 2 },
+  ART_RRT: { extensoes: [".pdf"], maxMB: 1 },
+  MEMORIAL_DESCRITIVO: { extensoes: [".pdf"], maxMB: 2 },
+  PROJETO_ESTRUTURAL: { extensoes: [".pdf", ".dwg"], maxMB: 2 },
+};
+
+export function formatosAceitos(tipo: DocumentoTipo) {
+  const { extensoes, maxMB } = DOC_REGRAS[tipo];
+  const nomes = extensoes.map((e) => e.replace(".", "").toUpperCase()).join(" ou ");
+  return `${nomes}, até ${maxMB} MB`;
+}
 
 export const TIPO_LABEL: Record<SolicitacaoTipo, string> = {
   OBRA_NOVA: "Obra nova",

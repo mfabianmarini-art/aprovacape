@@ -6,10 +6,10 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/require-role";
 import { saveUploadedFile } from "@/lib/upload";
+import { validarDocumento } from "@/lib/upload-documento";
 import { DOC_ORDER } from "@/lib/status";
 import type { DocumentoTipo } from "@/generated/prisma/enums";
 
-const MAX_BYTES = 15 * 1024 * 1024;
 
 const rascunhoSchema = z.object({
   loteId: z.string().min(1),
@@ -66,8 +66,8 @@ export async function uploadDocumentoAction(solicitacaoId: string, tipo: Documen
 
   const file = formData.get("arquivo");
   if (!(file instanceof File) || file.size === 0) return { error: "Selecione um arquivo." };
-  if (file.type !== "application/pdf") return { error: "Envie um arquivo em PDF." };
-  if (file.size > MAX_BYTES) return { error: "Arquivo maior que 15 MB." };
+  const invalido = await validarDocumento(file, tipo);
+  if (invalido) return { error: invalido };
 
   const saved = await saveUploadedFile(file, solicitacaoId);
 
