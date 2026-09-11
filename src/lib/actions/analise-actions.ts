@@ -86,7 +86,8 @@ export async function devolverDocumentacaoAction(solicitacaoId: string) {
   await prisma.$transaction([
     prisma.solicitacao.update({
       where: { id: solicitacaoId },
-      data: { status: "COMPLEMENTO", documentacaoValidada: false },
+      // Devolução na conferência documental não consome reenvio.
+      data: { status: "COMPLEMENTO", documentacaoValidada: false, devolvidaNoChecklist: false },
     }),
     prisma.historicoEvento.create({
       data: {
@@ -144,7 +145,7 @@ export async function emitirParecerAction(solicitacaoId: string) {
     await prisma.$transaction([
       prisma.solicitacao.update({
         where: { id: solicitacaoId },
-        data: { status: "COMPLEMENTO" },
+        data: { status: "COMPLEMENTO", devolvidaNoChecklist: true },
       }),
       ...sol.resultados
         .filter((r) => r.status === "APROVADO")

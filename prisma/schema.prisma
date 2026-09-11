@@ -198,7 +198,11 @@ model Solicitacao {
   descricao        String
   status           SolicitacaoStatus @default(ENVIADA)
   prazoDias        Int
+  // Só o ciclo do check-list conta como reenvio: devolução na validação documental é
+  // conferência de forma, não reanálise técnica. Marca de qual fase veio a devolução,
+  // para `reenviarComplementacaoAction` saber se incrementa ao receber de volta.
   reenvios         Int               @default(0)
+  devolvidaNoChecklist Boolean       @default(false)
   pago             Boolean           @default(false)
   criadoPorId      String
   criadoPor        User              @relation("SolicitacaoCriadaPor", fields: [criadoPorId], references: [id])

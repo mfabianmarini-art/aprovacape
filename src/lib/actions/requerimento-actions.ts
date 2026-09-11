@@ -16,10 +16,12 @@ export async function reenviarComplementacaoAction(solicitacaoId: string) {
   const sol = await loadOwnedSolicitacao(session, solicitacaoId);
   if (sol.status !== "COMPLEMENTO") return;
 
-  // O reenvio é contado aqui, quando a documentação nova chega de fato. Contar na
-  // devolução fazia cada clique do analista consumir uma das tentativas gratuitas.
+  // Conta aqui, quando a documentação nova chega de fato — contar na devolução fazia
+  // cada clique do analista consumir uma tentativa. E só conta o ciclo do check-list:
+  // devolução na conferência documental é acerto de forma, não reanálise técnica.
   const emp = await prisma.empreendimento.findUniqueOrThrow({ where: { id: sol.lote.empreendimentoId } });
-  const reenvios = sol.reenvios + 1;
+  const conta = sol.devolvidaNoChecklist;
+  const reenvios = conta ? sol.reenvios + 1 : sol.reenvios;
 
   await prisma.$transaction([
     prisma.solicitacao.update({
@@ -27,15 +29,18 @@ export async function reenviarComplementacaoAction(solicitacaoId: string) {
       data: {
         status: "ENVIADA",
         documentacaoValidada: false,
+        devolvidaNoChecklist: false,
         reenvios,
-        pago: reenvios > emp.reenviosSemTaxa ? false : sol.pago,
+        pago: conta && reenvios > emp.reenviosSemTaxa ? false : sol.pago,
       },
     }),
     prisma.solicitacaoDocumento.updateMany({ where: { solicitacaoId: sol.id }, data: { validado: false } }),
     prisma.historicoEvento.create({
       data: {
         solicitacaoId: sol.id,
-        texto: `Reenvio ${reenvios} de ${emp.reenviosSemTaxa} recebido. Aguardando nova validação documental.`,
+        texto: conta
+          ? `Reenvio ${reenvios} de ${emp.reenviosSemTaxa} recebido. Aguardando nova validação documental.`
+          : "Documentação complementada recebida. Aguardando nova validação documental.",
         cor: "#8FB0BF",
         autorId: session.user.id,
       },
