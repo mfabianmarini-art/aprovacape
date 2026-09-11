@@ -8,6 +8,10 @@ export async function getAnalise(protocolo: string) {
       documentos: true,
       resultados: { include: { item: true } },
       historico: { orderBy: { createdAt: "desc" } },
+      irregularidades: {
+        orderBy: { createdAt: "desc" },
+        include: { evidencias: true, registradaPor: { select: { name: true } } },
+      },
     },
   });
   if (!solicitacao) return null;

@@ -16,9 +16,18 @@ export function extensaoDe(nome: string) {
 }
 
 // O tipo informado pelo navegador não é confiável para DWG (costuma vir vazio ou
-// application/octet-stream), então quem manda é a extensão validada aqui.
+// application/octet-stream), então quem manda é a extensão validada no upload. Servir o
+// tipo declarado por quem envia permitiria entregar HTML na origem do app.
+const TIPO_POR_EXTENSAO: Record<string, string> = {
+  ".pdf": "application/pdf",
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".webp": "image/webp",
+};
+
 export function contentTypeDe(nomeArquivo: string) {
-  return extensaoDe(nomeArquivo) === ".pdf" ? "application/pdf" : "application/octet-stream";
+  return TIPO_POR_EXTENSAO[extensaoDe(nomeArquivo)] ?? "application/octet-stream";
 }
 
 export async function validarDocumento(file: File, tipo: DocumentoTipo): Promise<string | null> {

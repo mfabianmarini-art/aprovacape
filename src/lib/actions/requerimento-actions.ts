@@ -45,6 +45,7 @@ export async function reenviarComplementacaoAction(solicitacaoId: string) {
     prisma.historicoEvento.create({
       data: {
         solicitacaoId: sol.id,
+        tipo: "REENVIO_RECEBIDO",
         texto: (() => {
           const trocados = documentos.filter((d) => !d.validado).length;
           const oQue = trocados === 0 ? "sem troca de arquivos" : `${trocados} documento(s) a reanalisar`;
@@ -98,6 +99,7 @@ export async function enviarAlvaraAction(solicitacaoId: string, _prev: unknown, 
     prisma.historicoEvento.create({
       data: {
         solicitacaoId: sol.id,
+        tipo: "ALVARA_ENVIADO",
         texto: "Alvará de execução enviado. Aguardando conferência da CAPE para liberar o início da obra.",
         cor: "#4B3A7A",
         autorId: session.user.id,

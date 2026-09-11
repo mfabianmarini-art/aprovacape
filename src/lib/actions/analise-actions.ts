@@ -1,9 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/require-role";
-import { DOC_ORDER } from "@/lib/status";
+import { saveUploadedFile } from "@/lib/upload";
+import { DOC_ORDER, IRREGULARIDADE_LABEL } from "@/lib/status";
 import type { DocumentoTipo } from "@/generated/prisma/enums";
 
 async function loadSolicitacao(solicitacaoId: string) {
@@ -94,6 +96,7 @@ export async function devolverDocumentacaoAction(solicitacaoId: string) {
     prisma.historicoEvento.create({
       data: {
         solicitacaoId,
+        tipo: "DOCUMENTACAO_DEVOLVIDA",
         texto: "Documentação devolvida para complementação: um ou mais documentos inválidos ou ilegíveis.",
         cor: "#B4711A",
         autorId: session.user.id,
@@ -158,6 +161,7 @@ export async function emitirParecerAction(solicitacaoId: string) {
       prisma.historicoEvento.create({
         data: {
           solicitacaoId,
+          tipo: "CHECKLIST_DEVOLVIDO",
           texto: `Devolvida com ${reprovados.length} pendência(s) no check-list técnico.`,
           cor: "#B4711A",
           autorId: session.user.id,
@@ -170,6 +174,7 @@ export async function emitirParecerAction(solicitacaoId: string) {
       prisma.historicoEvento.create({
         data: {
           solicitacaoId,
+          tipo: "PROJETO_APROVADO",
           texto: "Projeto aprovado. A aprovação da CAPE não substitui a aprovação da Prefeitura.",
           cor: "#24603A",
           autorId: session.user.id,
@@ -194,6 +199,7 @@ export async function aceitarAlvaraAction(solicitacaoId: string) {
     prisma.historicoEvento.create({
       data: {
         solicitacaoId,
+        tipo: "ALVARA_ACEITO",
         texto: "Alvará de execução conferido e aceito pela CAPE. Obra liberada para início.",
         cor: "#3B3486",
         autorId: session.user.id,
@@ -228,6 +234,7 @@ export async function recusarAlvaraAction(solicitacaoId: string, formData: FormD
     prisma.historicoEvento.create({
       data: {
         solicitacaoId,
+        tipo: "ALVARA_RECUSADO",
         texto: motivo ? `Alvará recusado pela CAPE: ${motivo}` : "Alvará recusado pela CAPE. Envie o documento correto.",
         cor: "#8C2B22",
         autorId: session.user.id,
@@ -236,6 +243,129 @@ export async function recusarAlvaraAction(solicitacaoId: string, formData: FormD
   ]);
 
   revalidateAll(sol.protocolo);
+}
+
+const MAX_EVIDENCIA_BYTES = 5 * 1024 * 1024;
+const MAX_EVIDENCIAS = 8;
+const TIPOS_EVIDENCIA = new Set(["image/png", "image/jpeg", "image/webp", "application/pdf"]);
+
+const irregularidadeSchema = z.object({
+  tipo: z.enum([
+    "DIVERGENCIA_PROJETO",
+    "RECUO_OU_GABARITO",
+    "OBRA_SEM_APROVACAO",
+    "CANTEIRO_E_LIMPEZA",
+    "HORARIO_OU_RUIDO",
+    "DANO_A_AREA_COMUM",
+    "OUTRA",
+  ]),
+  descricao: z.string().trim().min(20, "Descreva a irregularidade com mais detalhes (mínimo 20 caracteres)"),
+});
+
+export type IrregularidadeState = { error?: string; ok?: boolean } | null;
+
+// A irregularidade é o registro que sustenta a notificação, então nasce com as
+// evidências junto: ou grava tudo, ou não grava nada.
+export async function registrarIrregularidadeAction(
+  solicitacaoId: string,
+  _prev: IrregularidadeState,
+  formData: FormData,
+): Promise<IrregularidadeState> {
+  const session = await requireRole("ADMIN_CAPE", "CAPE_ANALISTA");
+  const sol = await prisma.solicitacao.findUniqueOrThrow({ where: { id: solicitacaoId } });
+
+  const parsed = irregularidadeSchema.safeParse(Object.fromEntries(formData.entries()));
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
+
+  const arquivos = formData.getAll("evidencias").filter((f): f is File => f instanceof File && f.size > 0);
+  if (arquivos.length > MAX_EVIDENCIAS) return { error: `Anexe no máximo ${MAX_EVIDENCIAS} evidências.` };
+  for (const f of arquivos) {
+    if (!TIPOS_EVIDENCIA.has(f.type)) return { error: "Evidências devem ser imagens (PNG/JPG/WEBP) ou PDF." };
+    if (f.size > MAX_EVIDENCIA_BYTES) return { error: `"${f.name}" passa de 5 MB.` };
+  }
+
+  const salvos = await Promise.all(arquivos.map((f) => saveUploadedFile(f, `irregularidades/${solicitacaoId}`)));
+
+  await prisma.$transaction([
+    prisma.irregularidade.create({
+      data: {
+        solicitacaoId,
+        tipo: parsed.data.tipo,
+        descricao: parsed.data.descricao,
+        registradaPorId: session.user.id,
+        evidencias: { create: salvos },
+      },
+    }),
+    prisma.historicoEvento.create({
+      data: {
+        solicitacaoId,
+        tipo: "IRREGULARIDADE_REGISTRADA",
+        texto: `Irregularidade registrada pela CAPE: ${IRREGULARIDADE_LABEL[parsed.data.tipo]}.`,
+        cor: "#8C2B22",
+        autorId: session.user.id,
+      },
+    }),
+  ]);
+
+  revalidateAll(sol.protocolo);
+  revalidatePath("/relatorios");
+  return { ok: true };
+}
+
+export async function regularizarIrregularidadeAction(irregularidadeId: string) {
+  const session = await requireRole("ADMIN_CAPE", "CAPE_ANALISTA");
+  const irr = await prisma.irregularidade.findUniqueOrThrow({
+    where: { id: irregularidadeId },
+    include: { solicitacao: true },
+  });
+  if (irr.regularizadaEm) return;
+
+  await prisma.$transaction([
+    prisma.irregularidade.update({ where: { id: irregularidadeId }, data: { regularizadaEm: new Date() } }),
+    prisma.historicoEvento.create({
+      data: {
+        solicitacaoId: irr.solicitacaoId,
+        tipo: "IRREGULARIDADE_REGULARIZADA",
+        texto: `Irregularidade regularizada: ${IRREGULARIDADE_LABEL[irr.tipo]}.`,
+        cor: "#24603A",
+        autorId: session.user.id,
+      },
+    }),
+  ]);
+
+  revalidateAll(irr.solicitacao.protocolo);
+  revalidatePath("/relatorios");
+}
+
+// Encerra a solicitação: a obra terminou e o protocolo vira arquivo.
+export async function concluirObraAction(solicitacaoId: string) {
+  const session = await requireRole("ADMIN_CAPE", "CAPE_ANALISTA");
+  const sol = await prisma.solicitacao.findUniqueOrThrow({
+    where: { id: solicitacaoId },
+    include: { irregularidades: true },
+  });
+  if (sol.status !== "EXECUCAO") return;
+  // Encerrar com irregularidade aberta deixaria a pendência sem dono nem prazo.
+  if (sol.irregularidades.some((i) => !i.regularizadaEm)) return;
+
+  await prisma.$transaction([
+    prisma.solicitacao.update({
+      where: { id: solicitacaoId },
+      data: { status: "CONCLUIDA", concluidaEm: new Date() },
+    }),
+    prisma.historicoEvento.create({
+      data: {
+        solicitacaoId,
+        tipo: "OBRA_CONCLUIDA",
+        texto: "Obra concluída e solicitação arquivada pela CAPE.",
+        cor: "#0E1B24",
+        autorId: session.user.id,
+      },
+    }),
+  ]);
+
+  revalidateAll(sol.protocolo);
+  revalidatePath("/relatorios");
 }
 
 export async function togglePagoAction(solicitacaoId: string) {

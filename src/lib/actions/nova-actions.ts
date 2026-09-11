@@ -150,6 +150,7 @@ export async function enviarSolicitacaoAction(_prev: unknown, formData: FormData
     prisma.historicoEvento.create({
       data: {
         solicitacaoId: sol.id,
+        tipo: "SOLICITACAO_ENVIADA",
         texto: `Solicitação protocolada por ${session.user.name}.`,
         cor: "#8FB0BF",
         autorId: session.user.id,

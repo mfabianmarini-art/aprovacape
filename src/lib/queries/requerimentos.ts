@@ -14,6 +14,10 @@ export async function getMeusRequerimentos(userId: string) {
         where: { observacao: { not: null } },
         select: { observacao: true, item: { select: { texto: true, referencia: true } } },
       },
+      irregularidades: {
+        orderBy: { createdAt: "desc" },
+        include: { evidencias: { select: { id: true, nomeArquivo: true } } },
+      },
     },
   });
 }

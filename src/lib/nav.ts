@@ -9,7 +9,8 @@ export type ScreenId =
   | "empreendimentos"
   | "checklists"
   | "usuarios"
-  | "documentos";
+  | "documentos"
+  | "relatorios";
 
 export const SCREENS: Array<{
   id: ScreenId;
@@ -23,6 +24,7 @@ export const SCREENS: Array<{
   { id: "resumo", label: "Resumo do loteamento", path: "/resumo", roles: ["ADMIN_CAPE", "CAPE_ANALISTA", "SINDICO"] },
   { id: "fila", label: "Fila de análise", path: "/fila", roles: ["ADMIN_CAPE", "CAPE_ANALISTA"] },
   { id: "vinculos", label: "Vínculos a validar", path: "/vinculos", roles: ["ADMIN_CAPE", "CAPE_ANALISTA"] },
+  { id: "relatorios", label: "Relatório", path: "/relatorios", roles: ["ADMIN_CAPE", "CAPE_ANALISTA", "SINDICO"] },
   // Admin/Analista CAPE cadastram e consultam os documentos dentro de Empreendimentos,
   // então para eles esta aba seria redundante.
   //

@@ -29,6 +29,33 @@ enum Conselho {
   CAU
 }
 
+// O histórico era só texto livre. O relatório precisa contar o que a CAPE fez num
+// período, e contar por texto seria refém da redação de cada mensagem.
+enum EventoTipo {
+  OUTRO
+  SOLICITACAO_ENVIADA
+  DOCUMENTACAO_DEVOLVIDA
+  REENVIO_RECEBIDO
+  CHECKLIST_DEVOLVIDO
+  PROJETO_APROVADO
+  ALVARA_ENVIADO
+  ALVARA_ACEITO
+  ALVARA_RECUSADO
+  IRREGULARIDADE_REGISTRADA
+  IRREGULARIDADE_REGULARIZADA
+  OBRA_CONCLUIDA
+}
+
+enum IrregularidadeTipo {
+  DIVERGENCIA_PROJETO
+  RECUO_OU_GABARITO
+  OBRA_SEM_APROVACAO
+  CANTEIRO_E_LIMPEZA
+  HORARIO_OU_RUIDO
+  DANO_A_AREA_COMUM
+  OUTRA
+}
+
 enum SolicitacaoTipo {
   OBRA_NOVA
   REFORMA
@@ -103,6 +130,7 @@ model User {
   lotesComoRT           Lote[]        @relation("LoteRT")
   solicitacoesCriadas   Solicitacao[] @relation("SolicitacaoCriadaPor")
   historicoEventos      HistoricoEvento[]
+  irregularidadesRegistradas Irregularidade[] @relation("IrregularidadeRegistradaPor")
   empreendimentosSindico Empreendimento[] @relation("EmpreendimentoSindico")
   documentosTecnicosEnviados DocumentoTecnico[] @relation("DocumentoTecnicoEnviadoPor")
 
@@ -222,15 +250,17 @@ model Solicitacao {
   alvaraTamanho    Int?
   alvaraEnviadoEm  DateTime?
   alvaraRecusa     String?
+  concluidaEm      DateTime?
   statusAntesAlvara SolicitacaoStatus?
 
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
   prazoAnaliseEm   DateTime?
 
-  documentos  SolicitacaoDocumento[]
-  resultados  ChecklistResultado[]
-  historico   HistoricoEvento[]
+  documentos      SolicitacaoDocumento[]
+  resultados      ChecklistResultado[]
+  historico       HistoricoEvento[]
+  irregularidades Irregularidade[]
 }
 
 model SolicitacaoDocumento {
@@ -270,11 +300,41 @@ model HistoricoEvento {
   id            String      @id @default(cuid())
   solicitacaoId String
   solicitacao   Solicitacao @relation(fields: [solicitacaoId], references: [id])
+  tipo          EventoTipo  @default(OUTRO)
   texto         String
   cor           String      // hex used for the timeline dot, matches status semantics
   autorId       String?
   autor         User?       @relation(fields: [autorId], references: [id])
   createdAt     DateTime    @default(now())
+
+  @@index([tipo, createdAt])
+}
+
+// Irregularidade constatada na obra pela CAPE. Fica visível ao síndico, ao proprietário
+// e ao RT — é o registro que sustenta a notificação.
+model Irregularidade {
+  id              String             @id @default(cuid())
+  solicitacaoId   String
+  solicitacao     Solicitacao        @relation(fields: [solicitacaoId], references: [id])
+  tipo            IrregularidadeTipo
+  descricao       String
+  registradaPorId String
+  registradaPor   User               @relation("IrregularidadeRegistradaPor", fields: [registradaPorId], references: [id])
+  regularizadaEm  DateTime?
+  createdAt       DateTime           @default(now())
+
+  evidencias IrregularidadeEvidencia[]
+
+  @@index([createdAt])
+}
+
+model IrregularidadeEvidencia {
+  id               String         @id @default(cuid())
+  irregularidadeId String
+  irregularidade   Irregularidade @relation(fields: [irregularidadeId], references: [id], onDelete: Cascade)
+  nomeArquivo      String
+  caminhoArquivo   String
+  tamanhoBytes     Int
 }
 
 enum DocumentoTecnicoCategoria {

@@ -3,7 +3,7 @@ import { getUserDisplay } from "@/lib/user-display";
 import { getMeusRequerimentos } from "@/lib/queries/requerimentos";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { ScreenBody } from "@/components/ScreenBody";
-import { STATUS_INFO, DOC_LABEL, formatDate } from "@/lib/status";
+import { STATUS_INFO, DOC_LABEL, IRREGULARIDADE_LABEL, formatDate } from "@/lib/status";
 import { reenviarComplementacaoAction } from "@/lib/actions/requerimento-actions";
 import { SubstituirDocumentos } from "./SubstituirDocumentos";
 import { EnviarAlvara } from "./EnviarAlvara";
@@ -124,6 +124,46 @@ export default async function RequerimentosPage() {
                             )}
                           </div>
                           <div style={{ fontSize: 12.5, color: "#3B4653", lineHeight: 1.5, whiteSpace: "pre-line" }}>{p.texto}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {s.irregularidades.length > 0 && (
+                    <div style={{ background: "#FDF6F5", border: "1px solid #E8C9C4", borderRadius: 4, padding: "14px 16px", display: "flex", flexDirection: "column", gap: 12 }}>
+                      <div style={{ fontSize: 11, letterSpacing: ".13em", textTransform: "uppercase", color: "#8C2B22" }}>
+                        Irregularidades constatadas na obra
+                      </div>
+                      {s.irregularidades.map((irr) => (
+                        <div key={irr.id} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                          <div style={{ display: "flex", alignItems: "baseline", gap: 9, flexWrap: "wrap" }}>
+                            <span style={{ fontSize: 12.5, fontWeight: 600, color: irr.regularizadaEm ? "#4A5563" : "#8C2B22" }}>
+                              {IRREGULARIDADE_LABEL[irr.tipo]}
+                            </span>
+                            <span style={{ fontSize: 10.5, fontFamily: "var(--font-mono)", color: "#6B7480" }}>
+                              {formatDate(irr.createdAt)}
+                            </span>
+                            {irr.regularizadaEm && (
+                              <span style={{ padding: "2px 7px", borderRadius: 3, fontSize: 10, fontWeight: 600, background: "#D8E9DA", color: "#24603A" }}>
+                                regularizada
+                              </span>
+                            )}
+                          </div>
+                          <div style={{ fontSize: 12.5, color: "#3B4653", lineHeight: 1.5, whiteSpace: "pre-line" }}>{irr.descricao}</div>
+                          {irr.evidencias.length > 0 && (
+                            <div style={{ display: "flex", gap: 9, flexWrap: "wrap" }}>
+                              {irr.evidencias.map((ev) => (
+                                <a
+                                  key={ev.id}
+                                  href={`/api/irregularidades/${ev.id}`}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  style={{ fontSize: 11.5, color: "#12455E", fontFamily: "var(--font-mono)" }}
+                                >
+                                  {ev.nomeArquivo}
+                                </a>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>

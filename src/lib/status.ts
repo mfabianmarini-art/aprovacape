@@ -1,4 +1,4 @@
-import type { SolicitacaoStatus, DocumentoTipo, SolicitacaoTipo, DocumentoTecnicoCategoria } from "@/generated/prisma/enums";
+import type { SolicitacaoStatus, DocumentoTipo, SolicitacaoTipo, DocumentoTecnicoCategoria, IrregularidadeTipo } from "@/generated/prisma/enums";
 
 export const STATUS_INFO: Record<SolicitacaoStatus, { label: string; bg: string; fg: string }> = {
   RASCUNHO: { label: "Rascunho", bg: "#E7E5DF", fg: "#5A6270" },
@@ -36,6 +36,16 @@ export const DOC_REGRAS: Record<DocumentoTipo, { extensoes: readonly string[]; m
   ART_RRT: { extensoes: [".pdf"], maxMB: 5 },
   MEMORIAL_DESCRITIVO: { extensoes: [".pdf"], maxMB: 5 },
   PROJETO_ESTRUTURAL: { extensoes: [".pdf", ".dwg"], maxMB: 5 },
+};
+
+export const IRREGULARIDADE_LABEL: Record<IrregularidadeTipo, string> = {
+  DIVERGENCIA_PROJETO: "Execução divergente do projeto aprovado",
+  RECUO_OU_GABARITO: "Recuo ou gabarito fora do aprovado",
+  OBRA_SEM_APROVACAO: "Obra ou intervenção sem aprovação",
+  CANTEIRO_E_LIMPEZA: "Canteiro, entulho ou limpeza",
+  HORARIO_OU_RUIDO: "Horário de trabalho ou ruído",
+  DANO_A_AREA_COMUM: "Dano a área comum ou a lote vizinho",
+  OUTRA: "Outra irregularidade",
 };
 
 export function formatosAceitos(tipo: DocumentoTipo) {

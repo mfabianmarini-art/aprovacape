@@ -4,7 +4,7 @@ import { getUserDisplay } from "@/lib/user-display";
 import { getAnalise } from "@/lib/queries/analise";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { ScreenBody } from "@/components/ScreenBody";
-import { DOC_LABEL, DOC_ORDER, TIPO_LABEL, formatBRL, formatDate, formatDateTime } from "@/lib/status";
+import { DOC_LABEL, DOC_ORDER, TIPO_LABEL, IRREGULARIDADE_LABEL, formatBRL, formatDate, formatDateTime } from "@/lib/status";
 import {
   toggleDocumentoAction,
   devolverDocumentacaoAction,
@@ -15,8 +15,11 @@ import {
   salvarObservacaoItemAction,
   aceitarAlvaraAction,
   recusarAlvaraAction,
+  regularizarIrregularidadeAction,
+  concluirObraAction,
 } from "@/lib/actions/analise-actions";
 import { ObservacaoField } from "@/components/ObservacaoField";
+import { IrregularidadeForm } from "./IrregularidadeForm";
 
 const EDITAVEL = new Set(["ENVIADA", "ANALISE", "COMPLEMENTO"]);
 
@@ -34,6 +37,10 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
   // Já devolvida: a bola está com o proprietário até o reenvio, e devolver de novo
   // não muda nada — a action recusa. O botão reflete isso em vez de aceitar cliques.
   const aguardandoProprietario = sol.status === "COMPLEMENTO";
+  // Irregularidade e conclusão são do acompanhamento da obra, que começa quando ela é
+  // liberada; antes disso não há obra no lote para fiscalizar.
+  const podeAcompanharObra = sol.status === "EXECUCAO" || sol.status === "CONCLUIDA";
+  const irregularidadesAbertas = sol.irregularidades.filter((i) => !i.regularizadaEm).length;
   const nOk = DOC_ORDER.filter((t) => sol.documentos.find((d) => d.tipo === t)?.validado).length;
   const allDocs = nOk === DOC_ORDER.length;
   // Com tudo validado não há o que complementar: a devolução aqui é da conferência
@@ -103,6 +110,109 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
     <>
       <ScreenHeader crumb={`CAPE · ${sol.protocolo}`} title="Análise de projeto" {...user} />
       <ScreenBody>
+        {podeAcompanharObra && (
+          <section style={{ background: "#fff", border: "1px solid #DDD8CE", borderTop: `3px solid ${irregularidadesAbertas > 0 ? "#8C2B22" : "#3B3486"}`, borderRadius: 4, padding: 18, display: "flex", flexDirection: "column", gap: 13 }}>
+            <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+              <div style={{ fontFamily: "var(--font-display)", fontSize: 17, fontWeight: 600, letterSpacing: ".04em", textTransform: "uppercase" }}>
+                Acompanhamento da obra
+              </div>
+              <div style={{ fontSize: 11.5, color: irregularidadesAbertas > 0 ? "#8C2B22" : "#6B7480", fontFamily: "var(--font-mono)" }}>
+                {irregularidadesAbertas > 0
+                  ? `${irregularidadesAbertas} irregularidade(s) em aberto`
+                  : "nenhuma irregularidade em aberto"}
+              </div>
+            </div>
+
+            {sol.irregularidades.map((irr) => (
+              <div
+                key={irr.id}
+                style={{
+                  border: `1px solid ${irr.regularizadaEm ? "#EDE9E1" : "#E8C9C4"}`,
+                  background: irr.regularizadaEm ? "#FBFAF7" : "#FDF6F5",
+                  borderRadius: 4,
+                  padding: "12px 14px",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 7,
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: irr.regularizadaEm ? "#4A5563" : "#8C2B22" }}>
+                    {IRREGULARIDADE_LABEL[irr.tipo]}
+                  </span>
+                  <span style={{ fontSize: 11, color: "#6B7480", fontFamily: "var(--font-mono)" }}>
+                    {formatDateTime(irr.createdAt)} · {irr.registradaPor.name}
+                    {irr.regularizadaEm && ` · regularizada em ${formatDateTime(irr.regularizadaEm)}`}
+                  </span>
+                </div>
+                <div style={{ fontSize: 12.5, lineHeight: 1.5, color: "#3B4653", whiteSpace: "pre-line" }}>{irr.descricao}</div>
+                {irr.evidencias.length > 0 && (
+                  <div style={{ display: "flex", gap: 9, flexWrap: "wrap" }}>
+                    {irr.evidencias.map((ev) => (
+                      <a
+                        key={ev.id}
+                        href={`/api/irregularidades/${ev.id}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{ fontSize: 11.5, color: "#12455E", fontFamily: "var(--font-mono)" }}
+                      >
+                        {ev.nomeArquivo}
+                      </a>
+                    ))}
+                  </div>
+                )}
+                {!irr.regularizadaEm && (
+                  <form action={regularizarIrregularidadeAction.bind(null, irr.id)}>
+                    <button
+                      type="submit"
+                      style={{ border: "1px solid #C6DAC9", background: "#fff", color: "#24603A", borderRadius: 4, padding: "7px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer" }}
+                    >
+                      Marcar como regularizada
+                    </button>
+                  </form>
+                )}
+              </div>
+            ))}
+
+            <IrregularidadeForm solicitacaoId={sol.id} />
+
+            {sol.status === "EXECUCAO" && (
+              <div style={{ borderTop: "1px solid #EDE9E1", paddingTop: 13, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                <form action={irregularidadesAbertas > 0 ? undefined : concluirObraAction.bind(null, sol.id)}>
+                  <button
+                    type="submit"
+                    disabled={irregularidadesAbertas > 0}
+                    title={irregularidadesAbertas > 0 ? "Regularize as pendências antes de concluir." : undefined}
+                    style={{
+                      border: `1px solid ${irregularidadesAbertas > 0 ? "#DDD8CE" : "#0E1B24"}`,
+                      background: irregularidadesAbertas > 0 ? "#fff" : "#0E1B24",
+                      color: irregularidadesAbertas > 0 ? "#B0AAA0" : "#fff",
+                      borderRadius: 4,
+                      padding: "9px 15px",
+                      fontSize: 12.5,
+                      fontWeight: 600,
+                      cursor: irregularidadesAbertas > 0 ? "not-allowed" : "pointer",
+                    }}
+                  >
+                    Obra concluída — arquivar solicitação
+                  </button>
+                </form>
+                <span style={{ fontSize: 11.5, color: "#6B7480" }}>
+                  {irregularidadesAbertas > 0
+                    ? "Há irregularidade em aberto: regularize antes de encerrar."
+                    : "Encerra o protocolo. O histórico e os documentos continuam consultáveis."}
+                </span>
+              </div>
+            )}
+
+            {sol.status === "CONCLUIDA" && (
+              <div style={{ fontSize: 12.5, color: "#4A5563", borderTop: "1px solid #EDE9E1", paddingTop: 13 }}>
+                Solicitação arquivada{sol.concluidaEm ? ` em ${formatDateTime(sol.concluidaEm)}` : ""}.
+              </div>
+            )}
+          </section>
+        )}
+
         {sol.status === "ALVARA_CONFERENCIA" && (
           <section style={{ background: "#fff", border: "1px solid #D9D1EC", borderTop: "3px solid #4B3A7A", borderRadius: 4, padding: 18, display: "flex", flexDirection: "column", gap: 13 }}>
             <div style={{ fontFamily: "var(--font-display)", fontSize: 17, fontWeight: 600, letterSpacing: ".04em", textTransform: "uppercase" }}>
