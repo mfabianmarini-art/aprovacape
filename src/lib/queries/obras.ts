@@ -8,9 +8,14 @@ export async function getObrasEmAndamento() {
     orderBy: { updatedAt: "desc" },
     include: {
       lote: { include: { quadra: true, empreendimento: { select: { nome: true } } } },
+      // Com o relatório e as evidências: a linha resolve o acompanhamento sem abrir a
+      // ficha, e regularizar sem reler o que foi apontado seria decidir no escuro.
       irregularidades: {
         orderBy: { createdAt: "desc" },
-        select: { id: true, tipo: true, createdAt: true, regularizadaEm: true },
+        include: {
+          registradaPor: { select: { name: true } },
+          evidencias: { select: { id: true, nomeArquivo: true } },
+        },
       },
       // Quando a obra foi liberada é a data em que o alvará foi aceito, não a do envio
       // nem a da aprovação do projeto.

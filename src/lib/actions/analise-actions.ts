@@ -18,6 +18,7 @@ async function loadSolicitacao(solicitacaoId: string) {
 function revalidateAll(protocolo: string) {
   revalidatePath(`/analise/${protocolo}`);
   revalidatePath("/fila");
+  revalidatePath("/obras");
   revalidatePath("/resumo");
   revalidatePath("/requerimentos");
 }

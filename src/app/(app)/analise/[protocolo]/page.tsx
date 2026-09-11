@@ -19,7 +19,7 @@ import {
   concluirObraAction,
 } from "@/lib/actions/analise-actions";
 import { ObservacaoField } from "@/components/ObservacaoField";
-import { IrregularidadeForm } from "./IrregularidadeForm";
+import { IrregularidadeBotao } from "@/components/IrregularidadeForm";
 
 const EDITAVEL = new Set(["ENVIADA", "ANALISE", "COMPLEMENTO"]);
 
@@ -174,7 +174,7 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
               </div>
             ))}
 
-            <IrregularidadeForm solicitacaoId={sol.id} />
+            <IrregularidadeBotao solicitacaoId={sol.id} />
 
             {sol.status === "EXECUCAO" && (
               <div style={{ borderTop: "1px solid #EDE9E1", paddingTop: 13, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>

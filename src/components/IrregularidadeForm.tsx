@@ -19,25 +19,21 @@ const labelStyle: React.CSSProperties = {
   color: "#6B7480",
 };
 
-export function IrregularidadeForm({ solicitacaoId }: { solicitacaoId: string }) {
-  const [aberto, setAberto] = useState(false);
+// Formulário sempre aberto. Quem controla a abertura é a tela: na ficha de análise é o
+// próprio botão abaixo; na lista de obras em andamento, a linha, que abre o painel
+// ocupando a largura toda.
+export function IrregularidadeForm({
+  solicitacaoId,
+  onCancelar,
+}: {
+  solicitacaoId: string;
+  onCancelar: () => void;
+}) {
   const [state, formAction, pending] = useActionState<IrregularidadeState, FormData>(
     registrarIrregularidadeAction.bind(null, solicitacaoId),
     null,
   );
   const [arquivos, setArquivos] = useState<string[]>([]);
-
-  if (!aberto) {
-    return (
-      <button
-        type="button"
-        onClick={() => setAberto(true)}
-        style={{ alignSelf: "flex-start", border: "1px solid #8C2B22", background: "#fff", color: "#8C2B22", borderRadius: 4, padding: "9px 14px", fontSize: 12.5, fontWeight: 600, cursor: "pointer" }}
-      >
-        Registrar irregularidade na obra
-      </button>
-    );
-  }
 
   return (
     <form
@@ -48,7 +44,7 @@ export function IrregularidadeForm({ solicitacaoId }: { solicitacaoId: string })
     >
       {state?.ok ? (
         <div style={{ fontSize: 12.5, color: "#24603A", lineHeight: 1.45 }}>
-          Irregularidade registrada — ela aparece na lista acima e já está visível ao síndico, ao proprietário e ao RT.
+          Irregularidade registrada — ela já está visível ao síndico, ao proprietário e ao RT.
           Preencha abaixo se houver outra.
         </div>
       ) : (
@@ -108,12 +104,31 @@ export function IrregularidadeForm({ solicitacaoId }: { solicitacaoId: string })
         </button>
         <button
           type="button"
-          onClick={() => setAberto(false)}
+          onClick={onCancelar}
           style={{ border: "1px solid #DDD8CE", background: "#fff", color: "#4A5563", borderRadius: 4, padding: "9px 12px", fontSize: 12.5, cursor: "pointer" }}
         >
-          Cancelar
+          {state?.ok ? "Fechar" : "Cancelar"}
         </button>
       </div>
     </form>
   );
+}
+
+// Botão + formulário, para a ficha de análise, onde não há painel de linha.
+export function IrregularidadeBotao({ solicitacaoId }: { solicitacaoId: string }) {
+  const [aberto, setAberto] = useState(false);
+
+  if (!aberto) {
+    return (
+      <button
+        type="button"
+        onClick={() => setAberto(true)}
+        style={{ alignSelf: "flex-start", border: "1px solid #8C2B22", background: "#fff", color: "#8C2B22", borderRadius: 4, padding: "9px 14px", fontSize: 12.5, fontWeight: 600, cursor: "pointer" }}
+      >
+        Registrar irregularidade na obra
+      </button>
+    );
+  }
+
+  return <IrregularidadeForm solicitacaoId={solicitacaoId} onCancelar={() => setAberto(false)} />;
 }
