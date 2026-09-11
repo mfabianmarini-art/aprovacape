@@ -2,16 +2,24 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { formatDate } from "@/lib/status";
+import { formatDate, STATUS_INFO, TIPO_LABEL } from "@/lib/status";
 import type { getResumoData } from "@/lib/queries/resumo";
 
 type Data = NonNullable<Awaited<ReturnType<typeof getResumoData>>>;
 
 export function ResumoMapa({ data, podeAnalisar }: { data: Data; podeAnalisar: boolean }) {
   const [loteSel, setLoteSel] = useState<string | null>(null);
+  const [protocoloSel, setProtocoloSel] = useState<string | null>(null);
   const router = useRouter();
   const lote = data.lotes.find((l) => l.id === loteSel) ?? null;
   const ATIVOS = ["ENVIADA", "ANALISE", "COMPLEMENTO"];
+
+  // Trocar de lote fecha o protocolo aberto: o histórico mostrado tem de ser sempre
+  // o do lote em tela.
+  function selecionarLote(id: string | null) {
+    setLoteSel(id);
+    setProtocoloSel(null);
+  }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
@@ -97,7 +105,7 @@ export function ResumoMapa({ data, podeAnalisar }: { data: Data; podeAnalisar: b
                     return (
                       <button
                         key={l.id}
-                        onClick={() => setLoteSel(ativo ? null : l.id)}
+                        onClick={() => selecionarLote(ativo ? null : l.id)}
                         title={`${l.quadra.nome} L${l.numero} · ${l.statusInfo.label}`}
                         style={{
                           position: "absolute",
@@ -172,7 +180,7 @@ export function ResumoMapa({ data, podeAnalisar }: { data: Data; podeAnalisar: b
                   <div style={{ fontSize: 11.5, color: "#8FB0BF" }}>{lote.rua ?? "Endereço não informado"}</div>
                 </div>
                 <button
-                  onClick={() => setLoteSel(null)}
+                  onClick={() => selecionarLote(null)}
                   style={{
                     border: "1px solid rgba(255,255,255,.3)",
                     background: "transparent",
@@ -223,26 +231,93 @@ export function ResumoMapa({ data, podeAnalisar }: { data: Data; podeAnalisar: b
               </div>
               <div style={{ padding: "14px 18px", display: "flex", flexDirection: "column", gap: 11 }}>
                 <div style={{ fontSize: 10.5, letterSpacing: ".14em", textTransform: "uppercase", color: "#6B7480" }}>
-                  Histórico de solicitações
+                  Protocolos deste lote
                 </div>
-                {lote.historico.length === 0 && (
+                {lote.solicitacoes.length === 0 && (
                   <div style={{ fontSize: 12.5, color: "#6B7480" }}>Nenhuma solicitação registrada para este lote.</div>
                 )}
-                {lote.historico.map((h, i) => (
-                  <div key={h.id} style={{ display: "grid", gridTemplateColumns: "12px 1fr", gap: 10 }}>
-                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                      <span style={{ width: 9, height: 9, borderRadius: "50%", background: h.cor, marginTop: 4, flex: "none" }} />
-                      {i < lote.historico.length - 1 && <span style={{ flex: 1, width: 1, background: "#E4DFD5" }} />}
+                {lote.solicitacoes.map((s) => {
+                  const info = STATUS_INFO[s.status];
+                  const aberto = protocoloSel === s.id;
+                  return (
+                    <div key={s.id} style={{ border: `1px solid ${aberto ? "#12455E" : "#EDE9E1"}`, borderRadius: 4, overflow: "hidden" }}>
+                      <button
+                        type="button"
+                        onClick={() => setProtocoloSel(aberto ? null : s.id)}
+                        style={{
+                          width: "100%",
+                          display: "grid",
+                          gridTemplateColumns: "1fr 14px",
+                          alignItems: "center",
+                          gap: 10,
+                          padding: "11px 13px",
+                          border: 0,
+                          background: aberto ? "#F7F5F0" : "#fff",
+                          textAlign: "left",
+                          cursor: "pointer",
+                          font: "inherit",
+                        }}
+                      >
+                        <span style={{ display: "flex", flexDirection: "column", gap: 5, minWidth: 0 }}>
+                          <span style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                            <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 600 }}>{s.protocolo}</span>
+                            <span
+                              style={{ display: "inline-block", padding: "3px 8px", borderRadius: 3, fontSize: 10.5, fontWeight: 600, background: info.bg, color: info.fg }}
+                            >
+                              {info.label}
+                            </span>
+                          </span>
+                          <span style={{ fontSize: 11.5, color: "#6B7480" }}>
+                            {TIPO_LABEL[s.tipo]} · aberta em {formatDate(s.createdAt)} · {s.historico.length} movimentação(ões)
+                          </span>
+                        </span>
+                        <span style={{ color: "#6B7480", fontSize: 11 }}>{aberto ? "▾" : "▸"}</span>
+                      </button>
+
+                      {aberto && (
+                        <div style={{ padding: "12px 13px 4px", borderTop: "1px solid #EDE9E1", background: "#FBFAF7" }}>
+                          {s.historico.length === 0 && (
+                            <div style={{ fontSize: 12, color: "#6B7480", paddingBottom: 10 }}>
+                              Sem movimentações registradas neste protocolo.
+                            </div>
+                          )}
+                          {s.historico.map((h, i) => (
+                            <div key={h.id} style={{ display: "grid", gridTemplateColumns: "12px 1fr", gap: 10 }}>
+                              <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                                <span style={{ width: 9, height: 9, borderRadius: "50%", background: h.cor, marginTop: 4, flex: "none" }} />
+                                {i < s.historico.length - 1 && <span style={{ flex: 1, width: 1, background: "#E4DFD5" }} />}
+                              </div>
+                              <div style={{ display: "flex", flexDirection: "column", gap: 2, paddingBottom: 11 }}>
+                                <span style={{ fontSize: 11, color: "#6B7480", fontFamily: "var(--font-mono)" }}>
+                                  {formatDate(h.createdAt)}
+                                </span>
+                                <div style={{ fontSize: 12.5, lineHeight: 1.45, color: "#3B4653" }}>{h.texto}</div>
+                              </div>
+                            </div>
+                          ))}
+                          {podeAnalisar && (
+                            <button
+                              onClick={() => router.push(`/analise/${s.protocolo}`)}
+                              style={{
+                                border: "1px solid #DDD8CE",
+                                background: "#fff",
+                                color: "#12455E",
+                                borderRadius: 4,
+                                padding: "8px 12px",
+                                fontSize: 12,
+                                fontWeight: 600,
+                                cursor: "pointer",
+                                marginBottom: 10,
+                              }}
+                            >
+                              Abrir análise deste protocolo
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 2, paddingBottom: 11 }}>
-                      <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
-                        <span style={{ fontFamily: "var(--font-mono)", fontSize: 11.5, fontWeight: 600 }}>{h.protocolo}</span>
-                        <span style={{ fontSize: 11, color: "#6B7480", fontFamily: "var(--font-mono)" }}>{formatDate(h.createdAt)}</span>
-                      </div>
-                      <div style={{ fontSize: 12.5, lineHeight: 1.45, color: "#3B4653" }}>{h.texto}</div>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
                 {podeAnalisar && lote.statusAtual && ATIVOS.includes(lote.statusAtual.status) && (
                   <button
                     onClick={() => router.push(`/analise/${lote.statusAtual!.protocolo}`)}
