@@ -34,12 +34,37 @@ export function ResumoMapa({ data, podeAnalisar }: { data: Data; podeAnalisar: b
   const lote = data.lotes.find((l) => l.id === loteSel) ?? null;
   const ATIVOS = ["ENVIADA", "ANALISE", "COMPLEMENTO"];
 
+  const [busca, setBusca] = useState("");
+  const [statusFiltro, setStatusFiltro] = useState("Todos");
+
   // Trocar de lote fecha o protocolo aberto: o histórico mostrado tem de ser sempre
   // o do lote em tela.
   function selecionarLote(id: string | null) {
     setLoteSel(id);
     setProtocoloSel(null);
   }
+
+  const termo = busca.trim().toLowerCase();
+  const statusDisponiveis = Array.from(new Set(data.lotes.map((l) => l.statusInfo.label))).sort();
+
+  function combina(l: Data["lotes"][number]) {
+    if (statusFiltro !== "Todos" && l.statusInfo.label !== statusFiltro) return false;
+    if (!termo) return true;
+    return [
+      l.numero,
+      l.quadra.nome,
+      `${l.quadra.nome} ${l.numero}`,
+      `${l.quadra.nome}${l.numero}`,
+      `${l.quadra.nome} L${l.numero}`,
+      l.rua ?? "",
+      l.proprietario?.name ?? "",
+      l.rt?.name ?? "",
+      ...l.solicitacoes.map((s) => s.protocolo),
+    ].some((campo) => campo.toLowerCase().includes(termo));
+  }
+
+  const filtrados = data.lotes.filter(combina);
+  const filtroAtivo = termo.length > 0 || statusFiltro !== "Todos";
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
@@ -88,6 +113,44 @@ export function ResumoMapa({ data, podeAnalisar }: { data: Data; podeAnalisar: b
             </div>
             <div style={{ fontSize: 11, color: "#6B7480", fontFamily: "var(--font-mono)" }}>clique num lote →</div>
           </div>
+
+          <div style={{ display: "flex", gap: 9, padding: "12px 18px", borderBottom: "1px solid #EDE9E1", flexWrap: "wrap", alignItems: "center" }}>
+            <input
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+              placeholder="Buscar por quadra, lote, proprietário, RT, endereço ou protocolo"
+              style={{ flex: 1, minWidth: 240, border: "1px solid #DDD8CE", borderRadius: 4, padding: "9px 11px", fontSize: 12.5 }}
+            />
+            <select
+              value={statusFiltro}
+              onChange={(e) => setStatusFiltro(e.target.value)}
+              style={{ border: "1px solid #DDD8CE", borderRadius: 4, padding: "9px 11px", fontSize: 12.5, background: "#fff" }}
+            >
+              <option value="Todos">Todos os status</option>
+              {statusDisponiveis.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+            {filtroAtivo && (
+              <>
+                <span style={{ fontSize: 11.5, color: "#6B7480", fontFamily: "var(--font-mono)" }}>
+                  {filtrados.length} de {data.lotes.length}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setBusca("");
+                    setStatusFiltro("Todos");
+                  }}
+                  style={{ border: "1px solid #DDD8CE", background: "#fff", color: "#4A5563", borderRadius: 4, padding: "8px 12px", fontSize: 12, cursor: "pointer" }}
+                >
+                  Limpar
+                </button>
+              </>
+            )}
+          </div>
           <div style={{ position: "relative", padding: 16, background: "#F4F2ED" }}>
             <div style={{ position: "relative", width: "100%", aspectRatio: "1200/669" }}>
               {data.empreendimento.plantaImageUrl ? (
@@ -122,6 +185,9 @@ export function ResumoMapa({ data, podeAnalisar }: { data: Data; podeAnalisar: b
                     const ativo = loteSel === l.id;
                     const bg = l.statusInfo.bg;
                     const fillOpaque = bg === "#0E1B24" ? "rgba(14,27,36,.82)" : bg;
+                    // Fora do filtro o pin apaga em vez de sumir: a planta continua
+                    // legível como planta, e o que casa salta à vista.
+                    const apagado = filtroAtivo && !combina(l);
                     return (
                       <button
                         key={l.id}
@@ -143,8 +209,13 @@ export function ResumoMapa({ data, podeAnalisar }: { data: Data; podeAnalisar: b
                           placeItems: "center",
                           borderRadius: 2,
                           background: fillOpaque,
+                          opacity: apagado ? 0.22 : 1,
                           border: ativo ? "2px solid #0E1B24" : "1px solid rgba(14,27,36,.35)",
-                          boxShadow: ativo ? "0 0 0 3px rgba(180,113,26,.55)" : "0 1px 3px rgba(14,27,36,.28)",
+                          boxShadow: ativo
+                            ? "0 0 0 3px rgba(180,113,26,.55)"
+                            : filtroAtivo && !apagado
+                              ? "0 0 0 2px rgba(180,113,26,.5)"
+                              : "0 1px 3px rgba(14,27,36,.28)",
                           color: l.statusInfo.fg,
                           fontFamily: "var(--font-mono)",
                           fontSize: 8,
@@ -170,6 +241,57 @@ export function ResumoMapa({ data, podeAnalisar }: { data: Data; podeAnalisar: b
         </section>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+          {filtroAtivo && (
+            <section style={{ background: "#fff", border: "1px solid #DDD8CE", borderRadius: 4, overflow: "hidden" }}>
+              <div style={{ padding: "12px 16px", borderBottom: "1px solid #EDE9E1", fontSize: 10.5, letterSpacing: ".14em", textTransform: "uppercase", color: "#6B7480" }}>
+                Resultados da busca
+              </div>
+              {filtrados.length === 0 && (
+                <div style={{ padding: 18, fontSize: 12.5, color: "#6B7480" }}>Nenhum lote corresponde ao filtro.</div>
+              )}
+              <div style={{ maxHeight: 300, overflowY: "auto" }}>
+                {filtrados.map((l) => (
+                  <button
+                    key={l.id}
+                    type="button"
+                    onClick={() => selecionarLote(l.id)}
+                    style={{
+                      width: "100%",
+                      display: "grid",
+                      gridTemplateColumns: "1fr auto",
+                      alignItems: "center",
+                      gap: 10,
+                      padding: "10px 16px",
+                      border: 0,
+                      borderBottom: "1px solid #F1EEE7",
+                      background: loteSel === l.id ? "#F7F5F0" : "#fff",
+                      textAlign: "left",
+                      cursor: "pointer",
+                      font: "inherit",
+                    }}
+                  >
+                    <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+                      <span style={{ fontSize: 12.5, fontWeight: 600 }}>
+                        {l.quadra.nome} L{l.numero}
+                        {l.posX == null && (
+                          <span style={{ fontWeight: 400, color: "#8B939C" }}> · sem pino na planta</span>
+                        )}
+                      </span>
+                      <span style={{ fontSize: 11, color: "#6B7480", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        {l.proprietario?.name ?? "sem proprietário"}
+                        {l.statusAtual ? ` · ${l.statusAtual.protocolo}` : ""}
+                      </span>
+                    </span>
+                    <span
+                      style={{ flex: "none", padding: "3px 8px", borderRadius: 3, fontSize: 10.5, fontWeight: 600, background: l.statusInfo.bg, color: l.statusInfo.fg }}
+                    >
+                      {l.statusInfo.label}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
           {lote && (
             <section
               style={{
