@@ -5,6 +5,7 @@ import { resolveEmpreendimentoAtual } from "@/lib/queries/empreendimentos-acesso
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { ScreenBody } from "@/components/ScreenBody";
 import { EmpreendimentoSwitcher } from "@/components/EmpreendimentoSwitcher";
+import { labelDaTela } from "@/lib/nav";
 import { DocumentosList } from "./DocumentosList";
 import { DocumentoUploadForm } from "./DocumentoUploadForm";
 
@@ -16,14 +17,18 @@ export default async function DocumentosPage({ searchParams }: { searchParams: P
     resolveEmpreendimentoAtual(session.user.id, session.user.role, empParam),
   ]);
 
+  const titulo = labelDaTela("documentos", session.user.role);
+  const ehConsulta =
+    session.user.role === "PROPRIETARIO" || session.user.role === "RESPONSAVEL_TECNICO";
+
   if (!atual) {
     return (
       <>
-        <ScreenHeader crumb="Referência" title="Documentos técnicos" {...user} />
+        <ScreenHeader crumb="Referência" title={titulo} {...user} />
         <ScreenBody>
           <div style={{ fontSize: 13.5, color: "#6B7480" }}>
-            {session.user.role === "PROPRIETARIO" || session.user.role === "RESPONSAVEL_TECNICO"
-              ? "Nenhum lote informado na sua conta ainda — escolha o empreendimento, a quadra e o lote no cadastro para consultar os documentos do empreendimento."
+            {ehConsulta
+              ? "Nenhum lote informado na sua conta ainda — escolha o empreendimento, a quadra e o lote no cadastro para consultar as normas do empreendimento."
               : "Nenhum empreendimento cadastrado ainda."}
           </div>
         </ScreenBody>
@@ -38,18 +43,24 @@ export default async function DocumentosPage({ searchParams }: { searchParams: P
 
   return (
     <>
-      <ScreenHeader crumb="Referência" title="Documentos técnicos" {...user} />
+      <ScreenHeader crumb="Referência" title={titulo} {...user} />
       <ScreenBody>
         <EmpreendimentoSwitcher atualId={atual.id} opcoes={opcoes} />
+        {ehConsulta && (
+          <div style={{ fontSize: 13.5, color: "#3B4653", lineHeight: 1.5 }}>
+            Consulte aqui todas as regras e documentação técnica para elaborar o projeto.
+          </div>
+        )}
         <div style={{ display: "grid", gridTemplateColumns: podeGerenciar ? "minmax(0,1fr) 320px" : "1fr", gap: 20, alignItems: "start" }}>
           <DocumentosList documentos={documentos} podeGerenciar={podeGerenciar} />
           {podeGerenciar && <DocumentoUploadForm empreendimentoId={atual.id} />}
         </div>
-        <div style={{ fontSize: 12.5, color: "#6B4A11", background: "#FDF8EE", border: "1px solid #E8D7B4", borderRadius: 4, padding: "14px 16px", lineHeight: 1.5 }}>
-          {podeGerenciar
-            ? "Manual do proprietário, convenção do condomínio e outras regras ficam aqui para consulta de proprietários e responsáveis técnicos. A descrição de cada documento é o que explica a eles do que se trata."
-            : "Manual do proprietário, convenção do condomínio e outras regras ficam disponíveis aqui para consulta na hora de elaborar o projeto. Os documentos são publicados pela CAPE e pelo síndico do empreendimento."}
-        </div>
+        {podeGerenciar && (
+          <div style={{ fontSize: 12.5, color: "#6B4A11", background: "#FDF8EE", border: "1px solid #E8D7B4", borderRadius: 4, padding: "14px 16px", lineHeight: 1.5 }}>
+            Manual do proprietário, convenção do condomínio e outras regras ficam aqui para consulta de proprietários e
+            responsáveis técnicos. A descrição de cada documento é o que explica a eles do que se trata.
+          </div>
+        )}
       </ScreenBody>
     </>
   );

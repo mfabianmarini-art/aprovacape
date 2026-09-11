@@ -33,7 +33,7 @@ export async function getNavCounts(role: Role, userId: string): Promise<Record<S
 export function navWithCounts(role: Role, counts: Record<ScreenId, string>) {
   return SCREENS.filter((s) => s.roles.includes(role)).map((s) => ({
     path: s.path,
-    label: s.label,
+    label: s.labelPorPapel?.[role] ?? s.label,
     count: counts[s.id],
   }));
 }

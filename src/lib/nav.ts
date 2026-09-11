@@ -11,7 +11,15 @@ export type ScreenId =
   | "usuarios"
   | "documentos";
 
-export const SCREENS: Array<{ id: ScreenId; label: string; path: string; roles: Role[] }> = [
+export const SCREENS: Array<{
+  id: ScreenId;
+  label: string;
+  path: string;
+  roles: Role[];
+  // Mesma tela, nome diferente conforme quem olha: o síndico publica documentos ali,
+  // enquanto proprietário e RT a consultam como as normas que o projeto precisa atender.
+  labelPorPapel?: Partial<Record<Role, string>>;
+}> = [
   { id: "resumo", label: "Resumo do loteamento", path: "/resumo", roles: ["ADMIN_CAPE", "CAPE_ANALISTA", "SINDICO"] },
   { id: "fila", label: "Fila de análise", path: "/fila", roles: ["ADMIN_CAPE", "CAPE_ANALISTA"] },
   { id: "vinculos", label: "Vínculos a validar", path: "/vinculos", roles: ["ADMIN_CAPE", "CAPE_ANALISTA"] },
@@ -27,6 +35,7 @@ export const SCREENS: Array<{ id: ScreenId; label: string; path: string; roles: 
     label: "Documentos técnicos",
     path: "/documentos",
     roles: ["SINDICO", "PROPRIETARIO", "RESPONSAVEL_TECNICO"],
+    labelPorPapel: { PROPRIETARIO: "Normas para aprovação", RESPONSAVEL_TECNICO: "Normas para aprovação" },
   },
   { id: "requerimentos", label: "Meus requerimentos", path: "/requerimentos", roles: ["PROPRIETARIO", "RESPONSAVEL_TECNICO"] },
   { id: "nova", label: "Nova solicitação", path: "/nova", roles: ["PROPRIETARIO", "RESPONSAVEL_TECNICO"] },
@@ -39,6 +48,12 @@ export const SCREENS: Array<{ id: ScreenId; label: string; path: string; roles: 
 
 export function screensForRole(role: Role) {
   return SCREENS.filter((s) => s.roles.includes(role));
+}
+
+// Fonte única do nome da tela, para a barra lateral e o cabeçalho não divergirem.
+export function labelDaTela(id: ScreenId, role: Role) {
+  const screen = SCREENS.find((s) => s.id === id);
+  return screen?.labelPorPapel?.[role] ?? screen?.label ?? "";
 }
 
 export function homeForRole(role: Role): string {
