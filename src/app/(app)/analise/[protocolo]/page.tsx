@@ -34,6 +34,9 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
   const aguardandoProprietario = sol.status === "COMPLEMENTO";
   const nOk = DOC_ORDER.filter((t) => sol.documentos.find((d) => d.tipo === t)?.validado).length;
   const allDocs = nOk === DOC_ORDER.length;
+  // Com tudo validado não há o que complementar: a devolução aqui é da conferência
+  // documental, e o caminho passa a ser o check-list.
+  const devolverBloqueado = aguardandoProprietario || allDocs;
 
   const totalItens = categorias.reduce((a, c) => a + c.itens.length, 0);
   const avaliados = sol.resultados.length;
@@ -238,20 +241,26 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
                       : "Marque cada documento conferido. Se algum for impertinente ou ilegível, devolva a solicitação — o proprietário e o RT são notificados com a lista do que falta."}
                 </div>
                 {podeEditar && (
-                  <form action={aguardandoProprietario ? undefined : devolverDocumentacaoAction.bind(null, sol.id)}>
+                  <form action={devolverBloqueado ? undefined : devolverDocumentacaoAction.bind(null, sol.id)}>
                     <button
                       type="submit"
-                      disabled={aguardandoProprietario}
-                      title={aguardandoProprietario ? "Já devolvida — aguardando o reenvio do proprietário." : undefined}
+                      disabled={devolverBloqueado}
+                      title={
+                        aguardandoProprietario
+                          ? "Já devolvida — aguardando o reenvio do proprietário."
+                          : allDocs
+                            ? "Todos os documentos foram validados: não há o que complementar."
+                            : undefined
+                      }
                       style={{
-                        border: `1px solid ${aguardandoProprietario ? "#DDD8CE" : "#8C2B22"}`,
+                        border: `1px solid ${devolverBloqueado ? "#DDD8CE" : "#8C2B22"}`,
                         background: "#fff",
-                        color: aguardandoProprietario ? "#B0AAA0" : "#8C2B22",
+                        color: devolverBloqueado ? "#B0AAA0" : "#8C2B22",
                         borderRadius: 4,
                         padding: "9px 14px",
                         fontSize: 12.5,
                         fontWeight: 600,
-                        cursor: aguardandoProprietario ? "not-allowed" : "pointer",
+                        cursor: devolverBloqueado ? "not-allowed" : "pointer",
                       }}
                     >
                       {aguardandoProprietario ? "Aguardando reenvio" : "Devolver para complementação"}

@@ -82,6 +82,8 @@ export async function devolverDocumentacaoAction(solicitacaoId: string) {
   // Já devolvida: devolver de novo não é um novo ciclo, e um clique repetido não
   // deve render outro evento no histórico.
   if (sol.status === "COMPLEMENTO") return;
+  // Nada pendente na conferência documental: não há o que pedir de volta.
+  if (DOC_ORDER.every((t) => sol.documentos.find((d) => d.tipo === t)?.validado)) return;
 
   await prisma.$transaction([
     prisma.solicitacao.update({
