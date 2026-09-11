@@ -16,10 +16,8 @@ import {
   aceitarAlvaraAction,
   recusarAlvaraAction,
   regularizarIrregularidadeAction,
-  concluirObraAction,
 } from "@/lib/actions/analise-actions";
 import { ObservacaoField } from "@/components/ObservacaoField";
-import { IrregularidadeBotao } from "@/components/IrregularidadeForm";
 
 const EDITAVEL = new Set(["ENVIADA", "ANALISE", "COMPLEMENTO"]);
 
@@ -37,8 +35,8 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
   // Já devolvida: a bola está com o proprietário até o reenvio, e devolver de novo
   // não muda nada — a action recusa. O botão reflete isso em vez de aceitar cliques.
   const aguardandoProprietario = sol.status === "COMPLEMENTO";
-  // Irregularidade e conclusão são do acompanhamento da obra, que começa quando ela é
-  // liberada; antes disso não há obra no lote para fiscalizar.
+  // Registrar irregularidade e concluir a obra são ações da tela Obras em andamento.
+  // Aqui a seção fica como registro do que foi apontado, com o ponteiro para lá.
   const podeAcompanharObra = sol.status === "EXECUCAO" || sol.status === "CONCLUIDA";
   const irregularidadesAbertas = sol.irregularidades.filter((i) => !i.regularizadaEm).length;
   const nOk = DOC_ORDER.filter((t) => sol.documentos.find((d) => d.tipo === t)?.validado).length;
@@ -174,34 +172,9 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
               </div>
             ))}
 
-            <IrregularidadeBotao solicitacaoId={sol.id} />
-
             {sol.status === "EXECUCAO" && (
-              <div style={{ borderTop: "1px solid #EDE9E1", paddingTop: 13, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-                <form action={irregularidadesAbertas > 0 ? undefined : concluirObraAction.bind(null, sol.id)}>
-                  <button
-                    type="submit"
-                    disabled={irregularidadesAbertas > 0}
-                    title={irregularidadesAbertas > 0 ? "Regularize as pendências antes de concluir." : undefined}
-                    style={{
-                      border: `1px solid ${irregularidadesAbertas > 0 ? "#DDD8CE" : "#0E1B24"}`,
-                      background: irregularidadesAbertas > 0 ? "#fff" : "#0E1B24",
-                      color: irregularidadesAbertas > 0 ? "#B0AAA0" : "#fff",
-                      borderRadius: 4,
-                      padding: "9px 15px",
-                      fontSize: 12.5,
-                      fontWeight: 600,
-                      cursor: irregularidadesAbertas > 0 ? "not-allowed" : "pointer",
-                    }}
-                  >
-                    Obra concluída — arquivar solicitação
-                  </button>
-                </form>
-                <span style={{ fontSize: 11.5, color: "#6B7480" }}>
-                  {irregularidadesAbertas > 0
-                    ? "Há irregularidade em aberto: regularize antes de encerrar."
-                    : "Encerra o protocolo. O histórico e os documentos continuam consultáveis."}
-                </span>
+              <div style={{ fontSize: 11.5, color: "#6B7480", borderTop: "1px solid #EDE9E1", paddingTop: 13 }}>
+                Registrar irregularidade e encerrar a obra ficam em <strong>Obras em andamento</strong>.
               </div>
             )}
 

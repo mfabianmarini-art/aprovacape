@@ -19,9 +19,8 @@ const labelStyle: React.CSSProperties = {
   color: "#6B7480",
 };
 
-// Formulário sempre aberto. Quem controla a abertura é a tela: na ficha de análise é o
-// próprio botão abaixo; na lista de obras em andamento, a linha, que abre o painel
-// ocupando a largura toda.
+// Formulário sempre aberto: quem controla a abertura é a linha da obra, em Obras em
+// andamento, que o exibe num painel ocupando a largura toda.
 export function IrregularidadeForm({
   solicitacaoId,
   onCancelar,
@@ -112,23 +111,4 @@ export function IrregularidadeForm({
       </div>
     </form>
   );
-}
-
-// Botão + formulário, para a ficha de análise, onde não há painel de linha.
-export function IrregularidadeBotao({ solicitacaoId }: { solicitacaoId: string }) {
-  const [aberto, setAberto] = useState(false);
-
-  if (!aberto) {
-    return (
-      <button
-        type="button"
-        onClick={() => setAberto(true)}
-        style={{ alignSelf: "flex-start", border: "1px solid #8C2B22", background: "#fff", color: "#8C2B22", borderRadius: 4, padding: "9px 14px", fontSize: 12.5, fontWeight: 600, cursor: "pointer" }}
-      >
-        Registrar irregularidade na obra
-      </button>
-    );
-  }
-
-  return <IrregularidadeForm solicitacaoId={solicitacaoId} onCancelar={() => setAberto(false)} />;
 }
