@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { formatDate, formatDateTime, STATUS_INFO, TIPO_LABEL, DOC_LABEL } from "@/lib/status";
+import { formatDate, formatDateTime, STATUS_INFO, TIPO_LABEL, DOC_LABEL, IRREGULARIDADE_LABEL } from "@/lib/status";
 import { ROLE_LABEL } from "@/lib/nav";
 import type { getResumoData } from "@/lib/queries/resumo";
 
@@ -46,9 +46,15 @@ export function ResumoMapa({ data, podeAnalisar }: { data: Data; podeAnalisar: b
 
   const termo = busca.trim().toLowerCase();
   const statusDisponiveis = Array.from(new Set(data.lotes.map((l) => l.statusInfo.label))).sort();
+  // Irregularidade não é um status de protocolo: convive com qualquer um deles, então
+  // entra na mesma caixa como um recorte à parte, não como mais uma opção da lista.
+  const IRREGULARES = "__irregulares";
+  const nIrregulares = data.lotes.filter((l) => l.irregularidadesAbertas > 0).length;
 
   function combina(l: Data["lotes"][number]) {
-    if (statusFiltro !== "Todos" && l.statusInfo.label !== statusFiltro) return false;
+    if (statusFiltro === IRREGULARES) {
+      if (l.irregularidadesAbertas === 0) return false;
+    } else if (statusFiltro !== "Todos" && l.statusInfo.label !== statusFiltro) return false;
     if (!termo) return true;
     return [
       l.numero,
@@ -127,11 +133,18 @@ export function ResumoMapa({ data, podeAnalisar }: { data: Data; podeAnalisar: b
               style={{ border: "1px solid #DDD8CE", borderRadius: 4, padding: "9px 11px", fontSize: 12.5, background: "#fff" }}
             >
               <option value="Todos">Todos os status</option>
-              {statusDisponiveis.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
+              <option value={IRREGULARES} disabled={nIrregulares === 0}>
+                {nIrregulares === 0
+                  ? "Com irregularidade (nenhum)"
+                  : `Com irregularidade (${nIrregulares})`}
+              </option>
+              <optgroup label="Status do protocolo">
+                {statusDisponiveis.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </optgroup>
             </select>
             {filtroAtivo && (
               <>
@@ -188,11 +201,14 @@ export function ResumoMapa({ data, podeAnalisar }: { data: Data; podeAnalisar: b
                     // Fora do filtro o pin apaga em vez de sumir: a planta continua
                     // legível como planta, e o que casa salta à vista.
                     const apagado = filtroAtivo && !combina(l);
+                    const irregular = l.irregularidadesAbertas > 0;
                     return (
                       <button
                         key={l.id}
                         onClick={() => selecionarLote(ativo ? null : l.id)}
-                        title={`${l.quadra.nome} L${l.numero} · ${l.statusInfo.label}`}
+                        title={`${l.quadra.nome} L${l.numero} · ${l.statusInfo.label}${
+                          irregular ? ` · ${l.irregularidadesAbertas} irregularidade(s) em aberto` : ""
+                        }`}
                         style={{
                           position: "absolute",
                           left: `${l.posX}%`,
@@ -224,6 +240,23 @@ export function ResumoMapa({ data, podeAnalisar }: { data: Data; podeAnalisar: b
                         }}
                       >
                         {l.numero}
+                        {/* A cor do pino já é o status; a irregularidade entra como marca
+                            sobreposta para as duas informações caberem no mesmo pino. */}
+                        {irregular && (
+                          <span
+                            style={{
+                              position: "absolute",
+                              top: -3,
+                              right: -3,
+                              width: 7,
+                              height: 7,
+                              borderRadius: "50%",
+                              background: "#8C2B22",
+                              border: "1px solid #fff",
+                              boxShadow: "0 0 0 1px rgba(140,43,34,.5)",
+                            }}
+                          />
+                        )}
                       </button>
                     );
                   })}
@@ -237,6 +270,23 @@ export function ResumoMapa({ data, podeAnalisar }: { data: Data; podeAnalisar: b
                 {l.label}
               </div>
             ))}
+            <div style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 11.5, color: "#4A5563" }}>
+              <span style={{ position: "relative", width: 11, height: 11, borderRadius: 2, background: "#EDE9E1" }}>
+                <span
+                  style={{
+                    position: "absolute",
+                    top: -3,
+                    right: -3,
+                    width: 7,
+                    height: 7,
+                    borderRadius: "50%",
+                    background: "#8C2B22",
+                    border: "1px solid #fff",
+                  }}
+                />
+              </span>
+              Com irregularidade
+            </div>
           </div>
         </section>
 
@@ -282,10 +332,17 @@ export function ResumoMapa({ data, podeAnalisar }: { data: Data; podeAnalisar: b
                         {l.statusAtual ? ` · ${l.statusAtual.protocolo}` : ""}
                       </span>
                     </span>
-                    <span
-                      style={{ flex: "none", padding: "3px 8px", borderRadius: 3, fontSize: 10.5, fontWeight: 600, background: l.statusInfo.bg, color: l.statusInfo.fg }}
-                    >
-                      {l.statusInfo.label}
+                    <span style={{ flex: "none", display: "flex", alignItems: "center", gap: 6 }}>
+                      {l.irregularidadesAbertas > 0 && (
+                        <span style={{ padding: "3px 7px", borderRadius: 3, fontSize: 10.5, fontWeight: 600, background: "#F3DAD6", color: "#8C2B22" }}>
+                          {l.irregularidadesAbertas} irregular.
+                        </span>
+                      )}
+                      <span
+                        style={{ padding: "3px 8px", borderRadius: 3, fontSize: 10.5, fontWeight: 600, background: l.statusInfo.bg, color: l.statusInfo.fg }}
+                      >
+                        {l.statusInfo.label}
+                      </span>
                     </span>
                   </button>
                 ))}
@@ -353,6 +410,11 @@ export function ResumoMapa({ data, podeAnalisar }: { data: Data; podeAnalisar: b
                   >
                     {lote.statusInfo.label}
                   </span>
+                  {lote.irregularidadesAbertas > 0 && (
+                    <span style={{ padding: "4px 9px", borderRadius: 3, fontSize: 11.5, fontWeight: 600, background: "#F3DAD6", color: "#8C2B22" }}>
+                      {lote.irregularidadesAbertas} irregularidade(s) em aberto
+                    </span>
+                  )}
                   <span style={{ fontFamily: "var(--font-mono)", fontSize: 11.5, color: "#6B7480" }}>
                     {lote.areaM2 != null ? `${lote.areaM2.toLocaleString("pt-BR")} m²` : "área não informada"}
                   </span>
@@ -427,6 +489,22 @@ export function ResumoMapa({ data, podeAnalisar }: { data: Data; podeAnalisar: b
                             </Bloco>
 
                             <Campo k="Descrição" v={s.descricao} bloco />
+
+                            {s.irregularidades.length > 0 && (
+                              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                                <div style={{ fontSize: 10, letterSpacing: ".13em", textTransform: "uppercase", color: "#8C2B22" }}>
+                                  Irregularidades
+                                </div>
+                                {s.irregularidades.map((irr) => (
+                                  <div key={irr.id} style={{ fontSize: 11.5, lineHeight: 1.45, color: irr.regularizadaEm ? "#6B7480" : "#8C2B22" }}>
+                                    {IRREGULARIDADE_LABEL[irr.tipo]} · {formatDate(irr.createdAt)}
+                                    {irr.regularizadaEm
+                                      ? ` · regularizada em ${formatDate(irr.regularizadaEm)}`
+                                      : " · em aberto"}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
 
                             <Bloco titulo="Responsável técnico">
                               <Campo k="Nome" v={s.responsavelTecnicoNome || "—"} />

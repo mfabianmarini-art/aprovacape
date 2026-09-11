@@ -31,6 +31,10 @@ export async function getResumoData(empreendimentoId: string) {
               // relação aninhada aqui se multiplica pelo loteamento inteiro.
               criadoPor: { select: { name: true, role: true } },
               documentos: { select: { id: true, tipo: true, nomeArquivo: true, validado: true } },
+              irregularidades: {
+                orderBy: { createdAt: "desc" },
+                select: { id: true, tipo: true, createdAt: true, regularizadaEm: true },
+              },
             },
           },
         },
@@ -45,7 +49,13 @@ export async function getResumoData(empreendimentoId: string) {
     const historico = l.solicitacoes
       .flatMap((s) => s.historico.map((h) => ({ ...h, protocolo: s.protocolo })))
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-    return { ...l, statusAtual: atual ?? null, statusInfo, historico };
+    // Irregularidade pertence ao lote, não ao protocolo da vez: uma obra apontada
+    // continua apontada enquanto ninguém regularizar, mesmo com outro protocolo aberto.
+    const irregularidadesAbertas = l.solicitacoes.reduce(
+      (n, s) => n + s.irregularidades.filter((i) => !i.regularizadaEm).length,
+      0,
+    );
+    return { ...l, statusAtual: atual ?? null, statusInfo, historico, irregularidadesAbertas };
   });
 
   const totalLotes = emp.quadras.reduce((a, q) => a + q.totalLotes, 0);
@@ -53,6 +63,7 @@ export async function getResumoData(empreendimentoId: string) {
   const complemento = lotesComStatus.filter((l) => l.statusAtual?.status === "COMPLEMENTO");
   const aprovados = lotesComStatus.filter((l) => l.statusAtual && APROVADOS.includes(l.statusAtual.status));
   const execucao = lotesComStatus.filter((l) => l.statusAtual?.status === "EXECUCAO");
+  const comIrregularidade = lotesComStatus.filter((l) => l.irregularidadesAbertas > 0);
 
   const emRisco = lotesComStatus.filter((l) => {
     const s = l.statusAtual;
@@ -69,6 +80,7 @@ export async function getResumoData(empreendimentoId: string) {
     { valor: String(emRisco.length), rotulo: `Em risco de prazo (${emp.prazoDias} dias)`, cor: "#8C2B22" },
     { valor: String(aprovados.length), rotulo: "Projetos aprovados", cor: "#24603A" },
     { valor: String(execucao.length), rotulo: "Obras aprovadas", cor: "#3B3486" },
+    { valor: String(comIrregularidade.length), rotulo: "Lotes com irregularidade", cor: "#8C2B22" },
   ];
 
   const quadras = emp.quadras.map((q) => {
