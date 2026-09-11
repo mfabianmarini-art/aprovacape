@@ -68,7 +68,7 @@ export async function getResumoData(empreendimentoId: string) {
     { valor: String(complemento.length), rotulo: "Aguardando complementação", cor: "#B4711A" },
     { valor: String(emRisco.length), rotulo: `Em risco de prazo (${emp.prazoDias} dias)`, cor: "#8C2B22" },
     { valor: String(aprovados.length), rotulo: "Projetos aprovados", cor: "#24603A" },
-    { valor: String(execucao.length), rotulo: "Obras em execução", cor: "#3B3486" },
+    { valor: String(execucao.length), rotulo: "Obras aprovadas", cor: "#3B3486" },
   ];
 
   const quadras = emp.quadras.map((q) => {

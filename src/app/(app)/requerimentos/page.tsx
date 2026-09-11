@@ -15,7 +15,7 @@ const MENSAGEM_PADRAO: Record<string, string> = {
   RESSALVAS: "Projeto aprovado com ressalvas. Envie o alvará de execução da Prefeitura para a CAPE conferir e liberar o início da obra.",
   ALVARA_CONFERENCIA: "Alvará de execução em conferência pela CAPE.",
   REPROVADA: "Solicitação reprovada. Uma nova análise exige nova taxa.",
-  EXECUCAO: "Obra em execução.",
+  EXECUCAO: "Obra aprovada. Alvará conferido pela CAPE e início liberado.",
   CONCLUIDA: "Solicitação concluída.",
 };
 
