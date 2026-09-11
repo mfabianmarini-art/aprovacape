@@ -2,7 +2,7 @@ import type { SolicitacaoStatus, DocumentoTipo, SolicitacaoTipo, DocumentoTecnic
 
 export const STATUS_INFO: Record<SolicitacaoStatus, { label: string; bg: string; fg: string }> = {
   RASCUNHO: { label: "Rascunho", bg: "#E7E5DF", fg: "#5A6270" },
-  ENVIADA: { label: "Enviada", bg: "#DCE9F2", fg: "#12455E" },
+  ENVIADA: { label: "Em análise", bg: "#DCE9F2", fg: "#12455E" },
   ANALISE: { label: "Em análise técnica", bg: "#12455E", fg: "#FFFFFF" },
   COMPLEMENTO: { label: "Aguardando complementação", bg: "#F6E3C4", fg: "#8A5210" },
   APROVADA: { label: "Aprovada", bg: "#D8E9DA", fg: "#24603A" },

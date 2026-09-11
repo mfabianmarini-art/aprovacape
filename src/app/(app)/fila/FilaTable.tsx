@@ -10,7 +10,7 @@ type Fila = Awaited<ReturnType<typeof getFila>>;
 
 const FILTROS = [
   "Todas",
-  "Enviada",
+  "Em análise",
   "Em análise técnica",
   "Aguardando complementação",
   "Alvará em conferência",
