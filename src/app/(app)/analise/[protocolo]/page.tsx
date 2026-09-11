@@ -41,8 +41,12 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
   const devolverBloqueado = aguardandoProprietario || allDocs;
 
   const totalItens = categorias.reduce((a, c) => a + c.itens.length, 0);
-  const avaliados = sol.resultados.length;
+  // Conta decisões, não linhas: ao devolver o parecer os itens reprovados voltam a
+  // PENDENTE mas o ChecklistResultado continua existindo. Contar linhas dava o
+  // check-list por completo com itens ainda indecididos, liberando "Aprovar projeto".
+  const aprovados = sol.resultados.filter((r) => r.status === "APROVADO").length;
   const reprovados = sol.resultados.filter((r) => r.status === "REPROVADO").length;
+  const avaliados = aprovados + reprovados;
 
   let veredito: string;
   let vereditoCor: string;
@@ -52,6 +56,12 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
   let podeEmitir = false;
   if (!allDocs) {
     veredito = "Check-list bloqueado até a validação de toda a documentação.";
+    vereditoCor = "#8A5210";
+    emitirLabel = "Emitir parecer";
+    emitirBg = "#EDE9E1";
+    emitirFg = "#8B939C";
+  } else if (totalItens === 0) {
+    veredito = "Este empreendimento ainda não tem itens de check-list cadastrados. Configure o check-list antes de emitir parecer.";
     vereditoCor = "#8A5210";
     emitirLabel = "Emitir parecer";
     emitirBg = "#EDE9E1";

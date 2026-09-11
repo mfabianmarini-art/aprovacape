@@ -139,9 +139,13 @@ export async function emitirParecerAction(solicitacaoId: string) {
     include: { itens: true },
   });
   const totalItens = categorias.reduce((a, c) => a + c.itens.length, 0);
-  if (sol.resultados.length < totalItens) return;
+  if (totalItens === 0) return;
 
+  // Decididos, não linhas: um item devolvido guarda o ChecklistResultado com status
+  // PENDENTE, e contar linhas daria o check-list por concluído sem estar.
   const reprovados = sol.resultados.filter((r) => r.status === "REPROVADO");
+  const aprovados = sol.resultados.filter((r) => r.status === "APROVADO");
+  if (aprovados.length + reprovados.length < totalItens) return;
 
   if (reprovados.length > 0) {
     await prisma.$transaction([
@@ -149,9 +153,7 @@ export async function emitirParecerAction(solicitacaoId: string) {
         where: { id: solicitacaoId },
         data: { status: "COMPLEMENTO", devolvidaNoChecklist: true },
       }),
-      ...sol.resultados
-        .filter((r) => r.status === "APROVADO")
-        .map((r) => prisma.checklistResultado.update({ where: { id: r.id }, data: { travado: true } })),
+      ...aprovados.map((r) => prisma.checklistResultado.update({ where: { id: r.id }, data: { travado: true } })),
       ...reprovados.map((r) => prisma.checklistResultado.update({ where: { id: r.id }, data: { status: "PENDENTE", travado: false } })),
       prisma.historicoEvento.create({
         data: {
