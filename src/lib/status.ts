@@ -31,10 +31,10 @@ export const DOC_ORDER: DocumentoTipo[] = [
 // Formato e tamanho aceitos por documento. Projetos podem vir em DWG para a CAPE
 // conferir no CAD; ART e memorial são leitura, então só PDF.
 export const DOC_REGRAS: Record<DocumentoTipo, { extensoes: readonly string[]; maxMB: number }> = {
-  PROJETO_ARQUITETONICO: { extensoes: [".pdf", ".dwg"], maxMB: 2 },
-  ART_RRT: { extensoes: [".pdf"], maxMB: 1 },
-  MEMORIAL_DESCRITIVO: { extensoes: [".pdf"], maxMB: 2 },
-  PROJETO_ESTRUTURAL: { extensoes: [".pdf", ".dwg"], maxMB: 2 },
+  PROJETO_ARQUITETONICO: { extensoes: [".pdf", ".dwg"], maxMB: 5 },
+  ART_RRT: { extensoes: [".pdf"], maxMB: 5 },
+  MEMORIAL_DESCRITIVO: { extensoes: [".pdf"], maxMB: 5 },
+  PROJETO_ESTRUTURAL: { extensoes: [".pdf", ".dwg"], maxMB: 5 },
 };
 
 export function formatosAceitos(tipo: DocumentoTipo) {
