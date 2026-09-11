@@ -7,10 +7,12 @@ export async function getNavCounts(role: Role, userId: string): Promise<Record<S
     prisma.lote.count(),
     prisma.solicitacao.count({ where: { status: { not: "CONCLUIDA" } } }),
     prisma.user.count({ where: { vinculoStatus: "PENDENTE" } }),
+    // Rascunho é solicitação que a pessoa ainda está montando e que nem aparece em
+    // /requerimentos: contá-lo marcava o menu com pedidos que a CAPE nunca recebeu.
     prisma.solicitacao.count({
       where: {
         lote: { OR: [{ proprietarioId: userId }, { rtId: userId }] },
-        status: { not: "CONCLUIDA" },
+        status: { notIn: ["RASCUNHO", "CONCLUIDA"] },
       },
     }),
     prisma.empreendimento.count(),
