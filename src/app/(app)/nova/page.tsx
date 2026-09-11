@@ -1,12 +1,13 @@
 import { requireRole } from "@/lib/require-role";
 import { getUserDisplay } from "@/lib/user-display";
-import { getMeusLotes, getRascunho } from "@/lib/queries/nova";
+import { getMeusLotes, getMeusRascunhos, getRascunho } from "@/lib/queries/nova";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { ScreenBody } from "@/components/ScreenBody";
 import { formatBRL } from "@/lib/status";
 import { Step1Form } from "./Step1Form";
 import { Step2Uploads } from "./Step2Uploads";
 import { Step3Send } from "./Step3Send";
+import { RascunhosEmAndamento } from "./RascunhosEmAndamento";
 
 export default async function NovaPage({
   searchParams,
@@ -16,7 +17,11 @@ export default async function NovaPage({
   const session = await requireRole("PROPRIETARIO", "RESPONSAVEL_TECNICO");
   const { rascunho: rascunhoId, passo: passoParam } = await searchParams;
 
-  const [user, lotes] = await Promise.all([getUserDisplay(session.user.id, session.user.role), getMeusLotes(session.user.id)]);
+  const [user, lotes, rascunhos] = await Promise.all([
+    getUserDisplay(session.user.id, session.user.role),
+    getMeusLotes(session.user.id),
+    getMeusRascunhos(session.user.id),
+  ]);
 
   const rascunho = rascunhoId ? await getRascunho(rascunhoId) : null;
   const rascunhoValido =
@@ -37,6 +42,7 @@ export default async function NovaPage({
     <>
       <ScreenHeader crumb={emp?.nome ?? "Nova solicitação"} title="Nova solicitação de obra" {...user} />
       <ScreenBody>
+        {passo === 1 && <RascunhosEmAndamento rascunhos={rascunhos} />}
         <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 300px", gap: 20, alignItems: "start" }}>
           <section style={{ background: "#fff", border: "1px solid #DDD8CE", borderRadius: 4 }}>
             <div style={{ display: "flex", borderBottom: "1px solid #EDE9E1" }}>
