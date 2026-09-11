@@ -87,7 +87,9 @@ export async function uploadDocumentoAction(solicitacaoId: string, tipo: Documen
   await prisma.solicitacaoDocumento.upsert({
     where: { solicitacaoId_tipo: { solicitacaoId, tipo } },
     create: { solicitacaoId, tipo, ...saved, validado: false },
-    update: { ...saved, validado: false },
+    // uploadedAt não é @updatedAt: sem isto a data continuaria a do primeiro envio, e o
+    // analista não veria qual arquivo é novo nesta rodada.
+    update: { ...saved, validado: false, uploadedAt: new Date() },
   });
 
   revalidatePath("/nova");

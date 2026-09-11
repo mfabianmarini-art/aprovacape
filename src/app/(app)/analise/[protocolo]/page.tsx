@@ -115,7 +115,9 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
                       Validação documental
                     </div>
                     <div style={{ fontSize: 11.5, color: "#6B7480" }}>
-                      Conferência manual: o documento existe, está legível, assinado e pertence a este lote.
+                      {sol.reenvios > 0 || nOk > 0
+                        ? "O que você já validou permanece validado entre as rodadas — só os arquivos substituídos voltam para conferência."
+                        : "Conferência manual: o documento existe, está legível, assinado e pertence a este lote."}
                     </div>
                   </div>
                 </div>
@@ -184,9 +186,18 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
                         </span>
                       )}
                       <span style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                        <span style={{ fontSize: 13.5, fontWeight: 600 }}>{DOC_LABEL[tipo].nome}</span>
+                        <span style={{ fontSize: 13.5, fontWeight: 600 }}>
+                          {DOC_LABEL[tipo].nome}
+                          {doc && !ok && sol.reenvios > 0 && (
+                            <span
+                              style={{ marginLeft: 8, fontSize: 10.5, fontWeight: 600, letterSpacing: ".06em", textTransform: "uppercase", color: "#8A5210", background: "#F6E3C4", borderRadius: 3, padding: "2px 6px" }}
+                            >
+                              reanalisar
+                            </span>
+                          )}
+                        </span>
                         <span style={{ fontSize: 11.5, color: "#6B7480", fontFamily: "var(--font-mono)" }}>
-                          {doc ? doc.nomeArquivo : "Ainda não enviado"}
+                          {doc ? `${doc.nomeArquivo} · enviado em ${formatDateTime(doc.uploadedAt)}` : "Ainda não enviado"}
                         </span>
                       </span>
                       <span style={{ display: "flex", gap: 8, justifyContent: "flex-end", alignItems: "center" }}>

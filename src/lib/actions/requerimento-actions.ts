@@ -23,24 +23,33 @@ export async function reenviarComplementacaoAction(solicitacaoId: string) {
   const conta = sol.devolvidaNoChecklist;
   const reenvios = conta ? sol.reenvios + 1 : sol.reenvios;
 
+  // Os documentos substituídos já ficaram como não validados no próprio upload, e os
+  // demais seguem com a validação que o analista deu. Invalidar todo mundo aqui obrigava
+  // a CAPE a reconferir arquivos intactos a cada rodada.
+  const documentos = await prisma.solicitacaoDocumento.findMany({ where: { solicitacaoId: sol.id } });
+  const todosValidados = documentos.length > 0 && documentos.every((d) => d.validado);
+
   await prisma.$transaction([
     prisma.solicitacao.update({
       where: { id: sol.id },
       data: {
         status: "ENVIADA",
-        documentacaoValidada: false,
+        documentacaoValidada: todosValidados,
         devolvidaNoChecklist: false,
         reenvios,
         pago: conta && reenvios > emp.reenviosSemTaxa ? false : sol.pago,
       },
     }),
-    prisma.solicitacaoDocumento.updateMany({ where: { solicitacaoId: sol.id }, data: { validado: false } }),
     prisma.historicoEvento.create({
       data: {
         solicitacaoId: sol.id,
-        texto: conta
-          ? `Reenvio ${reenvios} de ${emp.reenviosSemTaxa} recebido. Aguardando nova validação documental.`
-          : "Documentação complementada recebida. Aguardando nova validação documental.",
+        texto: (() => {
+          const trocados = documentos.filter((d) => !d.validado).length;
+          const oQue = trocados === 0 ? "sem troca de arquivos" : `${trocados} documento(s) a reanalisar`;
+          return conta
+            ? `Reenvio ${reenvios} de ${emp.reenviosSemTaxa} recebido — ${oQue}.`
+            : `Documentação complementada recebida — ${oQue}.`;
+        })(),
         cor: "#8FB0BF",
         autorId: session.user.id,
       },
