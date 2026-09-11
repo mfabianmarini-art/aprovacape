@@ -73,6 +73,11 @@ model User {
   phone         String
   passwordHash  String
   role          Role
+
+  // Freio de força bruta: 5 falhas consecutivas bloqueiam o login por 15 minutos.
+  tentativasLogin Int       @default(0)
+  bloqueadoAte    DateTime?
+
   // Habilitação profissional (RT e equipe técnica da CAPE): conselho, número e UF emissora.
   conselho       Conselho?
   registroNumero String?

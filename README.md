@@ -42,6 +42,8 @@ Senha para todas: **`cape2026!`**
 
 O seed cadastra dois empreendimentos (Quinta da Primavera e Alto da Serra) para demonstrar o uso multi-cliente.
 
+**Bloqueio por tentativas**: 5 falhas consecutivas de senha bloqueiam o login daquela conta por 15 minutos (`tentativasLogin`/`bloqueadoAte` em `User`, aplicado no `authorize` de `src/lib/auth.ts`). O contador zera a cada login bem-sucedido e o bloqueio expira sozinho — como não há provedor de e-mail para recuperação de conta, um bloqueio permanente trancaria a pessoa para fora.
+
 Login por e-mail **ou** CPF. Novas contas de proprietário/RT são criadas por auto-cadastro em `/login`; contas de analista CAPE e admin CAPE são criadas na tela **Equipe CAPE** por um analista já logado; o síndico é criado dentro do empreendimento que ele vai gerir (tela **Empreendimentos**), porque é esse vínculo que define o que ele enxerga.
 
 ## Telas

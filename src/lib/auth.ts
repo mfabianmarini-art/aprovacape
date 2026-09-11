@@ -9,6 +9,9 @@ const credentialsSchema = z.object({
   password: z.string().min(1),
 });
 
+const MAX_TENTATIVAS_LOGIN = 5;
+const BLOQUEIO_LOGIN_MS = 15 * 60 * 1000;
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   session: { strategy: "jwt" },
   pages: { signIn: "/login" },
@@ -32,8 +35,25 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         });
         if (!user) return null;
 
+        // Bloqueio vigente: nem chega a conferir a senha.
+        if (user.bloqueadoAte && user.bloqueadoAte > new Date()) return null;
+
         const valid = await bcrypt.compare(password, user.passwordHash);
-        if (!valid) return null;
+        if (!valid) {
+          const tentativas = user.tentativasLogin + 1;
+          await prisma.user.update({
+            where: { id: user.id },
+            data:
+              tentativas >= MAX_TENTATIVAS_LOGIN
+                ? { tentativasLogin: 0, bloqueadoAte: new Date(Date.now() + BLOQUEIO_LOGIN_MS) }
+                : { tentativasLogin: tentativas },
+          });
+          return null;
+        }
+
+        if (user.tentativasLogin > 0 || user.bloqueadoAte) {
+          await prisma.user.update({ where: { id: user.id }, data: { tentativasLogin: 0, bloqueadoAte: null } });
+        }
 
         return { id: user.id, name: user.name, email: user.email, role: user.role };
       },

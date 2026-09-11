@@ -29,6 +29,13 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
     await signIn("credentials", { identifier, password, redirect: false });
   } catch (error) {
     if (error instanceof AuthError) {
+      // O authorize() recusa sem dizer por quê; sem isto, uma conta bloqueada receberia
+      // "senha inválida" e a pessoa seguiria tentando contra o bloqueio.
+      const user = await prisma.user.findFirst({ where: { OR: [{ email: identifier }, { cpf: identifier }] } });
+      if (user?.bloqueadoAte && user.bloqueadoAte > new Date()) {
+        const minutos = Math.max(1, Math.ceil((user.bloqueadoAte.getTime() - Date.now()) / 60000));
+        return { error: `Muitas tentativas seguidas. Acesso bloqueado por mais ${minutos} minuto(s) por segurança.` };
+      }
       return { error: "E-mail/CPF ou senha inválidos." };
     }
     throw error;
