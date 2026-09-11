@@ -15,8 +15,23 @@ export async function listEmpreendimentosAcessiveis(userId: string, role: Role):
     });
   }
   if (role === "PROPRIETARIO" || role === "RESPONSAVEL_TECNICO") {
+    // O lote só é atribuído quando a CAPE aprova o vínculo, mas quem está aguardando
+    // análise já precisa do empreendimento para consultar os documentos técnicos — é
+    // com eles que o projeto é elaborado. Vínculo recusado não entra: a recusa só troca
+    // o status, o vinculoLoteId continua apontando para o lote.
+    const pendente = await prisma.user.findFirst({
+      where: { id: userId, vinculoStatus: "PENDENTE" },
+      select: { vinculoLote: { select: { empreendimentoId: true } } },
+    });
+    const empPendenteId = pendente?.vinculoLote?.empreendimentoId;
+
     return prisma.empreendimento.findMany({
-      where: { lotes: { some: { OR: [{ proprietarioId: userId }, { rtId: userId }] } } },
+      where: {
+        OR: [
+          { lotes: { some: { OR: [{ proprietarioId: userId }, { rtId: userId }] } } },
+          ...(empPendenteId ? [{ id: empPendenteId }] : []),
+        ],
+      },
       orderBy: { nome: "asc" },
       select: { id: true, nome: true },
     });

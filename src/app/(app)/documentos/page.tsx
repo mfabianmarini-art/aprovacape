@@ -23,7 +23,7 @@ export default async function DocumentosPage({ searchParams }: { searchParams: P
         <ScreenBody>
           <div style={{ fontSize: 13.5, color: "#6B7480" }}>
             {session.user.role === "PROPRIETARIO" || session.user.role === "RESPONSAVEL_TECNICO"
-              ? "Nenhum lote vinculado à sua conta ainda — assim que a CAPE confirmar seu vínculo, os documentos do empreendimento aparecem aqui."
+              ? "Nenhum lote informado na sua conta ainda — escolha o empreendimento, a quadra e o lote no cadastro para consultar os documentos do empreendimento."
               : "Nenhum empreendimento cadastrado ainda."}
           </div>
         </ScreenBody>

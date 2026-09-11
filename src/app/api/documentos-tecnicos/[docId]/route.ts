@@ -21,7 +21,13 @@ export async function GET(_req: Request, { params }: { params: Promise<{ docId: 
     const lote = await prisma.lote.findFirst({
       where: {
         empreendimentoId: doc.empreendimentoId,
-        OR: [{ proprietarioId: session.user.id }, { rtId: session.user.id }],
+        OR: [
+          { proprietarioId: session.user.id },
+          { rtId: session.user.id },
+          // Vínculo ainda em análise conta: os documentos técnicos são a referência
+          // para elaborar o projeto, e esperar a aprovação só atrasaria isso.
+          { vinculosPendentes: { some: { id: session.user.id, vinculoStatus: "PENDENTE" } } },
+        ],
       },
     });
     podeVer = !!lote;
