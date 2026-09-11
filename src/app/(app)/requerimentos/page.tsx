@@ -24,6 +24,11 @@ export default async function RequerimentosPage() {
     getMeusRequerimentos(session.user.id),
   ]);
 
+  // Prazos e limite são por empreendimento: só dá para citar números nesta nota geral
+  // quando todos os requerimentos da pessoa são do mesmo.
+  const empreendimentos = new Set(pedidos.map((s) => s.lote.empreendimentoId));
+  const regras = empreendimentos.size === 1 ? pedidos[0].lote.empreendimento : null;
+
   return (
     <>
       <ScreenHeader crumb="Meus lotes" title="Requerimentos" {...user} />
@@ -89,7 +94,12 @@ export default async function RequerimentosPage() {
                     <span style={{ display: "inline-block", padding: "4px 9px", borderRadius: 3, fontSize: 11.5, fontWeight: 600, background: info.bg, color: info.fg }}>
                       {info.label}
                     </span>
-                    <span style={{ fontSize: 11.5, color: "#6B7480" }}>reenvios {s.reenvios} / 3</span>
+                    <span
+                      style={{ fontSize: 11.5, color: "#6B7480" }}
+                      title="Só os reenvios da etapa de análise técnica (check-list) são contados."
+                    >
+                      reenvios na análise técnica {s.reenvios} / {s.lote.empreendimento.reenviosSemTaxa}
+                    </span>
                   </div>
                   <div style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 600, lineHeight: 1.1 }}>
                     {s.lote.quadra.nome} L{s.lote.numero} — {s.descricao.length > 60 ? s.descricao.slice(0, 60) + "…" : s.descricao}
@@ -164,7 +174,17 @@ export default async function RequerimentosPage() {
             );
           })}
           <div style={{ background: "#FDF8EE", border: "1px solid #E8D7B4", borderRadius: 4, padding: "15px 18px", fontSize: 12.5, color: "#6B4A11", lineHeight: 1.5, maxWidth: "92ch" }}>
-            Cada reenvio de documentação é reanalisado em até 10 dias corridos. São permitidos 3 reenvios por solicitação; a partir do 4º é necessária nova taxa de análise. O prazo para envio da documentação corrigida é de 6 meses, após o qual a solicitação é encerrada.
+            <strong>Só contam como reenvio as devoluções da etapa de análise técnica (check-list).</strong> Quando a
+            devolução é da validação documental — arquivo ilegível, faltando ou trocado —, corrigir e reenviar não
+            consome nenhuma das suas reanálises.
+            {regras && (
+              <>
+                {" "}
+                Cada reenvio é reanalisado em até {regras.prazoDias} dias corridos. São permitidos {regras.reenviosSemTaxa}{" "}
+                reenvios por solicitação; a partir daí é necessária nova taxa de análise. O prazo para enviar a
+                documentação corrigida é de {regras.prazoComplementoDias} dias, após o qual a solicitação é encerrada.
+              </>
+            )}
           </div>
         </div>
       </ScreenBody>

@@ -5,7 +5,7 @@ export async function getMeusRequerimentos(userId: string) {
     where: { lote: { OR: [{ proprietarioId: userId }, { rtId: userId }] }, status: { not: "RASCUNHO" } },
     orderBy: { createdAt: "desc" },
     include: {
-      lote: { include: { quadra: true } },
+      lote: { include: { quadra: true, empreendimento: true } },
       historico: { orderBy: { createdAt: "desc" }, take: 1 },
       // Todos os documentos: os com `observacao` viram a lista de pendências, e em
       // COMPLEMENTO a pessoa precisa da lista inteira para poder substituir qualquer um.
