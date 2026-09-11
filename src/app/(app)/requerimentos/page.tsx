@@ -5,6 +5,7 @@ import { ScreenHeader } from "@/components/ScreenHeader";
 import { ScreenBody } from "@/components/ScreenBody";
 import { STATUS_INFO, DOC_LABEL, formatDate } from "@/lib/status";
 import { reenviarComplementacaoAction, enviarAlvaraAction } from "@/lib/actions/requerimento-actions";
+import { SubstituirDocumentos } from "./SubstituirDocumentos";
 
 const MENSAGEM_PADRAO: Record<string, string> = {
   ENVIADA: "Aguardando validação documental pela CAPE.",
@@ -35,11 +36,13 @@ export default async function RequerimentosPage() {
             const info = STATUS_INFO[s.status];
             const mensagem = s.status === "COMPLEMENTO" || s.status === "REPROVADA" ? s.historico[0]?.texto ?? MENSAGEM_PADRAO[s.status] : MENSAGEM_PADRAO[s.status];
             const pendencias = [
-              ...s.documentos.map((d) => ({
-                titulo: DOC_LABEL[d.tipo].nome,
-                referencia: null as string | null,
-                texto: d.observacao!,
-              })),
+              ...s.documentos
+                .filter((d) => d.observacao)
+                .map((d) => ({
+                  titulo: DOC_LABEL[d.tipo].nome,
+                  referencia: null as string | null,
+                  texto: d.observacao!,
+                })),
               ...s.resultados.map((r) => ({
                 titulo: r.item.texto,
                 referencia: r.item.referencia,
@@ -92,7 +95,10 @@ export default async function RequerimentosPage() {
                     {s.lote.quadra.nome} L{s.lote.numero} — {s.descricao.length > 60 ? s.descricao.slice(0, 60) + "…" : s.descricao}
                   </div>
                   <div style={{ fontSize: 13, color: "#4A5563", lineHeight: 1.5, maxWidth: "66ch" }}>{mensagem}</div>
-                  {pendencias.length > 0 && (
+                  {/* Só enquanto a bola está com o proprietário: depois do reenvio a
+                      solicitação volta à CAPE, e as notas do ciclo anterior deixariam
+                      a impressão de que ainda há algo a corrigir. */}
+                  {pendencias.length > 0 && (s.status === "COMPLEMENTO" || s.status === "REPROVADA") && (
                     <div style={{ background: "#FDF8EE", border: "1px solid #E8D7B4", borderRadius: 4, padding: "14px 16px", display: "flex", flexDirection: "column", gap: 11 }}>
                       <div style={{ fontSize: 11, letterSpacing: ".13em", textTransform: "uppercase", color: "#8A5210" }}>
                         O que a CAPE apontou
@@ -109,6 +115,9 @@ export default async function RequerimentosPage() {
                         </div>
                       ))}
                     </div>
+                  )}
+                  {s.status === "COMPLEMENTO" && (
+                    <SubstituirDocumentos solicitacaoId={s.id} documentos={s.documentos} />
                   )}
                   <div style={{ display: "flex", gap: 9, flexWrap: "wrap" }}>
                     {s.status === "COMPLEMENTO" && (

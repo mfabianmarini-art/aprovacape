@@ -62,7 +62,11 @@ export async function uploadDocumentoAction(solicitacaoId: string, tipo: Documen
   if (sol.lote.proprietarioId !== session.user.id && sol.lote.rtId !== session.user.id) {
     return { error: "Solicitação não pertence a este usuário." };
   }
-  if (sol.status !== "RASCUNHO") return { error: "Esta solicitação já foi enviada." };
+  // COMPLEMENTO também aceita: é exatamente o momento de trocar o que foi apontado,
+  // antes de reenviar para análise.
+  if (sol.status !== "RASCUNHO" && sol.status !== "COMPLEMENTO") {
+    return { error: "Esta solicitação está em análise e não aceita novos arquivos." };
+  }
 
   const file = formData.get("arquivo");
   if (!(file instanceof File) || file.size === 0) return { error: "Selecione um arquivo." };
@@ -78,6 +82,7 @@ export async function uploadDocumentoAction(solicitacaoId: string, tipo: Documen
   });
 
   revalidatePath("/nova");
+  revalidatePath("/requerimentos");
   return { error: undefined };
 }
 

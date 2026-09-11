@@ -7,8 +7,9 @@ export async function getMeusRequerimentos(userId: string) {
     include: {
       lote: { include: { quadra: true } },
       historico: { orderBy: { createdAt: "desc" }, take: 1 },
-      // Pendências descritas pelo analista: é o que diz ao proprietário/RT o que corrigir.
-      documentos: { where: { observacao: { not: null } }, select: { tipo: true, observacao: true } },
+      // Todos os documentos: os com `observacao` viram a lista de pendências, e em
+      // COMPLEMENTO a pessoa precisa da lista inteira para poder substituir qualquer um.
+      documentos: { select: { id: true, tipo: true, nomeArquivo: true, observacao: true } },
       resultados: {
         where: { observacao: { not: null } },
         select: { observacao: true, item: { select: { texto: true, referencia: true } } },
