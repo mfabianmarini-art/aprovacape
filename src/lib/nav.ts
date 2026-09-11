@@ -15,6 +15,19 @@ export const SCREENS: Array<{ id: ScreenId; label: string; path: string; roles: 
   { id: "resumo", label: "Resumo do loteamento", path: "/resumo", roles: ["ADMIN_CAPE", "CAPE_ANALISTA", "SINDICO"] },
   { id: "fila", label: "Fila de análise", path: "/fila", roles: ["ADMIN_CAPE", "CAPE_ANALISTA"] },
   { id: "vinculos", label: "Vínculos a validar", path: "/vinculos", roles: ["ADMIN_CAPE", "CAPE_ANALISTA"] },
+  // Admin/Analista CAPE cadastram e consultam os documentos dentro de Empreendimentos,
+  // então para eles esta aba seria redundante.
+  //
+  // Posição: vem antes de "requerimentos"/"nova" para abrir o menu de proprietário e RT
+  // — é a referência que eles consultam antes de elaborar o projeto, e homeForRole usa o
+  // primeiro item da lista filtrada, então também vira a tela de entrada deles. Fica
+  // depois de "resumo" para não mudar a home do síndico, que também enxerga esta aba.
+  {
+    id: "documentos",
+    label: "Documentos técnicos",
+    path: "/documentos",
+    roles: ["SINDICO", "PROPRIETARIO", "RESPONSAVEL_TECNICO"],
+  },
   { id: "requerimentos", label: "Meus requerimentos", path: "/requerimentos", roles: ["PROPRIETARIO", "RESPONSAVEL_TECNICO"] },
   { id: "nova", label: "Nova solicitação", path: "/nova", roles: ["PROPRIETARIO", "RESPONSAVEL_TECNICO"] },
   { id: "empreendimentos", label: "Empreendimentos", path: "/empreendimentos", roles: ["ADMIN_CAPE", "CAPE_ANALISTA"] },
@@ -22,16 +35,6 @@ export const SCREENS: Array<{ id: ScreenId; label: string; path: string; roles: 
   // Só a equipe CAPE, que atende todos os empreendimentos. Síndico, proprietário e RT
   // pertencem a um empreendimento e são geridos dentro dele, na tela Empreendimentos.
   { id: "usuarios", label: "Equipe CAPE", path: "/usuarios", roles: ["ADMIN_CAPE", "CAPE_ANALISTA"] },
-  // Só para quem apenas consulta a biblioteca: Admin/Analista CAPE cadastram e
-  // veem os documentos dentro de Empreendimentos, então a aba seria redundante.
-  // Fica por último em SCREENS de propósito: não deve virar a home de nenhum papel
-  // (homeForRole usa o primeiro item da lista filtrada por papel).
-  {
-    id: "documentos",
-    label: "Documentos técnicos",
-    path: "/documentos",
-    roles: ["SINDICO", "PROPRIETARIO", "RESPONSAVEL_TECNICO"],
-  },
 ];
 
 export function screensForRole(role: Role) {
