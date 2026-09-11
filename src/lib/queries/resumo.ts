@@ -23,7 +23,10 @@ export async function getResumoData(empreendimentoId: string) {
           solicitacoes: {
             orderBy: { createdAt: "desc" },
             include: {
-              historico: { orderBy: { createdAt: "desc" } },
+              historico: {
+                orderBy: { createdAt: "desc" },
+                include: { autor: { select: { name: true, role: true } } },
+              },
               // Campos rasos: o resumo carrega todos os lotes de uma vez, então cada
               // relação aninhada aqui se multiplica pelo loteamento inteiro.
               criadoPor: { select: { name: true, role: true } },

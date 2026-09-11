@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { formatDate, STATUS_INFO, TIPO_LABEL, DOC_LABEL } from "@/lib/status";
+import { formatDate, formatDateTime, STATUS_INFO, TIPO_LABEL, DOC_LABEL } from "@/lib/status";
+import { ROLE_LABEL } from "@/lib/nav";
 import type { getResumoData } from "@/lib/queries/resumo";
 
 type Data = NonNullable<Awaited<ReturnType<typeof getResumoData>>>;
@@ -365,8 +366,16 @@ export function ResumoMapa({ data, podeAnalisar }: { data: Data; podeAnalisar: b
                                 {i < s.historico.length - 1 && <span style={{ flex: 1, width: 1, background: "#E4DFD5" }} />}
                               </div>
                               <div style={{ display: "flex", flexDirection: "column", gap: 2, paddingBottom: 11 }}>
-                                <span style={{ fontSize: 11, color: "#6B7480", fontFamily: "var(--font-mono)" }}>
-                                  {formatDate(h.createdAt)}
+                                <span style={{ display: "flex", alignItems: "baseline", gap: 7, flexWrap: "wrap" }}>
+                                  <span style={{ fontSize: 11, color: "#6B7480", fontFamily: "var(--font-mono)" }}>
+                                    {formatDateTime(h.createdAt)}
+                                  </span>
+                                  {h.autor && (
+                                    <span style={{ fontSize: 11, color: "#4A5563" }}>
+                                      {h.autor.name}
+                                      <span style={{ color: "#8B939C" }}> · {ROLE_LABEL[h.autor.role]}</span>
+                                    </span>
+                                  )}
                                 </span>
                                 <div style={{ fontSize: 12.5, lineHeight: 1.45, color: "#3B4653" }}>{h.texto}</div>
                               </div>
