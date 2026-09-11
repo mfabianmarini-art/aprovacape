@@ -2,10 +2,29 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { formatDate, STATUS_INFO, TIPO_LABEL } from "@/lib/status";
+import { formatDate, STATUS_INFO, TIPO_LABEL, DOC_LABEL } from "@/lib/status";
 import type { getResumoData } from "@/lib/queries/resumo";
 
 type Data = NonNullable<Awaited<ReturnType<typeof getResumoData>>>;
+
+function Bloco({ titulo, children }: { titulo: string; children: React.ReactNode }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+      <div style={{ fontSize: 10, letterSpacing: ".13em", textTransform: "uppercase", color: "#6B7480" }}>{titulo}</div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px 12px" }}>{children}</div>
+    </div>
+  );
+}
+
+// `bloco` ocupa a largura toda: serve para textos longos, como a descrição da obra.
+function Campo({ k, v, bloco }: { k: string; v: string; bloco?: boolean }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 1, gridColumn: bloco ? "1 / -1" : undefined }}>
+      <span style={{ fontSize: 9.5, letterSpacing: ".1em", textTransform: "uppercase", color: "#8B939C" }}>{k}</span>
+      <span style={{ fontSize: 12, lineHeight: 1.4, color: "#3B4653" }}>{v}</span>
+    </div>
+  );
+}
 
 export function ResumoMapa({ data, podeAnalisar }: { data: Data; podeAnalisar: boolean }) {
   const [loteSel, setLoteSel] = useState<string | null>(null);
@@ -276,6 +295,64 @@ export function ResumoMapa({ data, podeAnalisar }: { data: Data; podeAnalisar: b
 
                       {aberto && (
                         <div style={{ padding: "12px 13px 4px", borderTop: "1px solid #EDE9E1", background: "#FBFAF7" }}>
+                          <div style={{ display: "flex", flexDirection: "column", gap: 9, paddingBottom: 13 }}>
+                            <Bloco titulo="Obra">
+                              <Campo k="Tipo" v={TIPO_LABEL[s.tipo]} />
+                              <Campo k="Área construída" v={`${s.areaConstruida.toLocaleString("pt-BR")} m²`} />
+                              <Campo k="Área do lote" v={lote.areaM2 != null ? `${lote.areaM2.toLocaleString("pt-BR")} m²` : "—"} />
+                              <Campo k="Endereço" v={lote.rua ?? "—"} />
+                            </Bloco>
+
+                            <Campo k="Descrição" v={s.descricao} bloco />
+
+                            <Bloco titulo="Responsável técnico">
+                              <Campo k="Nome" v={s.responsavelTecnicoNome || "—"} />
+                              <Campo k="Registro" v={s.responsavelTecnicoRegistro || "—"} />
+                              <Campo k="E-mail" v={s.responsavelTecnicoEmail || "—"} />
+                              <Campo k="RT do lote" v={lote.rt?.name ?? "—"} />
+                            </Bloco>
+
+                            <Bloco titulo="Protocolo">
+                              <Campo k="Aberta por" v={s.criadoPor?.name ?? "—"} />
+                              <Campo k="Abertura" v={formatDate(s.createdAt)} />
+                              <Campo k="Prazo de análise" v={`${s.prazoDias} dias`} />
+                              {/* Pagamento é assunto entre CAPE e proprietário; o síndico
+                                  acompanha o andamento, não a cobrança. */}
+                              {podeAnalisar && <Campo k="Taxa" v={s.pago ? "paga" : "não paga"} />}
+                              <Campo k="Reenvios" v={String(s.reenvios)} />
+                              <Campo k="Proprietário" v={lote.proprietario?.name ?? "—"} />
+                            </Bloco>
+
+                            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                              <div style={{ fontSize: 10, letterSpacing: ".13em", textTransform: "uppercase", color: "#6B7480" }}>
+                                Documentos anexados
+                              </div>
+                              {s.documentos.length === 0 ? (
+                                <div style={{ fontSize: 12, color: "#6B7480" }}>Nenhum documento anexado.</div>
+                              ) : (
+                                s.documentos.map((d) => (
+                                  <div key={d.id} style={{ display: "flex", alignItems: "baseline", gap: 7, flexWrap: "wrap" }}>
+                                    <span style={{ fontSize: 11.5, fontWeight: 600 }}>{DOC_LABEL[d.tipo].nome}</span>
+                                    <a
+                                      href={`/api/files/${d.id}`}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      style={{ fontSize: 11.5, color: "#12455E", fontFamily: "var(--font-mono)", wordBreak: "break-all" }}
+                                    >
+                                      {d.nomeArquivo}
+                                    </a>
+                                    <span style={{ fontSize: 10.5, fontFamily: "var(--font-mono)", color: d.validado ? "#24603A" : "#8A5210" }}>
+                                      {d.validado ? "validado" : "a validar"}
+                                    </span>
+                                  </div>
+                                ))
+                              )}
+                            </div>
+
+                            <div style={{ fontSize: 10, letterSpacing: ".13em", textTransform: "uppercase", color: "#6B7480", paddingTop: 4 }}>
+                              Histórico
+                            </div>
+                          </div>
                           {s.historico.length === 0 && (
                             <div style={{ fontSize: 12, color: "#6B7480", paddingBottom: 10 }}>
                               Sem movimentações registradas neste protocolo.

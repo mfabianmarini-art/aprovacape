@@ -22,7 +22,13 @@ export async function getResumoData(empreendimentoId: string) {
           rt: true,
           solicitacoes: {
             orderBy: { createdAt: "desc" },
-            include: { historico: { orderBy: { createdAt: "desc" } } },
+            include: {
+              historico: { orderBy: { createdAt: "desc" } },
+              // Campos rasos: o resumo carrega todos os lotes de uma vez, então cada
+              // relação aninhada aqui se multiplica pelo loteamento inteiro.
+              criadoPor: { select: { name: true, role: true } },
+              documentos: { select: { id: true, tipo: true, nomeArquivo: true, validado: true } },
+            },
           },
         },
       },
