@@ -3,6 +3,7 @@ import type { Role } from "@/generated/prisma/enums";
 export type ScreenId =
   | "resumo"
   | "fila"
+  | "obras"
   | "vinculos"
   | "requerimentos"
   | "nova"
@@ -23,6 +24,9 @@ export const SCREENS: Array<{
 }> = [
   { id: "resumo", label: "Resumo do loteamento", path: "/resumo", roles: ["ADMIN_CAPE", "CAPE_ANALISTA", "SINDICO"] },
   { id: "fila", label: "Fila de análise", path: "/fila", roles: ["ADMIN_CAPE", "CAPE_ANALISTA"] },
+  // Obra liberada sai da fila: não há mais nada a analisar nela, o que existe é
+  // acompanhamento de execução (irregularidades e conclusão).
+  { id: "obras", label: "Obras em andamento", path: "/obras", roles: ["ADMIN_CAPE", "CAPE_ANALISTA"] },
   { id: "vinculos", label: "Vínculos a validar", path: "/vinculos", roles: ["ADMIN_CAPE", "CAPE_ANALISTA"] },
   { id: "relatorios", label: "Relatório", path: "/relatorios", roles: ["ADMIN_CAPE", "CAPE_ANALISTA", "SINDICO"] },
   // Admin/Analista CAPE cadastram e consultam os documentos dentro de Empreendimentos,
