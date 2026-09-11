@@ -3,7 +3,7 @@ import { getUserDisplay } from "@/lib/user-display";
 import { getMeusRequerimentos } from "@/lib/queries/requerimentos";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { ScreenBody } from "@/components/ScreenBody";
-import { STATUS_INFO, formatDate } from "@/lib/status";
+import { STATUS_INFO, DOC_LABEL, formatDate } from "@/lib/status";
 import { reenviarComplementacaoAction, enviarAlvaraAction } from "@/lib/actions/requerimento-actions";
 
 const MENSAGEM_PADRAO: Record<string, string> = {
@@ -34,6 +34,18 @@ export default async function RequerimentosPage() {
           {pedidos.map((s) => {
             const info = STATUS_INFO[s.status];
             const mensagem = s.status === "COMPLEMENTO" || s.status === "REPROVADA" ? s.historico[0]?.texto ?? MENSAGEM_PADRAO[s.status] : MENSAGEM_PADRAO[s.status];
+            const pendencias = [
+              ...s.documentos.map((d) => ({
+                titulo: DOC_LABEL[d.tipo].nome,
+                referencia: null as string | null,
+                texto: d.observacao!,
+              })),
+              ...s.resultados.map((r) => ({
+                titulo: r.item.texto,
+                referencia: r.item.referencia,
+                texto: r.observacao!,
+              })),
+            ];
             const etapas = [
               { titulo: "Solicitação enviada", data: formatDate(s.createdAt), cor: "#24603A" },
               {
@@ -80,6 +92,24 @@ export default async function RequerimentosPage() {
                     {s.lote.quadra.nome} L{s.lote.numero} — {s.descricao.length > 60 ? s.descricao.slice(0, 60) + "…" : s.descricao}
                   </div>
                   <div style={{ fontSize: 13, color: "#4A5563", lineHeight: 1.5, maxWidth: "66ch" }}>{mensagem}</div>
+                  {pendencias.length > 0 && (
+                    <div style={{ background: "#FDF8EE", border: "1px solid #E8D7B4", borderRadius: 4, padding: "14px 16px", display: "flex", flexDirection: "column", gap: 11 }}>
+                      <div style={{ fontSize: 11, letterSpacing: ".13em", textTransform: "uppercase", color: "#8A5210" }}>
+                        O que a CAPE apontou
+                      </div>
+                      {pendencias.map((p, i) => (
+                        <div key={i} style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                          <div style={{ fontSize: 12.5, fontWeight: 600, color: "#6B4A11" }}>
+                            {p.titulo}
+                            {p.referencia && (
+                              <span style={{ fontWeight: 400, color: "#8A5210" }}> · {p.referencia}</span>
+                            )}
+                          </div>
+                          <div style={{ fontSize: 12.5, color: "#3B4653", lineHeight: 1.5, whiteSpace: "pre-line" }}>{p.texto}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                   <div style={{ display: "flex", gap: 9, flexWrap: "wrap" }}>
                     {s.status === "COMPLEMENTO" && (
                       <form action={reenviarComplementacaoAction.bind(null, s.id)}>

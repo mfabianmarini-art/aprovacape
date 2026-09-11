@@ -11,7 +11,10 @@ import {
   decidirItemAction,
   emitirParecerAction,
   togglePagoAction,
+  salvarObservacaoDocumentoAction,
+  salvarObservacaoItemAction,
 } from "@/lib/actions/analise-actions";
+import { ObservacaoField } from "@/components/ObservacaoField";
 
 const EDITAVEL = new Set(["ENVIADA", "ANALISE", "COMPLEMENTO"]);
 
@@ -130,6 +133,7 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
                         gridTemplateColumns: "26px 1fr 132px",
                         alignItems: "center",
                         gap: 12,
+                        rowGap: 10,
                         padding: "13px 18px",
                         borderBottom: "1px solid #F1EEE7",
                         background: ok ? "#FBFCFA" : "#FFFFFF",
@@ -192,6 +196,21 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
                           {doc ? (ok ? "validado" : "validar") : "pendente"}
                         </span>
                       </span>
+                      {doc && !ok && (
+                        <div style={{ gridColumn: "2 / -1" }}>
+                          {podeEditar ? (
+                            <ObservacaoField
+                              defaultValue={doc.observacao ?? ""}
+                              placeholder="O que impede a validação deste documento? Ex.: prancha sem assinatura do RT."
+                              onSave={salvarObservacaoDocumentoAction.bind(null, sol.id, tipo)}
+                            />
+                          ) : (
+                            doc.observacao && (
+                              <div style={{ fontSize: 12.5, color: "#6B4A11", lineHeight: 1.45 }}>{doc.observacao}</div>
+                            )
+                          )}
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -274,6 +293,7 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
                             gridTemplateColumns: "1fr 186px",
                             alignItems: "center",
                             gap: 14,
+                            rowGap: 10,
                             padding: "12px 18px",
                             borderTop: "1px solid #F5F2EC",
                             background: travado ? "#FBFAF7" : est === "REPROVADO" ? "#FDF6F5" : "#FFFFFF",
@@ -323,6 +343,21 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
                               </button>
                             </form>
                           </div>
+                          {est === "REPROVADO" && (
+                            <div style={{ gridColumn: "1 / -1" }}>
+                              {ativo ? (
+                                <ObservacaoField
+                                  defaultValue={resultado?.observacao ?? ""}
+                                  placeholder="O que não atendeu a norma e o que precisa ser corrigido para este item."
+                                  onSave={salvarObservacaoItemAction.bind(null, sol.id, item.id)}
+                                />
+                              ) : (
+                                resultado?.observacao && (
+                                  <div style={{ fontSize: 12.5, color: "#6B4A11", lineHeight: 1.45 }}>{resultado.observacao}</div>
+                                )
+                              )}
+                            </div>
+                          )}
                         </div>
                       );
                     })}

@@ -224,6 +224,9 @@ model SolicitacaoDocumento {
   caminhoArquivo String
   tamanhoBytes   Int
   validado       Boolean       @default(false)
+  // O que impede a validação deste documento, escrito pelo analista e lido pelo
+  // proprietário/RT em /requerimentos quando a solicitação volta para complementação.
+  observacao     String?
   uploadedAt     DateTime      @default(now())
 
   @@unique([solicitacaoId, tipo])
@@ -237,6 +240,9 @@ model ChecklistResultado {
   item          ChecklistItem       @relation(fields: [itemId], references: [id])
   status        ChecklistItemStatus @default(PENDENTE)
   travado       Boolean             @default(false)
+  // O que não atendeu a norma neste item. Sobrevive à devolução: o item volta a
+  // PENDENTE para o próximo ciclo, mas o motivo continua à vista de quem vai corrigir.
+  observacao    String?
   avaliadoEm    DateTime?
 
   @@unique([solicitacaoId, itemId])

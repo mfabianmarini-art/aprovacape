@@ -26,12 +26,53 @@ export async function toggleDocumentoAction(solicitacaoId: string, tipo: Documen
   const doc = sol.documentos.find((d) => d.tipo === tipo);
   if (!doc) return;
 
-  await prisma.solicitacaoDocumento.update({ where: { id: doc.id }, data: { validado: !doc.validado } });
+  const validado = !doc.validado;
+  await prisma.solicitacaoDocumento.update({
+    where: { id: doc.id },
+    // Validou: a pendência descrita deixou de existir, some com ela.
+    data: { validado, observacao: validado ? null : doc.observacao },
+  });
 
   const updated = await prisma.solicitacaoDocumento.findMany({ where: { solicitacaoId } });
   const allValidados = DOC_ORDER.every((t) => updated.find((d) => d.tipo === t)?.validado);
   await prisma.solicitacao.update({ where: { id: solicitacaoId }, data: { documentacaoValidada: allValidados } });
 
+  revalidateAll(sol.protocolo);
+}
+
+const MAX_OBSERVACAO = 1000;
+
+function normalizarObservacao(texto: string) {
+  const limpo = texto.trim().slice(0, MAX_OBSERVACAO);
+  return limpo.length > 0 ? limpo : null;
+}
+
+export async function salvarObservacaoDocumentoAction(solicitacaoId: string, tipo: DocumentoTipo, texto: string) {
+  await requireRole("ADMIN_CAPE", "CAPE_ANALISTA");
+  const sol = await loadSolicitacao(solicitacaoId);
+  const doc = sol.documentos.find((d) => d.tipo === tipo);
+  if (!doc) return;
+
+  await prisma.solicitacaoDocumento.update({
+    where: { id: doc.id },
+    data: { observacao: normalizarObservacao(texto) },
+  });
+  revalidateAll(sol.protocolo);
+}
+
+export async function salvarObservacaoItemAction(solicitacaoId: string, itemId: string, texto: string) {
+  await requireRole("ADMIN_CAPE", "CAPE_ANALISTA");
+  const sol = await prisma.solicitacao.findUniqueOrThrow({ where: { id: solicitacaoId } });
+
+  const existing = await prisma.checklistResultado.findUnique({
+    where: { solicitacaoId_itemId: { solicitacaoId, itemId } },
+  });
+  if (!existing || existing.travado) return;
+
+  await prisma.checklistResultado.update({
+    where: { id: existing.id },
+    data: { observacao: normalizarObservacao(texto) },
+  });
   revalidateAll(sol.protocolo);
 }
 
@@ -75,7 +116,8 @@ export async function decidirItemAction(solicitacaoId: string, itemId: string, d
   await prisma.checklistResultado.upsert({
     where: { solicitacaoId_itemId: { solicitacaoId, itemId } },
     create: { solicitacaoId, itemId, status: decisao, avaliadoEm: new Date() },
-    update: { status: decisao, avaliadoEm: new Date() },
+    // Aprovar encerra a pendência; a observação que a descrevia não vale mais.
+    update: { status: decisao, avaliadoEm: new Date(), ...(decisao === "APROVADO" && { observacao: null }) },
   });
 
   if (sol.status === "ENVIADA") {
