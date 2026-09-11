@@ -29,6 +29,9 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
   const { solicitacao: sol, categorias } = result;
 
   const podeEditar = EDITAVEL.has(sol.status);
+  // Já devolvida: a bola está com o proprietário até o reenvio, e devolver de novo
+  // não muda nada — a action recusa. O botão reflete isso em vez de aceitar cliques.
+  const aguardandoProprietario = sol.status === "COMPLEMENTO";
   const nOk = DOC_ORDER.filter((t) => sol.documentos.find((d) => d.tipo === t)?.validado).length;
   const allDocs = nOk === DOC_ORDER.length;
 
@@ -217,17 +220,30 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
               </div>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14, padding: "14px 18px", flexWrap: "wrap" }}>
                 <div style={{ fontSize: 12.5, color: "#4A5563", maxWidth: "60ch", lineHeight: 1.45 }}>
-                  {allDocs
-                    ? "Documentação completa e pertinente. Check-list liberado."
-                    : "Marque cada documento conferido. Se algum for impertinente ou ilegível, devolva a solicitação — o proprietário e o RT são notificados com a lista do que falta."}
+                  {aguardandoProprietario
+                    ? "Devolvida. O botão volta a ficar disponível quando o proprietário reenviar a documentação."
+                    : allDocs
+                      ? "Documentação completa e pertinente. Check-list liberado."
+                      : "Marque cada documento conferido. Se algum for impertinente ou ilegível, devolva a solicitação — o proprietário e o RT são notificados com a lista do que falta."}
                 </div>
                 {podeEditar && (
-                  <form action={devolverDocumentacaoAction.bind(null, sol.id)}>
+                  <form action={aguardandoProprietario ? undefined : devolverDocumentacaoAction.bind(null, sol.id)}>
                     <button
                       type="submit"
-                      style={{ border: "1px solid #8C2B22", background: "#fff", color: "#8C2B22", borderRadius: 4, padding: "9px 14px", fontSize: 12.5, fontWeight: 600, cursor: "pointer" }}
+                      disabled={aguardandoProprietario}
+                      title={aguardandoProprietario ? "Já devolvida — aguardando o reenvio do proprietário." : undefined}
+                      style={{
+                        border: `1px solid ${aguardandoProprietario ? "#DDD8CE" : "#8C2B22"}`,
+                        background: "#fff",
+                        color: aguardandoProprietario ? "#B0AAA0" : "#8C2B22",
+                        borderRadius: 4,
+                        padding: "9px 14px",
+                        fontSize: 12.5,
+                        fontWeight: 600,
+                        cursor: aguardandoProprietario ? "not-allowed" : "pointer",
+                      }}
                     >
-                      Devolver para complementação
+                      {aguardandoProprietario ? "Aguardando reenvio" : "Devolver para complementação"}
                     </button>
                   </form>
                 )}

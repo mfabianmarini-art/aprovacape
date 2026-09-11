@@ -117,7 +117,11 @@ export default async function RequerimentosPage() {
                     </div>
                   )}
                   {s.status === "COMPLEMENTO" && (
-                    <SubstituirDocumentos solicitacaoId={s.id} documentos={s.documentos} />
+                    <SubstituirDocumentos
+                      solicitacaoId={s.id}
+                      documentos={s.documentos}
+                      devolvidaNoChecklist={s.devolvidaNoChecklist}
+                    />
                   )}
                   <div style={{ display: "flex", gap: 9, flexWrap: "wrap" }}>
                     {s.status === "COMPLEMENTO" && (

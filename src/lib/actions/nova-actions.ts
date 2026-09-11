@@ -68,6 +68,15 @@ export async function uploadDocumentoAction(solicitacaoId: string, tipo: Documen
     return { error: "Esta solicitação está em análise e não aceita novos arquivos." };
   }
 
+  // Em complementação troca-se só o que foi apontado — documento já validado pela CAPE
+  // permanece. A exceção é a devolução no check-list, onde o projeto em si muda.
+  if (sol.status === "COMPLEMENTO" && !sol.devolvidaNoChecklist) {
+    const atual = await prisma.solicitacaoDocumento.findUnique({
+      where: { solicitacaoId_tipo: { solicitacaoId, tipo } },
+    });
+    if (atual?.validado) return { error: "Este documento já foi validado pela CAPE e não precisa ser substituído." };
+  }
+
   const file = formData.get("arquivo");
   if (!(file instanceof File) || file.size === 0) return { error: "Selecione um arquivo." };
   const invalido = await validarDocumento(file, tipo);
