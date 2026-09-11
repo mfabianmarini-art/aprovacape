@@ -63,10 +63,22 @@ export function formatBRL(cents: number): string {
   return (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
+// Estas telas são renderizadas no servidor, que na Vercel roda em UTC — sem fixar o
+// fuso, um evento das 22h de Brasília aparecia como 01h do dia seguinte. O fuso do
+// empreendimento é o que interessa aqui, não o da máquina que renderiza.
+const FUSO_BRASIL = "America/Sao_Paulo";
+
 export function formatDate(d: Date): string {
-  return new Intl.DateTimeFormat("pt-BR").format(d);
+  return new Intl.DateTimeFormat("pt-BR", { timeZone: FUSO_BRASIL }).format(d);
 }
 
 export function formatDateTime(d: Date): string {
-  return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(d);
+  return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short", timeZone: FUSO_BRASIL }).format(d);
+}
+
+// Datas sem hora (nascimento) são gravadas como meia-noite UTC a partir de um
+// <input type="date">. Convertê-las para Brasília as jogaria para o dia anterior, então
+// são lidas no mesmo fuso em que foram gravadas.
+export function formatDataPura(d: Date): string {
+  return new Intl.DateTimeFormat("pt-BR", { timeZone: "UTC" }).format(d);
 }

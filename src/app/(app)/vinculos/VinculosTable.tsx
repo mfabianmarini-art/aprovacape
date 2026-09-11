@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ROLE_LABEL, ROLE_COLOR } from "@/lib/nav";
-import { formatDate } from "@/lib/status";
+import { formatDate, formatDataPura } from "@/lib/status";
 import { formatRegistro } from "@/lib/registro-profissional";
 import { aprovarVinculoAction, recusarVinculoAction } from "@/lib/actions/usuarios-actions";
 import type { getVinculosPendentes } from "@/lib/queries/usuarios";
@@ -112,7 +112,7 @@ export function VinculosTable({ pendentes }: { pendentes: Pendentes }) {
                       ["E-mail", p.email],
                       ["Telefone", p.phone],
                       ["CPF", p.cpf],
-                      ["Nascimento", formatDate(p.birthDate)],
+                      ["Nascimento", formatDataPura(p.birthDate)],
                       ["Perfil", ROLE_LABEL[p.role]],
                       ...(registro ? [["Registro", registro] as const] : []),
                       ["Empreendimento", p.vinculoLote?.empreendimento.nome ?? "—"],
