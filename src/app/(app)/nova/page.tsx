@@ -43,7 +43,7 @@ export default async function NovaPage({
       <ScreenHeader crumb={emp?.nome ?? "Nova solicitação"} title="Nova solicitação de obra" {...user} />
       <ScreenBody>
         {passo === 1 && <RascunhosEmAndamento rascunhos={rascunhos} />}
-        <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 300px", gap: 20, alignItems: "start" }}>
+        <div className="layout-with-aside" style={{ "--aside-w": "300px" } as React.CSSProperties}>
           <section style={{ background: "#fff", border: "1px solid #DDD8CE", borderRadius: 4 }}>
             <div style={{ display: "flex", borderBottom: "1px solid #EDE9E1" }}>
               {passos.map((p) => {

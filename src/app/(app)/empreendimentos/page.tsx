@@ -57,7 +57,7 @@ export default async function EmpreendimentosPage({ searchParams }: { searchPara
           <EmpreendimentoSwitcher atualId={emp.id} opcoes={opcoes} />
           {isAdmin && <NovoEmpreendimentoForm />}
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 320px", gap: 20, alignItems: "start" }}>
+        <div className="layout-with-aside">
           <section style={{ background: "#fff", border: "1px solid #DDD8CE", borderRadius: 4 }}>
             <div style={{ padding: "15px 18px", borderBottom: "1px solid #EDE9E1", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
               <div style={{ fontFamily: "var(--font-display)", fontSize: 17, fontWeight: 600, letterSpacing: ".04em", textTransform: "uppercase" }}>{emp.nome}</div>
@@ -89,7 +89,7 @@ export default async function EmpreendimentosPage({ searchParams }: { searchPara
         />
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           <div style={{ fontSize: 11, letterSpacing: ".14em", textTransform: "uppercase", color: "#6B7480" }}>Documentos técnicos</div>
-          <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 320px", gap: 20, alignItems: "start" }}>
+          <div className="layout-with-aside">
             <DocumentosList documentos={documentos} podeGerenciar />
             <DocumentoUploadForm empreendimentoId={emp.id} />
           </div>

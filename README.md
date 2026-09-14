@@ -46,6 +46,17 @@ O seed cadastra dois empreendimentos (Quinta da Primavera e Alto da Serra) para 
 
 Login por e-mail **ou** CPF. Novas contas de proprietário/RT são criadas por auto-cadastro em `/login`; contas de analista CAPE e admin CAPE são criadas na tela **Equipe CAPE** por um analista já logado; o síndico é criado dentro do empreendimento que ele vai gerir (tela **Empreendimentos**), porque é esse vínculo que define o que ele enxerga.
 
+## Responsividade
+
+A UI é toda feita com `style={{}}` inline (Tailwind está instalado mas mal usado — só o `@import` em `globals.css`), então media queries entram por classes CSS pontuais, não pelo Tailwind. Ver `src/app/globals.css` (seção "Mobile layout") para a lista completa; resumo:
+
+- **Sidebar** (`src/components/Sidebar.tsx`): abaixo de 860px vira gaveta (`position: fixed`, deslizando com `transform`), acionada por um botão ☰ fixo no topo; acima de 860px continua fixa como sempre foi. Fecha sozinha ao navegar (ajuste de estado durante a renderização, não `useEffect`, por causa do aviso do React sobre `setState` em efeito).
+- **`.layout-with-aside`**: o padrão "conteúdo + coluna lateral de largura fixa" (Empreendimentos, Documentos, Check-lists, Nova solicitação, Requerimentos, Usuários, Análise) empilha em uma coluna abaixo de 860px. Largura da coluna lateral customizável via `style={{ "--aside-w": "300px" }}` (padrão 320px).
+- **`.table-scroll`**: envolve listas de colunas fixas em pixel (Fila, Obras, Vínculos, listas de usuários, itens de check-list) para rolarem na horizontal em vez de estourar a página.
+- **`.screen-body` / `.screen-header` / `.screen-title`**: reduzem padding e tamanho de título em telas estreitas.
+
+Verificado manualmente via CDP do Chrome (emulação mobile real, 390×844) em `/login`, `/empreendimentos`, `/fila`, `/checklists`, `/usuarios`, `/documentos` e `/resumo` — sem overflow horizontal, sem erro de console. Um teste anterior com `chrome --headless --screenshot` (sem emulação mobile de verdade) deu um falso positivo de overflow no login; não confiar nesse método sozinho para diagnosticar responsividade.
+
 ## Telas
 
 `/login` (cadastro + login) · `/resumo` · `/fila` · `/vinculos` · `/relatorios` · `/analise/[protocolo]` · `/requerimentos` · `/nova` (wizard de 3 passos) · `/empreendimentos` · `/checklists` · `/usuarios` · `/documentos` — visibilidade e navegação por papel definidas em `src/lib/nav.ts`.

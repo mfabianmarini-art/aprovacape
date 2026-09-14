@@ -234,7 +234,7 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
             </div>
           </section>
         )}
-        <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 300px", gap: 20, alignItems: "start" }}>
+        <div className="layout-with-aside" style={{ "--aside-w": "300px" } as React.CSSProperties}>
           <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
             {/* Step 1 — Validação documental */}
             <section style={{ background: "#fff", border: "1px solid #DDD8CE", borderRadius: 4 }}>

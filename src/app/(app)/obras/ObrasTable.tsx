@@ -58,26 +58,6 @@ export function ObrasTable({ obras }: { obras: Obras }) {
           </button>
         ))}
       </div>
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: COLUNAS,
-          padding: "10px 18px",
-          background: "#FAF9F6",
-          borderBottom: "1px solid #EDE9E1",
-          fontSize: 10.5,
-          letterSpacing: ".13em",
-          textTransform: "uppercase",
-          color: "#6B7480",
-        }}
-      >
-        <div>Protocolo</div>
-        <div>Empreendimento</div>
-        <div>Lote / obra</div>
-        <div>Início liberado</div>
-        <div>Acompanhamento</div>
-        <div />
-      </div>
       {linhas.length === 0 && (
         <div style={{ padding: 24, fontSize: 13, color: "#6B7480" }}>
           {obras.length === 0
@@ -85,9 +65,35 @@ export function ObrasTable({ obras }: { obras: Obras }) {
             : "Nenhuma obra neste filtro."}
         </div>
       )}
-      {linhas.map((o) => (
-        <ObraLinha key={o.id} obra={o} />
-      ))}
+      {linhas.length > 0 && (
+        <div className="table-scroll">
+          <div style={{ minWidth: 960 }}>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: COLUNAS,
+                padding: "10px 18px",
+                background: "#FAF9F6",
+                borderBottom: "1px solid #EDE9E1",
+                fontSize: 10.5,
+                letterSpacing: ".13em",
+                textTransform: "uppercase",
+                color: "#6B7480",
+              }}
+            >
+              <div>Protocolo</div>
+              <div>Empreendimento</div>
+              <div>Lote / obra</div>
+              <div>Início liberado</div>
+              <div>Acompanhamento</div>
+              <div />
+            </div>
+            {linhas.map((o) => (
+              <ObraLinha key={o.id} obra={o} />
+            ))}
+          </div>
+        </div>
+      )}
     </section>
   );
 }

@@ -51,7 +51,7 @@ export default async function DocumentosPage({ searchParams }: { searchParams: P
             Consulte aqui todas as regras e documentação técnica para elaborar o projeto.
           </div>
         )}
-        <div style={{ display: "grid", gridTemplateColumns: podeGerenciar ? "minmax(0,1fr) 320px" : "1fr", gap: 20, alignItems: "start" }}>
+        <div className={podeGerenciar ? "layout-with-aside" : undefined} style={podeGerenciar ? undefined : { display: "grid", gridTemplateColumns: "1fr" }}>
           <DocumentosList documentos={documentos} podeGerenciar={podeGerenciar} />
           {podeGerenciar && <DocumentoUploadForm empreendimentoId={atual.id} />}
         </div>

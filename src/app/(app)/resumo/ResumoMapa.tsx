@@ -97,7 +97,7 @@ export function ResumoMapa({ data, podeAnalisar }: { data: Data; podeAnalisar: b
         ))}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1.55fr) minmax(0,1fr)", gap: 20, alignItems: "start" }}>
+      <div className="resumo-grid">
         <section style={{ background: "#fff", border: "1px solid #DDD8CE", borderRadius: 4, overflow: "hidden" }}>
           <div
             style={{

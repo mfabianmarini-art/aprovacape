@@ -48,7 +48,7 @@ export default async function ChecklistsPage({ searchParams }: { searchParams: P
       <ScreenHeader crumb="Configuração" title="Check-lists por empreendimento" {...user} />
       <ScreenBody>
         <EmpreendimentoSwitcher atualId={emp.id} opcoes={opcoes} />
-        <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 300px", gap: 20, alignItems: "start" }}>
+        <div className="layout-with-aside" style={{ "--aside-w": "300px" } as React.CSSProperties}>
           <section style={{ background: "#fff", border: "1px solid #DDD8CE", borderRadius: 4 }}>
             <div style={{ padding: "15px 18px", borderBottom: "1px solid #EDE9E1", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
               <div>
@@ -90,33 +90,37 @@ export default async function ChecklistsPage({ searchParams }: { searchParams: P
                     </button>
                   </form>
                 </div>
-                {c.itens.map((i) => (
-                  <div key={i.id} style={{ display: "grid", gridTemplateColumns: "1fr 220px 34px", alignItems: "center", gap: 12, padding: "11px 18px", borderTop: "1px solid #F5F2EC" }}>
-                    <EditableField
-                      defaultValue={i.texto}
-                      onSave={updateItemAction.bind(null, i.id, "texto")}
-                      style={{ border: "1px solid #EDE9E1", borderRadius: 4, padding: "8px 10px", fontSize: 13, background: "#fff" }}
-                    />
-                    <EditableField
-                      defaultValue={i.referencia}
-                      onSave={updateItemAction.bind(null, i.id, "referencia")}
-                      style={{ border: "1px solid #EDE9E1", borderRadius: 4, padding: "8px 10px", fontSize: 12, color: "#6B7480", background: "#fff" }}
-                    />
-                    <form action={deleteItemAction.bind(null, i.id)}>
-                      <button type="submit" style={{ border: "1px solid #EDE9E1", background: "#fff", color: "#8C2B22", borderRadius: 4, padding: "7px 0", fontSize: 13, cursor: "pointer", width: "100%" }}>
-                        ×
-                      </button>
-                    </form>
+                <div className="table-scroll">
+                  <div style={{ minWidth: 480 }}>
+                    {c.itens.map((i) => (
+                      <div key={i.id} style={{ display: "grid", gridTemplateColumns: "1fr 220px 34px", alignItems: "center", gap: 12, padding: "11px 18px", borderTop: "1px solid #F5F2EC" }}>
+                        <EditableField
+                          defaultValue={i.texto}
+                          onSave={updateItemAction.bind(null, i.id, "texto")}
+                          style={{ border: "1px solid #EDE9E1", borderRadius: 4, padding: "8px 10px", fontSize: 13, background: "#fff" }}
+                        />
+                        <EditableField
+                          defaultValue={i.referencia}
+                          onSave={updateItemAction.bind(null, i.id, "referencia")}
+                          style={{ border: "1px solid #EDE9E1", borderRadius: 4, padding: "8px 10px", fontSize: 12, color: "#6B7480", background: "#fff" }}
+                        />
+                        <form action={deleteItemAction.bind(null, i.id)}>
+                          <button type="submit" style={{ border: "1px solid #EDE9E1", background: "#fff", color: "#8C2B22", borderRadius: 4, padding: "7px 0", fontSize: 13, cursor: "pointer", width: "100%" }}>
+                            ×
+                          </button>
+                        </form>
+                      </div>
+                    ))}
+                    <div style={{ padding: "10px 18px 14px" }}>
+                      <form key={c.itens.length} action={addItemAction.bind(null, c.id)} style={{ display: "grid", gridTemplateColumns: "1fr 220px auto", gap: 8 }}>
+                        <input name="texto" placeholder="Novo item…" required style={{ border: "1px dashed #C9C2B4", borderRadius: 4, padding: "8px 10px", fontSize: 13 }} />
+                        <input name="referencia" placeholder="Referência (art.)" style={{ border: "1px dashed #C9C2B4", borderRadius: 4, padding: "8px 10px", fontSize: 12 }} />
+                        <button type="submit" style={{ border: "1px dashed #C9C2B4", background: "#fff", color: "#12455E", borderRadius: 4, padding: "8px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+                          + item
+                        </button>
+                      </form>
+                    </div>
                   </div>
-                ))}
-                <div style={{ padding: "10px 18px 14px" }}>
-                  <form key={c.itens.length} action={addItemAction.bind(null, c.id)} style={{ display: "grid", gridTemplateColumns: "1fr 220px auto", gap: 8 }}>
-                    <input name="texto" placeholder="Novo item…" required style={{ border: "1px dashed #C9C2B4", borderRadius: 4, padding: "8px 10px", fontSize: 13 }} />
-                    <input name="referencia" placeholder="Referência (art.)" style={{ border: "1px dashed #C9C2B4", borderRadius: 4, padding: "8px 10px", fontSize: 12 }} />
-                    <button type="submit" style={{ border: "1px dashed #C9C2B4", background: "#fff", color: "#12455E", borderRadius: 4, padding: "8px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
-                      + item
-                    </button>
-                  </form>
                 </div>
               </div>
             ))}

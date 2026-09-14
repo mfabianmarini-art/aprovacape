@@ -78,16 +78,14 @@ export default async function RequerimentosPage() {
             return (
               <section
                 key={s.id}
+                className="layout-with-aside"
                 style={{
                   background: "#fff",
                   border: "1px solid #DDD8CE",
                   borderLeft: `4px solid ${info.bg}`,
                   borderRadius: 4,
                   padding: "18px 20px",
-                  display: "grid",
-                  gridTemplateColumns: "minmax(0,1fr) 320px",
                   gap: 24,
-                  alignItems: "start",
                 }}
               >
                 <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>

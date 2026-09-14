@@ -39,3 +39,137 @@ select,
 textarea {
   font-family: inherit;
 }
+
+/* ---------------------------------------------------------------------- */
+/* Mobile layout: everything above this point was written desktop-only,   */
+/* with inline styles and fixed pixel widths. These rules retrofit the    */
+/* structural spots that break below ~860px (sidebar, content+aside       */
+/* two-column screens, and dense tables) without touching the desktop     */
+/* look. See README "Responsividade" for the full list of what changed.  */
+/* ---------------------------------------------------------------------- */
+
+.app-shell {
+  display: flex;
+  min-height: 100vh;
+  align-items: stretch;
+}
+
+.app-sidebar {
+  width: 250px;
+  flex: none;
+}
+
+.app-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-menu-btn,
+.app-menu-close {
+  display: none;
+}
+
+.app-sidebar-backdrop {
+  display: none;
+}
+
+.screen-body {
+  padding: 26px 32px 48px;
+}
+
+.screen-header {
+  padding: 24px 32px 18px;
+}
+
+.screen-title {
+  font-size: 30px;
+}
+
+/* Content + fixed-width aside (Empreendimentos, Documentos, Check-lists, Nova
+   solicitação, Requerimentos, Usuários…): stacks to one column on mobile
+   instead of squeezing the aside next to the main content. Aside width
+   defaults to 320px; override per-use with style={{ "--aside-w": "300px" }}. */
+.layout-with-aside {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--aside-w, 320px);
+  gap: 20px;
+  align-items: start;
+}
+
+/* Resumo's planta + side panel: two flexible columns rather than a fixed
+   aside, same stacking treatment. */
+.resumo-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+/* Wraps a dense, fixed-column grid "table" (Fila, Obras, Vínculos, listas de
+   usuários, itens de check-list…) so it scrolls sideways on a narrow screen
+   instead of overflowing the page or squeezing every column unreadably. */
+.table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 860px) {
+  .app-shell {
+    display: block;
+  }
+
+  .app-sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 50;
+    transform: translateX(-100%);
+    transition: transform 0.22s ease;
+    box-shadow: 2px 0 28px rgba(11, 46, 63, 0.35);
+  }
+
+  .app-sidebar[data-open="true"] {
+    transform: translateX(0);
+  }
+
+  .app-main {
+    width: 100%;
+  }
+
+  .app-menu-btn {
+    display: flex;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+  }
+
+  .app-menu-close {
+    display: flex;
+  }
+
+  .app-sidebar-backdrop[data-open="true"] {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(11, 46, 63, 0.45);
+    z-index: 40;
+  }
+
+  .screen-body {
+    padding: 18px 16px 32px;
+  }
+
+  .screen-header {
+    padding: 16px 16px 14px;
+  }
+
+  .screen-title {
+    font-size: 23px;
+  }
+
+  .layout-with-aside,
+  .resumo-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -16,32 +16,34 @@ export function VinculosTable({ pendentes }: { pendentes: Pendentes }) {
 
   return (
     <section style={{ background: "#fff", border: "1px solid #DDD8CE", borderRadius: 4, overflow: "hidden" }}>
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: COLUNAS,
-          padding: "10px 18px",
-          background: "#FAF9F6",
-          borderBottom: "1px solid #EDE9E1",
-          fontSize: 10.5,
-          letterSpacing: ".13em",
-          textTransform: "uppercase",
-          color: "#6B7480",
-        }}
-      >
-        <div>Empreendimento</div>
-        <div>Quadra / lote</div>
-        <div>Solicitante</div>
-        <div>Perfil</div>
-        <div>Solicitado em</div>
-        <div />
-      </div>
-
       {pendentes.length === 0 && (
         <div style={{ padding: 24, fontSize: 13, color: "#6B7480" }}>Nenhum vínculo aguardando validação.</div>
       )}
+      {pendentes.length > 0 && (
+        <div className="table-scroll">
+          <div style={{ minWidth: 800 }}>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: COLUNAS,
+                padding: "10px 18px",
+                background: "#FAF9F6",
+                borderBottom: "1px solid #EDE9E1",
+                fontSize: 10.5,
+                letterSpacing: ".13em",
+                textTransform: "uppercase",
+                color: "#6B7480",
+              }}
+            >
+              <div>Empreendimento</div>
+              <div>Quadra / lote</div>
+              <div>Solicitante</div>
+              <div>Perfil</div>
+              <div>Solicitado em</div>
+              <div />
+            </div>
 
-      {pendentes.map((p) => {
+            {pendentes.map((p) => {
         const cor = ROLE_COLOR[p.role];
         const expandida = aberta === p.id;
         const registro = formatRegistro(p);
@@ -208,8 +210,11 @@ export function VinculosTable({ pendentes }: { pendentes: Pendentes }) {
               </div>
             )}
           </div>
-        );
-      })}
+              );
+            })}
+          </div>
+        </div>
+      )}
     </section>
   );
 }

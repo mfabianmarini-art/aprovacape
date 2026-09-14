@@ -8,9 +8,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const nav = navWithCounts(session.user.role, counts);
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", alignItems: "stretch" }}>
+    <div className="app-shell">
       <Sidebar nav={nav} />
-      <main style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>{children}</main>
+      <main className="app-main">{children}</main>
     </div>
   );
 }

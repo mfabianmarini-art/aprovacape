@@ -13,12 +13,12 @@ export function ScreenHeader({
 }) {
   return (
     <header
+      className="screen-header"
       style={{
         display: "flex",
         alignItems: "flex-end",
         justifyContent: "space-between",
         gap: 24,
-        padding: "24px 32px 18px",
         background: "#fff",
         borderBottom: "1px solid #DDD8CE",
         flexWrap: "wrap",
@@ -29,11 +29,11 @@ export function ScreenHeader({
           {crumb}
         </div>
         <h1
+          className="screen-title"
           style={{
             margin: 0,
             fontFamily: "var(--font-display)",
             fontWeight: 600,
-            fontSize: 30,
             lineHeight: 1.05,
             letterSpacing: ".01em",
           }}
