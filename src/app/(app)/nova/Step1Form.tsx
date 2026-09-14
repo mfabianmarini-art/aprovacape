@@ -14,7 +14,7 @@ type Lote = {
 };
 
 const inputStyle: React.CSSProperties = { border: "1px solid #DDD8CE", borderRadius: 4, padding: "10px 11px", fontSize: 13.5 };
-const labelTextStyle: React.CSSProperties = { fontSize: 11, letterSpacing: ".13em", textTransform: "uppercase", color: "#6B7480" };
+const labelTextStyle: React.CSSProperties = { fontSize: 11, letterSpacing: ".13em", textTransform: "uppercase", color: "#7A7472" };
 
 export function Step1Form({ lotes }: { lotes: Lote[] }) {
   const [state, formAction, pending] = useActionState(criarRascunhoAction, null as { error?: string } | null);
@@ -23,7 +23,7 @@ export function Step1Form({ lotes }: { lotes: Lote[] }) {
 
   if (lotes.length === 0) {
     return (
-      <div style={{ padding: 20, fontSize: 13, color: "#6B7480" }}>
+      <div style={{ padding: 20, fontSize: 13, color: "#7A7472" }}>
         Nenhum lote vinculado à sua conta ainda. A CAPE precisa confirmar seu vínculo antes de abrir uma solicitação.
       </div>
     );
@@ -91,7 +91,7 @@ export function Step1Form({ lotes }: { lotes: Lote[] }) {
         <button
           type="submit"
           disabled={pending}
-          style={{ border: "1px solid #12455E", background: "#12455E", color: "#fff", borderRadius: 4, padding: "10px 18px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+          style={{ border: "1px solid #E01B22", background: "#E01B22", color: "#fff", borderRadius: 4, padding: "10px 18px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
         >
           {pending ? "Salvando…" : "Continuar"}
         </button>

@@ -15,7 +15,7 @@ export function PlantaPinPicker({
 }) {
   if (!plantaImageUrl) {
     return (
-      <div style={{ fontSize: 11.5, color: "#6B7480", fontStyle: "italic" }}>
+      <div style={{ fontSize: 11.5, color: "#7A7472", fontStyle: "italic" }}>
         Envie a planta do empreendimento (aba ao lado) para posicionar o lote no mapa.
       </div>
     );
@@ -57,9 +57,9 @@ export function PlantaPinPicker({
             width: 12,
             height: 12,
             borderRadius: "50%",
-            background: "#B4711A",
+            background: "#E01B22",
             border: "2px solid #fff",
-            boxShadow: "0 0 0 2px #B4711A",
+            boxShadow: "0 0 0 2px #E01B22",
             pointerEvents: "none",
           }}
         />

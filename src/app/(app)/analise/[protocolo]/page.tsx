@@ -114,7 +114,7 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
               <div style={{ fontFamily: "var(--font-display)", fontSize: 17, fontWeight: 600, letterSpacing: ".04em", textTransform: "uppercase" }}>
                 Acompanhamento da obra
               </div>
-              <div style={{ fontSize: 11.5, color: irregularidadesAbertas > 0 ? "#8C2B22" : "#6B7480", fontFamily: "var(--font-mono)" }}>
+              <div style={{ fontSize: 11.5, color: irregularidadesAbertas > 0 ? "#8C2B22" : "#7A7472", fontFamily: "var(--font-mono)" }}>
                 {irregularidadesAbertas > 0
                   ? `${irregularidadesAbertas} irregularidade(s) em aberto`
                   : "nenhuma irregularidade em aberto"}
@@ -138,7 +138,7 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
                   <span style={{ fontSize: 13, fontWeight: 600, color: irr.regularizadaEm ? "#4A5563" : "#8C2B22" }}>
                     {IRREGULARIDADE_LABEL[irr.tipo]}
                   </span>
-                  <span style={{ fontSize: 11, color: "#6B7480", fontFamily: "var(--font-mono)" }}>
+                  <span style={{ fontSize: 11, color: "#7A7472", fontFamily: "var(--font-mono)" }}>
                     {formatDateTime(irr.createdAt)} · {irr.registradaPor.name}
                     {irr.regularizadaEm && ` · regularizada em ${formatDateTime(irr.regularizadaEm)}`}
                   </span>
@@ -152,7 +152,7 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
                         href={`/api/irregularidades/${ev.id}`}
                         target="_blank"
                         rel="noreferrer"
-                        style={{ fontSize: 11.5, color: "#12455E", fontFamily: "var(--font-mono)" }}
+                        style={{ fontSize: 11.5, color: "#E01B22", fontFamily: "var(--font-mono)" }}
                       >
                         {ev.nomeArquivo}
                       </a>
@@ -173,7 +173,7 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
             ))}
 
             {sol.status === "EXECUCAO" && (
-              <div style={{ fontSize: 11.5, color: "#6B7480", borderTop: "1px solid #EDE9E1", paddingTop: 13 }}>
+              <div style={{ fontSize: 11.5, color: "#7A7472", borderTop: "1px solid #EDE9E1", paddingTop: 13 }}>
                 Registrar irregularidade e encerrar a obra ficam em <strong>Obras em andamento</strong>.
               </div>
             )}
@@ -206,7 +206,7 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
             <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) auto", gap: 12, alignItems: "end" }}>
               <form action={recusarAlvaraAction.bind(null, sol.id)} style={{ display: "flex", gap: 9, alignItems: "flex-end", flexWrap: "wrap" }}>
                 <label style={{ display: "flex", flexDirection: "column", gap: 5, flex: 1, minWidth: 260 }}>
-                  <span style={{ fontSize: 10.5, letterSpacing: ".1em", textTransform: "uppercase", color: "#6B7480" }}>
+                  <span style={{ fontSize: 10.5, letterSpacing: ".1em", textTransform: "uppercase", color: "#7A7472" }}>
                     Motivo, se for recusar
                   </span>
                   <input
@@ -260,7 +260,7 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
                     <div style={{ fontFamily: "var(--font-display)", fontSize: 17, fontWeight: 600, letterSpacing: ".04em", textTransform: "uppercase" }}>
                       Validação documental
                     </div>
-                    <div style={{ fontSize: 11.5, color: "#6B7480" }}>
+                    <div style={{ fontSize: 11.5, color: "#7A7472" }}>
                       {sol.reenvios > 0 || nOk > 0
                         ? "O que você já validou permanece validado entre as rodadas — só os arquivos substituídos voltam para conferência."
                         : "Conferência manual: o documento existe, está legível, assinado e pertence a este lote."}
@@ -342,7 +342,7 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
                             </span>
                           )}
                         </span>
-                        <span style={{ fontSize: 11.5, color: "#6B7480", fontFamily: "var(--font-mono)" }}>
+                        <span style={{ fontSize: 11.5, color: "#7A7472", fontFamily: "var(--font-mono)" }}>
                           {doc ? `${doc.nomeArquivo} · enviado em ${formatDateTime(doc.uploadedAt)}` : "Ainda não enviado"}
                         </span>
                       </span>
@@ -424,7 +424,7 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
                       width: 26,
                       height: 26,
                       borderRadius: "50%",
-                      background: allDocs ? "#12455E" : "#EDE9E1",
+                      background: allDocs ? "#E01B22" : "#EDE9E1",
                       color: allDocs ? "#fff" : "#8B939C",
                       fontSize: 12,
                       fontWeight: 700,
@@ -437,7 +437,7 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
                     <div style={{ fontFamily: "var(--font-display)", fontSize: 17, fontWeight: 600, letterSpacing: ".04em", textTransform: "uppercase" }}>
                       Check-list técnico
                     </div>
-                    <div style={{ fontSize: 11.5, color: "#6B7480" }}>
+                    <div style={{ fontSize: 11.5, color: "#7A7472" }}>
                       {allDocs ? "Itens aprovados na análise anterior aparecem travados e não são reavaliados." : "Liberado após a validação documental."}
                     </div>
                   </div>
@@ -453,8 +453,8 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
                 return (
                   <div key={c.id} style={{ borderBottom: "1px solid #EDE9E1" }}>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "11px 18px", background: "#FAF9F6" }}>
-                      <div style={{ fontSize: 11, letterSpacing: ".14em", textTransform: "uppercase", color: "#12455E", fontWeight: 600 }}>{c.nome}</div>
-                      <div style={{ fontSize: 11, color: "#6B7480", fontFamily: "var(--font-mono)" }}>
+                      <div style={{ fontSize: 11, letterSpacing: ".14em", textTransform: "uppercase", color: "#E01B22", fontWeight: 600 }}>{c.nome}</div>
+                      <div style={{ fontSize: 11, color: "#7A7472", fontFamily: "var(--font-mono)" }}>
                         {done}/{c.itens.length}
                         {travados ? ` · ${travados} travados` : ""}
                       </div>
@@ -479,8 +479,8 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
                           }}
                         >
                           <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                            <div style={{ fontSize: 13.5, fontWeight: 500, color: travado ? "#7A828C" : "#0E1B24" }}>{item.texto}</div>
-                            <div style={{ fontSize: 11.5, color: "#6B7480" }}>{item.referencia}</div>
+                            <div style={{ fontSize: 13.5, fontWeight: 500, color: travado ? "#7A828C" : "#231F20" }}>{item.texto}</div>
+                            <div style={{ fontSize: 11.5, color: "#7A7472" }}>{item.referencia}</div>
                           </div>
                           <div style={{ display: "flex", gap: 7, justifyContent: "flex-end" }}>
                             <form action={ativo ? decidirItemAction.bind(null, sol.id, item.id, "APROVADO") : undefined}>
@@ -552,7 +552,7 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
                       type="submit"
                       disabled={!podeEditar || !podeEmitir}
                       style={{
-                        border: "1px solid #12455E",
+                        border: "1px solid #E01B22",
                         background: emitirBg,
                         color: emitirFg,
                         borderRadius: 4,
@@ -576,14 +576,14 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
               <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
                 {selCampos.map(([k, v]) => (
                   <div key={k} style={{ display: "flex", flexDirection: "column", gap: 1 }}>
-                    <div style={{ fontSize: 10.5, letterSpacing: ".13em", textTransform: "uppercase", color: "#6B7480" }}>{k}</div>
+                    <div style={{ fontSize: 10.5, letterSpacing: ".13em", textTransform: "uppercase", color: "#7A7472" }}>{k}</div>
                     <div style={{ fontSize: 13, lineHeight: 1.35 }}>{v}</div>
                   </div>
                 ))}
               </div>
             </section>
             <section style={{ background: "#fff", border: "1px solid #DDD8CE", borderRadius: 4, padding: "16px 17px", display: "flex", flexDirection: "column", gap: 10 }}>
-              <div style={{ fontSize: 11, letterSpacing: ".14em", textTransform: "uppercase", color: "#6B7480" }}>Taxa de análise</div>
+              <div style={{ fontSize: 11, letterSpacing: ".14em", textTransform: "uppercase", color: "#7A7472" }}>Taxa de análise</div>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 600 }}>{formatBRL(sol.lote.empreendimento.taxaAnaliseCent)}</div>
               <div style={{ fontSize: 11.5, color: "#4A5563", lineHeight: 1.45 }}>
                 Lote único. Lotes contíguos do mesmo proprietário multiplicam a taxa pelo número de lotes originais da planta.
@@ -606,14 +606,14 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
                 </button>
               </form>
             </section>
-            <section style={{ background: "#0B2E3F", color: "#fff", borderRadius: 4, padding: "16px 17px", display: "flex", flexDirection: "column", gap: 9 }}>
-              <div style={{ fontSize: 11, letterSpacing: ".14em", textTransform: "uppercase", color: "#8FB0BF" }}>Histórico</div>
+            <section style={{ background: "#231F20", color: "#fff", borderRadius: 4, padding: "16px 17px", display: "flex", flexDirection: "column", gap: 9 }}>
+              <div style={{ fontSize: 11, letterSpacing: ".14em", textTransform: "uppercase", color: "#A89F9F" }}>Histórico</div>
               {sol.historico.map((h) => (
                 <div key={h.id} style={{ display: "flex", gap: 9, alignItems: "flex-start" }}>
                   <span style={{ width: 6, height: 6, borderRadius: "50%", background: h.cor, marginTop: 6, flex: "none" }} />
                   <span style={{ display: "flex", flexDirection: "column", gap: 1 }}>
                     <span style={{ fontSize: 12.5, lineHeight: 1.35 }}>{h.texto}</span>
-                    <span style={{ fontSize: 11, color: "#8FB0BF", fontFamily: "var(--font-mono)" }}>{formatDateTime(h.createdAt)}</span>
+                    <span style={{ fontSize: 11, color: "#A89F9F", fontFamily: "var(--font-mono)" }}>{formatDateTime(h.createdAt)}</span>
                   </span>
                 </div>
               ))}

@@ -40,7 +40,7 @@ export default async function EmpreendimentosPage({ searchParams }: { searchPara
       <>
         <ScreenHeader crumb="Configuração" title="Empreendimentos" {...user} />
         <ScreenBody>
-          <div style={{ fontSize: 13.5, color: "#6B7480" }}>Nenhum empreendimento cadastrado ainda.</div>
+          <div style={{ fontSize: 13.5, color: "#7A7472" }}>Nenhum empreendimento cadastrado ainda.</div>
           {isAdmin && <NovoEmpreendimentoForm />}
         </ScreenBody>
       </>
@@ -62,9 +62,9 @@ export default async function EmpreendimentosPage({ searchParams }: { searchPara
               style={{
                 display: "inline-flex",
                 alignItems: "center",
-                border: "1px solid #12455E",
+                border: "1px solid #E01B22",
                 background: "#fff",
-                color: "#12455E",
+                color: "#E01B22",
                 borderRadius: 4,
                 padding: "9px 14px",
                 fontSize: 12.5,
@@ -93,7 +93,7 @@ export default async function EmpreendimentosPage({ searchParams }: { searchPara
           }}
         >
           <div style={{ fontFamily: "var(--font-display)", fontSize: 17, fontWeight: 600, letterSpacing: ".04em", textTransform: "uppercase" }}>{emp.nome}</div>
-          <div style={{ fontSize: 11.5, color: "#6B7480", fontFamily: "var(--font-mono)" }}>
+          <div style={{ fontSize: 11.5, color: "#7A7472", fontFamily: "var(--font-mono)" }}>
             {emp.cidade}/{emp.uf} · {totalLotes} lotes
           </div>
         </div>

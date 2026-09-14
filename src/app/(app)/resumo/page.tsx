@@ -20,7 +20,7 @@ export default async function ResumoPage({ searchParams }: { searchParams: Promi
       <>
         <ScreenHeader crumb="CAPE Aprova" title="Resumo dos Loteamentos" {...user} />
         <ScreenBody>
-          <div style={{ fontSize: 13.5, color: "#6B7480" }}>
+          <div style={{ fontSize: 13.5, color: "#7A7472" }}>
             Nenhum empreendimento cadastrado ainda.
           </div>
         </ScreenBody>
@@ -34,7 +34,7 @@ export default async function ResumoPage({ searchParams }: { searchParams: Promi
       <>
         <ScreenHeader crumb="CAPE Aprova" title="Resumo dos Loteamentos" {...user} />
         <ScreenBody>
-          <div style={{ fontSize: 13.5, color: "#6B7480" }}>
+          <div style={{ fontSize: 13.5, color: "#7A7472" }}>
             Nenhum empreendimento cadastrado ainda.
           </div>
         </ScreenBody>

@@ -16,7 +16,7 @@ const labelStyle: React.CSSProperties = {
   fontSize: 10.5,
   letterSpacing: ".1em",
   textTransform: "uppercase",
-  color: "#6B7480",
+  color: "#7A7472",
 };
 
 // Formulário sempre aberto: quem controla a abertura é a linha da obra, em Obras em

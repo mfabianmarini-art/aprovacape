@@ -50,7 +50,7 @@ export function LotesManager({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: "10px 4px 4px" }}>
-      {lotes.length === 0 && <div style={{ fontSize: 12, color: "#6B7480" }}>Nenhum lote cadastrado nesta quadra ainda.</div>}
+      {lotes.length === 0 && <div style={{ fontSize: 12, color: "#7A7472" }}>Nenhum lote cadastrado nesta quadra ainda.</div>}
       {lotes.map((l) => {
         const vinculado = !!(l.proprietarioNome || l.rtNome);
         return (
@@ -80,7 +80,7 @@ export function LotesManager({
                 </button>
               </form>
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, fontSize: 11, color: "#6B7480" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, fontSize: 11, color: "#7A7472" }}>
               <span>
                 {l.proprietarioNome ? `Proprietário: ${l.proprietarioNome}` : "sem proprietário"}
                 {l.rtNome ? ` · RT: ${l.rtNome}` : ""}
@@ -88,7 +88,7 @@ export function LotesManager({
               <button
                 type="button"
                 onClick={() => setReposicionandoId(reposicionandoId === l.id ? null : l.id)}
-                style={{ border: 0, background: "transparent", color: "#12455E", fontSize: 11, fontWeight: 600, cursor: "pointer", padding: 0 }}
+                style={{ border: 0, background: "transparent", color: "#E01B22", fontSize: 11, fontWeight: 600, cursor: "pointer", padding: 0 }}
               >
                 {l.posX != null && l.posY != null ? `posição ${l.posX}%, ${l.posY}%` : "sem posição no mapa"} · reposicionar
               </button>
@@ -106,8 +106,8 @@ export function LotesManager({
       })}
 
       <form action={formAction} style={{ display: "flex", flexDirection: "column", gap: 8, border: "1px dashed #C9C2B4", borderRadius: 4, padding: 12 }}>
-        <div style={{ fontSize: 10.5, letterSpacing: ".13em", textTransform: "uppercase", color: "#6B7480" }}>Novo lote</div>
-        <div style={{ fontSize: 11, color: "#6B7480" }}>
+        <div style={{ fontSize: 10.5, letterSpacing: ".13em", textTransform: "uppercase", color: "#7A7472" }}>Novo lote</div>
+        <div style={{ fontSize: 11, color: "#7A7472" }}>
           Endereço e área ficam a cargo do proprietário/RT, na primeira solicitação de obra deste lote.
         </div>
         <input name="numero" placeholder="Número" required style={{ border: "1px solid #DDD8CE", borderRadius: 4, padding: "8px 9px", fontSize: 13, fontFamily: "var(--font-mono)" }} />
@@ -118,7 +118,7 @@ export function LotesManager({
         <button
           type="submit"
           disabled={pending}
-          style={{ alignSelf: "flex-start", border: "1px solid #12455E", background: "#12455E", color: "#fff", borderRadius: 4, padding: "8px 14px", fontSize: 12, fontWeight: 600, cursor: "pointer" }}
+          style={{ alignSelf: "flex-start", border: "1px solid #E01B22", background: "#E01B22", color: "#fff", borderRadius: 4, padding: "8px 14px", fontSize: 12, fontWeight: 600, cursor: "pointer" }}
         >
           {pending ? "Adicionando…" : "+ lote"}
         </button>
@@ -156,8 +156,8 @@ function ReposicionarLote({
             })
           }
           style={{
-            border: "1px solid #12455E",
-            background: pos ? "#12455E" : "#EDE9E1",
+            border: "1px solid #E01B22",
+            background: pos ? "#E01B22" : "#EDE9E1",
             color: pos ? "#fff" : "#8B939C",
             borderRadius: 4,
             padding: "7px 12px",
@@ -171,7 +171,7 @@ function ReposicionarLote({
         <button
           type="button"
           onClick={onFechar}
-          style={{ border: "1px solid #DDD8CE", background: "#fff", color: "#6B7480", borderRadius: 4, padding: "7px 12px", fontSize: 12, cursor: "pointer" }}
+          style={{ border: "1px solid #DDD8CE", background: "#fff", color: "#7A7472", borderRadius: 4, padding: "7px 12px", fontSize: 12, cursor: "pointer" }}
         >
           cancelar
         </button>

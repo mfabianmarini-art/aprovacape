@@ -26,7 +26,7 @@ export default async function DocumentosPage({ searchParams }: { searchParams: P
       <>
         <ScreenHeader crumb="Referência" title={titulo} {...user} />
         <ScreenBody>
-          <div style={{ fontSize: 13.5, color: "#6B7480" }}>
+          <div style={{ fontSize: 13.5, color: "#7A7472" }}>
             {ehConsulta
               ? "Nenhum lote informado na sua conta ainda — escolha o empreendimento, a quadra e o lote no cadastro para consultar as normas do empreendimento."
               : "Nenhum empreendimento cadastrado ainda."}

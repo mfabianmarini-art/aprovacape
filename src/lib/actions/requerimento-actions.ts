@@ -53,7 +53,7 @@ export async function reenviarComplementacaoAction(solicitacaoId: string) {
             ? `Reenvio ${reenvios} de ${emp.reenviosSemTaxa} recebido — ${oQue}.`
             : `Documentação complementada recebida — ${oQue}.`;
         })(),
-        cor: "#8FB0BF",
+        cor: "#A89F9F",
         autorId: session.user.id,
       },
     }),

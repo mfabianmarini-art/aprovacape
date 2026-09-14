@@ -37,7 +37,7 @@ const totalFieldStyle: React.CSSProperties = {
   border: "1px solid transparent",
   background: "transparent",
   fontSize: 11.5,
-  color: "#6B7480",
+  color: "#7A7472",
   fontFamily: "var(--font-mono)",
   textAlign: "right",
   padding: "4px 6px",
@@ -88,7 +88,7 @@ export function QuadrasManager({
           {stats.map((s) => (
             <div key={s.rotulo} style={{ display: "flex", flexDirection: "column", gap: 2 }}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 600, lineHeight: 1 }}>{s.valor}</div>
-              <div style={{ fontSize: 10.5, letterSpacing: ".08em", textTransform: "uppercase", color: "#6B7480" }}>{s.rotulo}</div>
+              <div style={{ fontSize: 10.5, letterSpacing: ".08em", textTransform: "uppercase", color: "#7A7472" }}>{s.rotulo}</div>
             </div>
           ))}
         </div>
@@ -96,8 +96,8 @@ export function QuadrasManager({
           type="button"
           onClick={() => setEditando((v) => !v)}
           style={{
-            border: `1px solid ${editando ? "#DDD8CE" : "#12455E"}`,
-            background: editando ? "#fff" : "#12455E",
+            border: `1px solid ${editando ? "#DDD8CE" : "#E01B22"}`,
+            background: editando ? "#fff" : "#E01B22",
             color: editando ? "#4A5563" : "#fff",
             borderRadius: 4,
             padding: "9px 14px",
@@ -111,7 +111,7 @@ export function QuadrasManager({
         </button>
       </div>
       {!editando && quadras.length === 0 && (
-        <div style={{ fontSize: 12.5, color: "#6B7480" }}>Nenhuma quadra cadastrada ainda.</div>
+        <div style={{ fontSize: 12.5, color: "#7A7472" }}>Nenhuma quadra cadastrada ainda.</div>
       )}
       {editando && quadras.map((q) => {
         const temLotes = q.lotes.length > 0;
@@ -123,7 +123,7 @@ export function QuadrasManager({
                 type="button"
                 onClick={() => alternar(q.id)}
                 title={aberta ? "Recolher lotes" : "Ver e cadastrar lotes"}
-                style={{ border: 0, background: "transparent", color: "#6B7480", fontSize: 12, cursor: "pointer", padding: 0 }}
+                style={{ border: 0, background: "transparent", color: "#7A7472", fontSize: 12, cursor: "pointer", padding: 0 }}
               >
                 {aberta ? "▾" : "▸"}
               </button>
@@ -192,7 +192,7 @@ export function QuadrasManager({
             <button
               type="submit"
               disabled={pending}
-              style={{ border: "1px dashed #C9C2B4", background: "#fff", color: "#12455E", borderRadius: 4, padding: "8px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer" }}
+              style={{ border: "1px dashed #C9C2B4", background: "#fff", color: "#E01B22", borderRadius: 4, padding: "8px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer" }}
             >
               {pending ? "Adicionando…" : "+ quadra"}
             </button>

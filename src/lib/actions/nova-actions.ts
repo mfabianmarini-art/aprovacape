@@ -152,7 +152,7 @@ export async function enviarSolicitacaoAction(_prev: unknown, formData: FormData
         solicitacaoId: sol.id,
         tipo: "SOLICITACAO_ENVIADA",
         texto: `Solicitação protocolada por ${session.user.name}.`,
-        cor: "#8FB0BF",
+        cor: "#A89F9F",
         autorId: session.user.id,
       },
     }),

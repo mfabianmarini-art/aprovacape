@@ -45,7 +45,7 @@ export function ObrasTable({ obras }: { obras: Obras }) {
       {empreendimentos.length > 1 && (
         <div style={{ display: "flex", gap: 8, padding: "13px 18px", borderBottom: "1px solid #EDE9E1", flexWrap: "wrap" }}>
           {["Todos", ...empreendimentos].map((e) => (
-            <button key={e} onClick={() => setEmpreendimentoFiltro(e)} style={chip(empreendimentoFiltro === e, "#B4711A")}>
+            <button key={e} onClick={() => setEmpreendimentoFiltro(e)} style={chip(empreendimentoFiltro === e, "#E01B22")}>
               {e}
             </button>
           ))}
@@ -59,7 +59,7 @@ export function ObrasTable({ obras }: { obras: Obras }) {
         ))}
       </div>
       {linhas.length === 0 && (
-        <div style={{ padding: 24, fontSize: 13, color: "#6B7480" }}>
+        <div style={{ padding: 24, fontSize: 13, color: "#7A7472" }}>
           {obras.length === 0
             ? "Nenhuma obra com início liberado. A obra entra aqui quando a CAPE aceita o alvará de execução."
             : "Nenhuma obra neste filtro."}
@@ -78,7 +78,7 @@ export function ObrasTable({ obras }: { obras: Obras }) {
                 fontSize: 10.5,
                 letterSpacing: ".13em",
                 textTransform: "uppercase",
-                color: "#6B7480",
+                color: "#7A7472",
               }}
             >
               <div>Protocolo</div>
@@ -115,7 +115,7 @@ function ObraLinha({ obra }: { obra: Obra }) {
           <div style={{ fontSize: 13.5, fontWeight: 600 }}>
             {obra.lote.quadra.nome} L{obra.lote.numero}
           </div>
-          <div style={{ fontSize: 11.5, color: "#6B7480" }}>
+          <div style={{ fontSize: 11.5, color: "#7A7472" }}>
             {TIPO_LABEL[obra.tipo]} · {obra.areaConstruida} m² · RT {obra.responsavelTecnicoNome}
           </div>
         </div>
@@ -123,11 +123,11 @@ function ObraLinha({ obra }: { obra: Obra }) {
           {liberadaEm ? (
             <>
               {formatDate(liberadaEm)}
-              <div style={{ fontSize: 11, color: "#6B7480" }}>há {diasDesde(liberadaEm)}d</div>
+              <div style={{ fontSize: 11, color: "#7A7472" }}>há {diasDesde(liberadaEm)}d</div>
             </>
           ) : (
             // Obras liberadas antes de existir a conferência de alvará não têm o evento.
-            <span style={{ color: "#6B7480" }}>não registrado</span>
+            <span style={{ color: "#7A7472" }}>não registrado</span>
           )}
         </div>
         <div style={{ paddingRight: 16 }}>
@@ -136,7 +136,7 @@ function ObraLinha({ obra }: { obra: Obra }) {
               <span style={{ fontSize: 12, fontWeight: 600, color: "#8C2B22" }}>
                 {emAberto.length} irregularidade{emAberto.length > 1 ? "s" : ""} em aberto
               </span>
-              <span style={{ fontSize: 11.5, color: "#6B7480" }}>
+              <span style={{ fontSize: 11.5, color: "#7A7472" }}>
                 {IRREGULARIDADE_LABEL[emAberto[0]!.tipo]}
                 {emAberto.length > 1 && ` e mais ${emAberto.length - 1}`}
               </span>
@@ -169,9 +169,9 @@ function ObraLinha({ obra }: { obra: Obra }) {
             disabled={travadoPorIrregularidade}
             title={travadoPorIrregularidade ? "Regularize as pendências antes de concluir." : undefined}
             style={{
-              border: `1px solid ${travadoPorIrregularidade ? "#DDD8CE" : "#0E1B24"}`,
-              background: painel === "concluir" ? "#0E1B24" : "#fff",
-              color: travadoPorIrregularidade ? "#B0AAA0" : painel === "concluir" ? "#fff" : "#0E1B24",
+              border: `1px solid ${travadoPorIrregularidade ? "#DDD8CE" : "#231F20"}`,
+              background: painel === "concluir" ? "#231F20" : "#fff",
+              color: travadoPorIrregularidade ? "#B0AAA0" : painel === "concluir" ? "#fff" : "#231F20",
               borderRadius: 4,
               padding: "7px 12px",
               fontSize: 12,
@@ -182,7 +182,7 @@ function ObraLinha({ obra }: { obra: Obra }) {
           >
             Obra concluída
           </button>
-          <Link href={`/analise/${obra.protocolo}`} style={{ fontSize: 11.5, color: "#12455E" }}>
+          <Link href={`/analise/${obra.protocolo}`} style={{ fontSize: 11.5, color: "#E01B22" }}>
             Abrir ficha completa
           </Link>
         </div>
@@ -209,7 +209,7 @@ function ObraLinha({ obra }: { obra: Obra }) {
                     <span style={{ fontSize: 13, fontWeight: 600, color: irr.regularizadaEm ? "#4A5563" : "#8C2B22" }}>
                       {IRREGULARIDADE_LABEL[irr.tipo]}
                     </span>
-                    <span style={{ fontSize: 11, color: "#6B7480", fontFamily: "var(--font-mono)" }}>
+                    <span style={{ fontSize: 11, color: "#7A7472", fontFamily: "var(--font-mono)" }}>
                       {formatDateTime(irr.createdAt)} · {irr.registradaPor.name}
                       {irr.regularizadaEm && ` · regularizada em ${formatDateTime(irr.regularizadaEm)}`}
                     </span>
@@ -223,7 +223,7 @@ function ObraLinha({ obra }: { obra: Obra }) {
                           href={`/api/irregularidades/${ev.id}`}
                           target="_blank"
                           rel="noreferrer"
-                          style={{ fontSize: 11.5, color: "#12455E", fontFamily: "var(--font-mono)" }}
+                          style={{ fontSize: 11.5, color: "#E01B22", fontFamily: "var(--font-mono)" }}
                         >
                           {ev.nomeArquivo}
                         </a>
@@ -272,7 +272,7 @@ function ObraLinha({ obra }: { obra: Obra }) {
             <form action={concluirObraAction.bind(null, obra.id)}>
               <button
                 type="submit"
-                style={{ border: "1px solid #0E1B24", background: "#0E1B24", color: "#fff", borderRadius: 4, padding: "9px 15px", fontSize: 12.5, fontWeight: 600, cursor: "pointer" }}
+                style={{ border: "1px solid #231F20", background: "#231F20", color: "#fff", borderRadius: 4, padding: "9px 15px", fontSize: 12.5, fontWeight: 600, cursor: "pointer" }}
               >
                 Confirmar conclusão e arquivar
               </button>

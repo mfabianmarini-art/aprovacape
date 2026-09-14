@@ -4,7 +4,7 @@ import { useActionState } from "react";
 import { updateEmpreendimentoAction } from "@/lib/actions/empreendimento-actions";
 
 const inputStyle: React.CSSProperties = { border: "1px solid #DDD8CE", borderRadius: 4, padding: "10px 11px", fontSize: 13.5, fontFamily: "var(--font-mono)" };
-const labelTextStyle: React.CSSProperties = { fontSize: 11, letterSpacing: ".13em", textTransform: "uppercase", color: "#6B7480" };
+const labelTextStyle: React.CSSProperties = { fontSize: 11, letterSpacing: ".13em", textTransform: "uppercase", color: "#7A7472" };
 
 function centsToBRL(cents: number) {
   return (cents / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -48,7 +48,7 @@ export function EmpreendimentoForm({
         <button
           type="submit"
           disabled={pending}
-          style={{ border: "1px solid #12455E", background: "#12455E", color: "#fff", borderRadius: 4, padding: "9px 16px", fontSize: 12.5, fontWeight: 600, cursor: "pointer" }}
+          style={{ border: "1px solid #E01B22", background: "#E01B22", color: "#fff", borderRadius: 4, padding: "9px 16px", fontSize: 12.5, fontWeight: 600, cursor: "pointer" }}
         >
           {pending ? "Salvando…" : "Salvar alterações"}
         </button>

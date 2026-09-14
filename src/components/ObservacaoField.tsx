@@ -46,7 +46,7 @@ export function ObservacaoField({
           width: "100%",
         }}
       />
-      <span style={{ fontSize: 10.5, color: pending ? "#8A5210" : alterado ? "#8A5210" : "#6B7480", fontFamily: "var(--font-mono)" }}>
+      <span style={{ fontSize: 10.5, color: pending ? "#8A5210" : alterado ? "#8A5210" : "#7A7472", fontFamily: "var(--font-mono)" }}>
         {pending ? "salvando…" : alterado ? "sai do campo para salvar" : salvo ? "salvo" : "visível ao proprietário e ao RT"}
       </span>
     </div>

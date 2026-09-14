@@ -17,7 +17,7 @@ export function VinculosTable({ pendentes }: { pendentes: Pendentes }) {
   return (
     <section style={{ background: "#fff", border: "1px solid #DDD8CE", borderRadius: 4, overflow: "hidden" }}>
       {pendentes.length === 0 && (
-        <div style={{ padding: 24, fontSize: 13, color: "#6B7480" }}>Nenhum vínculo aguardando validação.</div>
+        <div style={{ padding: 24, fontSize: 13, color: "#7A7472" }}>Nenhum vínculo aguardando validação.</div>
       )}
       {pendentes.length > 0 && (
         <div className="table-scroll">
@@ -32,7 +32,7 @@ export function VinculosTable({ pendentes }: { pendentes: Pendentes }) {
                 fontSize: 10.5,
                 letterSpacing: ".13em",
                 textTransform: "uppercase",
-                color: "#6B7480",
+                color: "#7A7472",
               }}
             >
               <div>Empreendimento</div>
@@ -73,7 +73,7 @@ export function VinculosTable({ pendentes }: { pendentes: Pendentes }) {
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 3, paddingRight: 16 }}>
                 <div style={{ fontSize: 13.5, fontWeight: 600 }}>{p.name}</div>
-                <div style={{ fontSize: 11.5, color: "#6B7480" }}>{p.email}</div>
+                <div style={{ fontSize: 11.5, color: "#7A7472" }}>{p.email}</div>
               </div>
               <div>
                 <span
@@ -93,7 +93,7 @@ export function VinculosTable({ pendentes }: { pendentes: Pendentes }) {
               <div style={{ fontSize: 12, color: "#4A5563", fontFamily: "var(--font-mono)" }}>
                 {formatDate(p.createdAt)}
               </div>
-              <div style={{ color: "#6B7480", fontSize: 12 }}>{expandida ? "▾" : "▸"}</div>
+              <div style={{ color: "#7A7472", fontSize: 12 }}>{expandida ? "▾" : "▸"}</div>
             </button>
 
             {expandida && (
@@ -127,14 +127,14 @@ export function VinculosTable({ pendentes }: { pendentes: Pendentes }) {
                     ] as const
                   ).map(([k, v]) => (
                     <div key={k} style={{ display: "grid", gridTemplateColumns: "140px 1fr", gap: 10, fontSize: 12.5 }}>
-                      <span style={{ color: "#6B7480", letterSpacing: ".06em", textTransform: "uppercase", fontSize: 10, paddingTop: 2 }}>
+                      <span style={{ color: "#7A7472", letterSpacing: ".06em", textTransform: "uppercase", fontSize: 10, paddingTop: 2 }}>
                         {k}
                       </span>
                       <span style={{ fontFamily: "var(--font-mono)", color: "#3B4653" }}>{v}</span>
                     </div>
                   ))}
                   <div style={{ display: "grid", gridTemplateColumns: "140px 1fr", gap: 10, fontSize: 12.5 }}>
-                    <span style={{ color: "#6B7480", letterSpacing: ".06em", textTransform: "uppercase", fontSize: 10, paddingTop: 2 }}>
+                    <span style={{ color: "#7A7472", letterSpacing: ".06em", textTransform: "uppercase", fontSize: 10, paddingTop: 2 }}>
                       Comprovação
                     </span>
                     {p.vinculoArquivoCaminho ? (
@@ -142,7 +142,7 @@ export function VinculosTable({ pendentes }: { pendentes: Pendentes }) {
                         href={`/api/vinculo-autorizacao/${p.id}`}
                         target="_blank"
                         rel="noreferrer"
-                        style={{ fontSize: 12.5, fontWeight: 600, color: "#12455E" }}
+                        style={{ fontSize: 12.5, fontWeight: 600, color: "#E01B22" }}
                       >
                         {p.vinculoArquivoNome ?? "Autorização do proprietário"}
                       </a>

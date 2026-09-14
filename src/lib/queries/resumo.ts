@@ -74,8 +74,8 @@ export async function getResumoData(empreendimentoId: string) {
   });
 
   const indicadores = [
-    { valor: String(totalLotes), rotulo: "Lotes cadastrados", cor: "#0E1B24" },
-    { valor: String(ativos.length), rotulo: "Solicitações ativas", cor: "#12455E" },
+    { valor: String(totalLotes), rotulo: "Lotes cadastrados", cor: "#231F20" },
+    { valor: String(ativos.length), rotulo: "Solicitações ativas", cor: "#E01B22" },
     { valor: String(complemento.length), rotulo: "Aguardando complementação", cor: "#B4711A" },
     { valor: String(emRisco.length), rotulo: `Em risco de prazo (${emp.prazoDias} dias)`, cor: "#8C2B22" },
     { valor: String(aprovados.length), rotulo: "Projetos aprovados", cor: "#24603A" },

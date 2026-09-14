@@ -9,7 +9,7 @@ export function PlantaUpload({ empreendimentoId, plantaImageUrl }: { empreendime
 
   return (
     <section style={{ background: "#fff", border: "1px solid #DDD8CE", borderRadius: 4, padding: "16px 17px", display: "flex", flexDirection: "column", gap: 11 }}>
-      <div style={{ fontSize: 11, letterSpacing: ".14em", textTransform: "uppercase", color: "#6B7480" }}>Planta cadastrada</div>
+      <div style={{ fontSize: 11, letterSpacing: ".14em", textTransform: "uppercase", color: "#7A7472" }}>Planta cadastrada</div>
       <div style={{ position: "relative", width: "100%", height: 150, background: "#F4F2ED", borderRadius: 4, overflow: "hidden" }}>
         {plantaImageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -29,7 +29,7 @@ export function PlantaUpload({ empreendimentoId, plantaImageUrl }: { empreendime
         />
         <label
           htmlFor="planta-file"
-          style={{ textAlign: "center", border: "1px solid #DDD8CE", background: "#fff", color: "#12455E", borderRadius: 4, padding: "8px 12px", fontSize: 12, fontWeight: 600, cursor: pending ? "wait" : "pointer" }}
+          style={{ textAlign: "center", border: "1px solid #DDD8CE", background: "#fff", color: "#E01B22", borderRadius: 4, padding: "8px 12px", fontSize: 12, fontWeight: 600, cursor: pending ? "wait" : "pointer" }}
         >
           {pending ? "Enviando…" : "Enviar nova planta"}
         </label>

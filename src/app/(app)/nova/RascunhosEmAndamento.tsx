@@ -13,7 +13,7 @@ export function RascunhosEmAndamento({ rascunhos }: { rascunhos: Rascunhos }) {
         <div style={{ fontFamily: "var(--font-display)", fontSize: 17, fontWeight: 600, letterSpacing: ".04em", textTransform: "uppercase" }}>
           Solicitações em andamento
         </div>
-        <div style={{ fontSize: 11.5, color: "#6B7480" }}>
+        <div style={{ fontSize: 11.5, color: "#7A7472" }}>
           Ainda não enviadas à CAPE — retome de onde parou ou descarte.
         </div>
       </div>
@@ -30,7 +30,7 @@ export function RascunhosEmAndamento({ rascunhos }: { rascunhos: Rascunhos }) {
               <div style={{ fontSize: 13.5, fontWeight: 600 }}>
                 {r.lote.quadra.nome} L{r.lote.numero} · {TIPO_LABEL[r.tipo]}
               </div>
-              <div style={{ fontSize: 11.5, color: "#6B7480" }}>
+              <div style={{ fontSize: 11.5, color: "#7A7472" }}>
                 {r.lote.empreendimento.nome} · iniciada em {formatDate(r.createdAt)} ·{" "}
                 <span style={{ fontFamily: "var(--font-mono)", color: completo ? "#24603A" : "#8A5210" }}>
                   {anexados}/{DOC_ORDER.length} documentos
@@ -40,7 +40,7 @@ export function RascunhosEmAndamento({ rascunhos }: { rascunhos: Rascunhos }) {
             <div style={{ display: "flex", gap: 8 }}>
               <a
                 href={`/nova?rascunho=${r.id}&passo=${completo ? 3 : 2}`}
-                style={{ border: "1px solid #12455E", background: "#12455E", color: "#fff", borderRadius: 4, padding: "8px 14px", fontSize: 12.5, fontWeight: 600, textDecoration: "none" }}
+                style={{ border: "1px solid #E01B22", background: "#E01B22", color: "#fff", borderRadius: 4, padding: "8px 14px", fontSize: 12.5, fontWeight: 600, textDecoration: "none" }}
               >
                 Retomar
               </a>

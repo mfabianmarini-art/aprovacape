@@ -38,7 +38,7 @@ export function Sidebar({ nav }: { nav: NavEntry[] }) {
           background: "#fff",
           borderRadius: 6,
           fontSize: 18,
-          color: "#0B2E3F",
+          color: "#231F20",
           cursor: "pointer",
         }}
       >
@@ -49,7 +49,7 @@ export function Sidebar({ nav }: { nav: NavEntry[] }) {
         className="app-sidebar"
         data-open={open}
         style={{
-          background: "#0B2E3F",
+          background: "#231F20",
           color: "#fff",
           display: "flex",
           flexDirection: "column",
@@ -61,7 +61,7 @@ export function Sidebar({ nav }: { nav: NavEntry[] }) {
             <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 27, letterSpacing: ".14em", lineHeight: 1 }}>
               CAPE
             </div>
-            <div style={{ fontSize: 10.5, letterSpacing: ".18em", textTransform: "uppercase", color: "#8FB0BF" }}>
+            <div style={{ fontSize: 10.5, letterSpacing: ".18em", textTransform: "uppercase", color: "#A89F9F" }}>
               Aprova · Obras em lotes
             </div>
           </div>
@@ -113,7 +113,7 @@ export function Sidebar({ nav }: { nav: NavEntry[] }) {
                     fontSize: 13.5,
                     fontWeight: active || pendente ? 600 : 400,
                     background: active ? "rgba(255,255,255,.14)" : "transparent",
-                    color: active ? "#FFFFFF" : pendente ? "#FFFFFF" : "#C7D8E0",
+                    color: active ? "#FFFFFF" : pendente ? "#FFFFFF" : "#CFC8C6",
                   }}
                 >
                   <span
@@ -122,7 +122,7 @@ export function Sidebar({ nav }: { nav: NavEntry[] }) {
                       height: 6,
                       borderRadius: "50%",
                       flex: "none",
-                      background: active ? "#B4711A" : pendente ? "#E0A030" : "rgba(255,255,255,.28)",
+                      background: active ? "#E01B22" : pendente ? "#E0A030" : "rgba(255,255,255,.28)",
                     }}
                   />
                   <span style={{ flex: 1 }}>{n.label}</span>
@@ -134,7 +134,7 @@ export function Sidebar({ nav }: { nav: NavEntry[] }) {
                         fontSize: 11,
                         fontWeight: pendente ? 700 : 400,
                         lineHeight: 1,
-                        color: pendente ? "#0B2E3F" : "#8FB0BF",
+                        color: pendente ? "#231F20" : "#A89F9F",
                         background: pendente ? "#E0A030" : "transparent",
                         borderRadius: pendente ? 999 : 0,
                         padding: pendente ? "3px 7px" : 0,
@@ -167,7 +167,7 @@ export function Sidebar({ nav }: { nav: NavEntry[] }) {
                 width: "100%",
                 border: "1px solid rgba(255,255,255,.22)",
                 background: "transparent",
-                color: "#C7D8E0",
+                color: "#CFC8C6",
                 borderRadius: 5,
                 padding: "9px 10px",
                 fontSize: 12.5,

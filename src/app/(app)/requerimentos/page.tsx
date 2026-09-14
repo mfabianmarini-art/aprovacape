@@ -37,7 +37,7 @@ export default async function RequerimentosPage() {
       <ScreenBody>
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           {pedidos.length === 0 && (
-            <div style={{ fontSize: 13.5, color: "#6B7480" }}>Nenhuma solicitação enviada ainda.</div>
+            <div style={{ fontSize: 13.5, color: "#7A7472" }}>Nenhuma solicitação enviada ainda.</div>
           )}
           {pedidos.map((s) => {
             const info = STATUS_INFO[s.status];
@@ -66,7 +66,7 @@ export default async function RequerimentosPage() {
               {
                 titulo: "Análise técnica (check-list)",
                 data: s.status === "ANALISE" ? "em andamento" : s.status === "ENVIADA" ? "aguardando" : formatDate(s.updatedAt),
-                cor: s.status === "ANALISE" ? "#B4711A" : s.status === "ENVIADA" ? "#8FB0BF" : "#24603A",
+                cor: s.status === "ANALISE" ? "#B4711A" : s.status === "ENVIADA" ? "#A89F9F" : "#24603A",
               },
               {
                 titulo: info.label,
@@ -95,7 +95,7 @@ export default async function RequerimentosPage() {
                       {info.label}
                     </span>
                     <span
-                      style={{ fontSize: 11.5, color: "#6B7480" }}
+                      style={{ fontSize: 11.5, color: "#7A7472" }}
                       title="Só os reenvios da etapa de análise técnica (check-list) são contados."
                     >
                       reenvios na análise técnica {s.reenvios} / {s.lote.empreendimento.reenviosSemTaxa}
@@ -137,7 +137,7 @@ export default async function RequerimentosPage() {
                             <span style={{ fontSize: 12.5, fontWeight: 600, color: irr.regularizadaEm ? "#4A5563" : "#8C2B22" }}>
                               {IRREGULARIDADE_LABEL[irr.tipo]}
                             </span>
-                            <span style={{ fontSize: 10.5, fontFamily: "var(--font-mono)", color: "#6B7480" }}>
+                            <span style={{ fontSize: 10.5, fontFamily: "var(--font-mono)", color: "#7A7472" }}>
                               {formatDate(irr.createdAt)}
                             </span>
                             {irr.regularizadaEm && (
@@ -155,7 +155,7 @@ export default async function RequerimentosPage() {
                                   href={`/api/irregularidades/${ev.id}`}
                                   target="_blank"
                                   rel="noreferrer"
-                                  style={{ fontSize: 11.5, color: "#12455E", fontFamily: "var(--font-mono)" }}
+                                  style={{ fontSize: 11.5, color: "#E01B22", fontFamily: "var(--font-mono)" }}
                                 >
                                   {ev.nomeArquivo}
                                 </a>
@@ -206,8 +206,8 @@ export default async function RequerimentosPage() {
                         {i < etapas.length - 1 && <span style={{ flex: 1, width: 1, background: "#E4DFD5" }} />}
                       </div>
                       <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
-                        <div style={{ fontSize: 12.5, fontWeight: 600, color: "#0E1B24" }}>{e.titulo}</div>
-                        <div style={{ fontSize: 11, color: "#6B7480", fontFamily: "var(--font-mono)" }}>{e.data}</div>
+                        <div style={{ fontSize: 12.5, fontWeight: 600, color: "#231F20" }}>{e.titulo}</div>
+                        <div style={{ fontSize: 11, color: "#7A7472", fontFamily: "var(--font-mono)" }}>{e.data}</div>
                       </div>
                     </div>
                   ))}

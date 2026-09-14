@@ -9,7 +9,7 @@ import {
 } from "@/lib/actions/usuarios-actions";
 
 const inputStyle: React.CSSProperties = { border: "1px solid #DDD8CE", borderRadius: 4, padding: "10px 11px", fontSize: 13.5, background: "#fff" };
-const labelTextStyle: React.CSSProperties = { fontSize: 11, letterSpacing: ".13em", textTransform: "uppercase", color: "#6B7480" };
+const labelTextStyle: React.CSSProperties = { fontSize: 11, letterSpacing: ".13em", textTransform: "uppercase", color: "#7A7472" };
 const cardStyle: React.CSSProperties = { background: "#fff", border: "1px solid #DDD8CE", borderRadius: 4, padding: 18, display: "flex", flexDirection: "column", gap: 13 };
 
 type Sindico = { id: string; name: string; email: string };
@@ -52,7 +52,7 @@ export function SindicoManager({
       {atual ? (
         <div style={{ display: "flex", flexDirection: "column", gap: 7, border: "1px solid #EDE9E1", borderRadius: 4, padding: "12px 13px" }}>
           <div style={{ fontSize: 13, fontWeight: 600 }}>{atual.name}</div>
-          <div style={{ fontSize: 11.5, color: "#6B7480" }}>{atual.email} · acesso somente leitura</div>
+          <div style={{ fontSize: 11.5, color: "#7A7472" }}>{atual.email} · acesso somente leitura</div>
           <form action={desvincularSindicoAction.bind(null, empreendimentoId)}>
             <button
               type="submit"
@@ -63,7 +63,7 @@ export function SindicoManager({
           </form>
         </div>
       ) : (
-        <div style={{ fontSize: 12.5, color: "#6B7480" }}>Nenhum síndico vinculado — enquanto isso, ninguém enxerga este empreendimento como síndico.</div>
+        <div style={{ fontSize: 12.5, color: "#7A7472" }}>Nenhum síndico vinculado — enquanto isso, ninguém enxerga este empreendimento como síndico.</div>
       )}
 
       {outros.length > 0 && (
@@ -81,7 +81,7 @@ export function SindicoManager({
           </select>
           <button
             type="submit"
-            style={{ border: "1px dashed #C9C2B4", background: "#fff", color: "#12455E", borderRadius: 4, padding: "9px 12px", fontSize: 12.5, fontWeight: 600, cursor: "pointer" }}
+            style={{ border: "1px dashed #C9C2B4", background: "#fff", color: "#E01B22", borderRadius: 4, padding: "9px 12px", fontSize: 12.5, fontWeight: 600, cursor: "pointer" }}
           >
             Vincular
           </button>
@@ -104,7 +104,7 @@ export function SindicoManager({
             <button
               type="submit"
               disabled={pending}
-              style={{ flex: 1, border: "1px solid #12455E", background: "#12455E", color: "#fff", borderRadius: 4, padding: "10px 14px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+              style={{ flex: 1, border: "1px solid #E01B22", background: "#E01B22", color: "#fff", borderRadius: 4, padding: "10px 14px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
             >
               {pending ? "Criando…" : atual ? "Criar e substituir" : "Criar síndico"}
             </button>
@@ -121,7 +121,7 @@ export function SindicoManager({
         <button
           type="button"
           onClick={() => setCriando(true)}
-          style={{ border: "1px dashed #C9C2B4", background: "#fff", color: "#12455E", borderRadius: 4, padding: "9px 12px", fontSize: 12.5, fontWeight: 600, cursor: "pointer" }}
+          style={{ border: "1px dashed #C9C2B4", background: "#fff", color: "#E01B22", borderRadius: 4, padding: "9px 12px", fontSize: 12.5, fontWeight: 600, cursor: "pointer" }}
         >
           + cadastrar novo síndico
         </button>

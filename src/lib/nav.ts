@@ -105,9 +105,9 @@ export const ROLE_LABEL: Record<Role, string> = {
 };
 
 export const ROLE_COLOR: Record<Role, { bg: string; fg: string }> = {
-  ADMIN_CAPE: { bg: "#0B2E3F", fg: "#FFFFFF" },
-  CAPE_ANALISTA: { bg: "#12455E", fg: "#FFFFFF" },
+  ADMIN_CAPE: { bg: "#231F20", fg: "#FFFFFF" },
+  CAPE_ANALISTA: { bg: "#E01B22", fg: "#FFFFFF" },
   SINDICO: { bg: "#DEDCF0", fg: "#3B3486" },
-  RESPONSAVEL_TECNICO: { bg: "#DCE9F2", fg: "#12455E" },
+  RESPONSAVEL_TECNICO: { bg: "#F7DCDD", fg: "#A5121A" },
   PROPRIETARIO: { bg: "#EDE9E1", fg: "#5A6270" },
 };

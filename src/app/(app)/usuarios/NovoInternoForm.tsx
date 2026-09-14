@@ -4,7 +4,7 @@ import { useActionState, useState } from "react";
 import { criarUsuarioInternoAction, type NovoInternoState } from "@/lib/actions/usuarios-actions";
 
 const inputStyle: React.CSSProperties = { border: "1px solid #DDD8CE", borderRadius: 4, padding: "10px 11px", fontSize: 13.5, background: "#fff" };
-const labelTextStyle: React.CSSProperties = { fontSize: 11, letterSpacing: ".13em", textTransform: "uppercase", color: "#6B7480" };
+const labelTextStyle: React.CSSProperties = { fontSize: 11, letterSpacing: ".13em", textTransform: "uppercase", color: "#7A7472" };
 
 export function NovoInternoForm({ podeAtribuirAdmin }: { podeAtribuirAdmin: boolean }) {
   const [state, formAction, pending] = useActionState<NovoInternoState, FormData>(criarUsuarioInternoAction, null);
@@ -75,7 +75,7 @@ export function NovoInternoForm({ podeAtribuirAdmin }: { podeAtribuirAdmin: bool
       <button
         type="submit"
         disabled={pending}
-        style={{ border: "1px solid #12455E", background: "#12455E", color: "#fff", borderRadius: 4, padding: "11px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+        style={{ border: "1px solid #E01B22", background: "#E01B22", color: "#fff", borderRadius: 4, padding: "11px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
       >
         {pending ? "Criando…" : "Cadastrar usuário"}
       </button>

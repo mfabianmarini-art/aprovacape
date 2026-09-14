@@ -11,7 +11,7 @@ type Data = NonNullable<Awaited<ReturnType<typeof getResumoData>>>;
 function Bloco({ titulo, children }: { titulo: string; children: React.ReactNode }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-      <div style={{ fontSize: 10, letterSpacing: ".13em", textTransform: "uppercase", color: "#6B7480" }}>{titulo}</div>
+      <div style={{ fontSize: 10, letterSpacing: ".13em", textTransform: "uppercase", color: "#7A7472" }}>{titulo}</div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px 12px" }}>{children}</div>
     </div>
   );
@@ -113,11 +113,11 @@ export function ResumoMapa({ data, podeAnalisar }: { data: Data; podeAnalisar: b
               <div style={{ fontFamily: "var(--font-display)", fontSize: 17, fontWeight: 600, letterSpacing: ".04em", textTransform: "uppercase" }}>
                 Planta do loteamento
               </div>
-              <div style={{ fontSize: 11.5, color: "#6B7480" }}>
+              <div style={{ fontSize: 11.5, color: "#7A7472" }}>
                 {data.empreendimento.nome} · {data.empreendimento.cidade}/{data.empreendimento.uf} · {data.empreendimento.numQuadras} quadras · {data.lotes.length} lotes
               </div>
             </div>
-            <div style={{ fontSize: 11, color: "#6B7480", fontFamily: "var(--font-mono)" }}>clique num lote →</div>
+            <div style={{ fontSize: 11, color: "#7A7472", fontFamily: "var(--font-mono)" }}>clique num lote →</div>
           </div>
 
           <div style={{ display: "flex", gap: 9, padding: "12px 18px", borderBottom: "1px solid #EDE9E1", flexWrap: "wrap", alignItems: "center" }}>
@@ -148,7 +148,7 @@ export function ResumoMapa({ data, podeAnalisar }: { data: Data; podeAnalisar: b
             </select>
             {filtroAtivo && (
               <>
-                <span style={{ fontSize: 11.5, color: "#6B7480", fontFamily: "var(--font-mono)" }}>
+                <span style={{ fontSize: 11.5, color: "#7A7472", fontFamily: "var(--font-mono)" }}>
                   {filtrados.length} de {data.lotes.length}
                 </span>
                 <button
@@ -197,7 +197,7 @@ export function ResumoMapa({ data, podeAnalisar }: { data: Data; podeAnalisar: b
                   .map((l) => {
                     const ativo = loteSel === l.id;
                     const bg = l.statusInfo.bg;
-                    const fillOpaque = bg === "#0E1B24" ? "rgba(14,27,36,.82)" : bg;
+                    const fillOpaque = bg === "#231F20" ? "rgba(35,31,32,.82)" : bg;
                     // Fora do filtro o pin apaga em vez de sumir: a planta continua
                     // legível como planta, e o que casa salta à vista.
                     const apagado = filtroAtivo && !combina(l);
@@ -226,12 +226,12 @@ export function ResumoMapa({ data, podeAnalisar }: { data: Data; podeAnalisar: b
                           borderRadius: 2,
                           background: fillOpaque,
                           opacity: apagado ? 0.22 : 1,
-                          border: ativo ? "2px solid #0E1B24" : "1px solid rgba(14,27,36,.35)",
+                          border: ativo ? "2px solid #231F20" : "1px solid rgba(35,31,32,.35)",
                           boxShadow: ativo
                             ? "0 0 0 3px rgba(180,113,26,.55)"
                             : filtroAtivo && !apagado
                               ? "0 0 0 2px rgba(180,113,26,.5)"
-                              : "0 1px 3px rgba(14,27,36,.28)",
+                              : "0 1px 3px rgba(35,31,32,.28)",
                           color: l.statusInfo.fg,
                           fontFamily: "var(--font-mono)",
                           fontSize: 8,
@@ -293,11 +293,11 @@ export function ResumoMapa({ data, podeAnalisar }: { data: Data; podeAnalisar: b
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
           {filtroAtivo && (
             <section style={{ background: "#fff", border: "1px solid #DDD8CE", borderRadius: 4, overflow: "hidden" }}>
-              <div style={{ padding: "12px 16px", borderBottom: "1px solid #EDE9E1", fontSize: 10.5, letterSpacing: ".14em", textTransform: "uppercase", color: "#6B7480" }}>
+              <div style={{ padding: "12px 16px", borderBottom: "1px solid #EDE9E1", fontSize: 10.5, letterSpacing: ".14em", textTransform: "uppercase", color: "#7A7472" }}>
                 Resultados da busca
               </div>
               {filtrados.length === 0 && (
-                <div style={{ padding: 18, fontSize: 12.5, color: "#6B7480" }}>Nenhum lote corresponde ao filtro.</div>
+                <div style={{ padding: 18, fontSize: 12.5, color: "#7A7472" }}>Nenhum lote corresponde ao filtro.</div>
               )}
               <div style={{ maxHeight: 300, overflowY: "auto" }}>
                 {filtrados.map((l) => (
@@ -327,7 +327,7 @@ export function ResumoMapa({ data, podeAnalisar }: { data: Data; podeAnalisar: b
                           <span style={{ fontWeight: 400, color: "#8B939C" }}> · sem pino na planta</span>
                         )}
                       </span>
-                      <span style={{ fontSize: 11, color: "#6B7480", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      <span style={{ fontSize: 11, color: "#7A7472", overflow: "hidden", textOverflow: "ellipsis" }}>
                         {l.proprietario?.name ?? "sem proprietário"}
                         {l.statusAtual ? ` · ${l.statusAtual.protocolo}` : ""}
                       </span>
@@ -353,11 +353,11 @@ export function ResumoMapa({ data, podeAnalisar }: { data: Data; podeAnalisar: b
             <section
               style={{
                 background: "#fff",
-                border: "1px solid #12455E",
+                border: "1px solid #E01B22",
                 borderRadius: 4,
                 display: "flex",
                 flexDirection: "column",
-                boxShadow: "0 2px 10px rgba(14,27,36,.1)",
+                boxShadow: "0 2px 10px rgba(35,31,32,.1)",
               }}
             >
               <div
@@ -367,7 +367,7 @@ export function ResumoMapa({ data, podeAnalisar }: { data: Data; podeAnalisar: b
                   justifyContent: "space-between",
                   gap: 12,
                   padding: "15px 18px",
-                  background: "#0B2E3F",
+                  background: "#231F20",
                   color: "#fff",
                   borderRadius: "3px 3px 0 0",
                 }}
@@ -376,7 +376,7 @@ export function ResumoMapa({ data, podeAnalisar }: { data: Data; podeAnalisar: b
                   <div style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 600, letterSpacing: ".03em", lineHeight: 1 }}>
                     Quadra {lote.quadra.nome} · Lote {lote.numero}
                   </div>
-                  <div style={{ fontSize: 11.5, color: "#8FB0BF" }}>{lote.rua ?? "Endereço não informado"}</div>
+                  <div style={{ fontSize: 11.5, color: "#A89F9F" }}>{lote.rua ?? "Endereço não informado"}</div>
                 </div>
                 <button
                   onClick={() => selecionarLote(null)}
@@ -415,7 +415,7 @@ export function ResumoMapa({ data, podeAnalisar }: { data: Data; podeAnalisar: b
                       {lote.irregularidadesAbertas} irregularidade(s) em aberto
                     </span>
                   )}
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 11.5, color: "#6B7480" }}>
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 11.5, color: "#7A7472" }}>
                     {lote.areaM2 != null ? `${lote.areaM2.toLocaleString("pt-BR")} m²` : "área não informada"}
                   </span>
                 </div>
@@ -427,24 +427,24 @@ export function ResumoMapa({ data, podeAnalisar }: { data: Data; podeAnalisar: b
                     ["Última movimentação", lote.historico[0]?.texto ?? "Sem movimentações"],
                   ].map(([k, v]) => (
                     <div key={k} style={{ display: "flex", flexDirection: "column", gap: 1 }}>
-                      <div style={{ fontSize: 10, letterSpacing: ".13em", textTransform: "uppercase", color: "#6B7480" }}>{k}</div>
+                      <div style={{ fontSize: 10, letterSpacing: ".13em", textTransform: "uppercase", color: "#7A7472" }}>{k}</div>
                       <div style={{ fontSize: 12.5, lineHeight: 1.35 }}>{v}</div>
                     </div>
                   ))}
                 </div>
               </div>
               <div style={{ padding: "14px 18px", display: "flex", flexDirection: "column", gap: 11 }}>
-                <div style={{ fontSize: 10.5, letterSpacing: ".14em", textTransform: "uppercase", color: "#6B7480" }}>
+                <div style={{ fontSize: 10.5, letterSpacing: ".14em", textTransform: "uppercase", color: "#7A7472" }}>
                   Protocolos deste lote
                 </div>
                 {lote.solicitacoes.length === 0 && (
-                  <div style={{ fontSize: 12.5, color: "#6B7480" }}>Nenhuma solicitação registrada para este lote.</div>
+                  <div style={{ fontSize: 12.5, color: "#7A7472" }}>Nenhuma solicitação registrada para este lote.</div>
                 )}
                 {lote.solicitacoes.map((s) => {
                   const info = STATUS_INFO[s.status];
                   const aberto = protocoloSel === s.id;
                   return (
-                    <div key={s.id} style={{ border: `1px solid ${aberto ? "#12455E" : "#EDE9E1"}`, borderRadius: 4, overflow: "hidden" }}>
+                    <div key={s.id} style={{ border: `1px solid ${aberto ? "#E01B22" : "#EDE9E1"}`, borderRadius: 4, overflow: "hidden" }}>
                       <button
                         type="button"
                         onClick={() => setProtocoloSel(aberto ? null : s.id)}
@@ -471,11 +471,11 @@ export function ResumoMapa({ data, podeAnalisar }: { data: Data; podeAnalisar: b
                               {info.label}
                             </span>
                           </span>
-                          <span style={{ fontSize: 11.5, color: "#6B7480" }}>
+                          <span style={{ fontSize: 11.5, color: "#7A7472" }}>
                             {TIPO_LABEL[s.tipo]} · aberta em {formatDate(s.createdAt)} · {s.historico.length} movimentação(ões)
                           </span>
                         </span>
-                        <span style={{ color: "#6B7480", fontSize: 11 }}>{aberto ? "▾" : "▸"}</span>
+                        <span style={{ color: "#7A7472", fontSize: 11 }}>{aberto ? "▾" : "▸"}</span>
                       </button>
 
                       {aberto && (
@@ -496,7 +496,7 @@ export function ResumoMapa({ data, podeAnalisar }: { data: Data; podeAnalisar: b
                                   Irregularidades
                                 </div>
                                 {s.irregularidades.map((irr) => (
-                                  <div key={irr.id} style={{ fontSize: 11.5, lineHeight: 1.45, color: irr.regularizadaEm ? "#6B7480" : "#8C2B22" }}>
+                                  <div key={irr.id} style={{ fontSize: 11.5, lineHeight: 1.45, color: irr.regularizadaEm ? "#7A7472" : "#8C2B22" }}>
                                     {IRREGULARIDADE_LABEL[irr.tipo]} · {formatDate(irr.createdAt)}
                                     {irr.regularizadaEm
                                       ? ` · regularizada em ${formatDate(irr.regularizadaEm)}`
@@ -525,11 +525,11 @@ export function ResumoMapa({ data, podeAnalisar }: { data: Data; podeAnalisar: b
                             </Bloco>
 
                             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                              <div style={{ fontSize: 10, letterSpacing: ".13em", textTransform: "uppercase", color: "#6B7480" }}>
+                              <div style={{ fontSize: 10, letterSpacing: ".13em", textTransform: "uppercase", color: "#7A7472" }}>
                                 Documentos anexados
                               </div>
                               {s.documentos.length === 0 ? (
-                                <div style={{ fontSize: 12, color: "#6B7480" }}>Nenhum documento anexado.</div>
+                                <div style={{ fontSize: 12, color: "#7A7472" }}>Nenhum documento anexado.</div>
                               ) : (
                                 s.documentos.map((d) => (
                                   <div key={d.id} style={{ display: "flex", alignItems: "baseline", gap: 7, flexWrap: "wrap" }}>
@@ -538,7 +538,7 @@ export function ResumoMapa({ data, podeAnalisar }: { data: Data; podeAnalisar: b
                                       href={`/api/files/${d.id}`}
                                       target="_blank"
                                       rel="noreferrer"
-                                      style={{ fontSize: 11.5, color: "#12455E", fontFamily: "var(--font-mono)", wordBreak: "break-all" }}
+                                      style={{ fontSize: 11.5, color: "#E01B22", fontFamily: "var(--font-mono)", wordBreak: "break-all" }}
                                     >
                                       {d.nomeArquivo}
                                     </a>
@@ -550,12 +550,12 @@ export function ResumoMapa({ data, podeAnalisar }: { data: Data; podeAnalisar: b
                               )}
                             </div>
 
-                            <div style={{ fontSize: 10, letterSpacing: ".13em", textTransform: "uppercase", color: "#6B7480", paddingTop: 4 }}>
+                            <div style={{ fontSize: 10, letterSpacing: ".13em", textTransform: "uppercase", color: "#7A7472", paddingTop: 4 }}>
                               Histórico
                             </div>
                           </div>
                           {s.historico.length === 0 && (
-                            <div style={{ fontSize: 12, color: "#6B7480", paddingBottom: 10 }}>
+                            <div style={{ fontSize: 12, color: "#7A7472", paddingBottom: 10 }}>
                               Sem movimentações registradas neste protocolo.
                             </div>
                           )}
@@ -567,7 +567,7 @@ export function ResumoMapa({ data, podeAnalisar }: { data: Data; podeAnalisar: b
                               </div>
                               <div style={{ display: "flex", flexDirection: "column", gap: 2, paddingBottom: 11 }}>
                                 <span style={{ display: "flex", alignItems: "baseline", gap: 7, flexWrap: "wrap" }}>
-                                  <span style={{ fontSize: 11, color: "#6B7480", fontFamily: "var(--font-mono)" }}>
+                                  <span style={{ fontSize: 11, color: "#7A7472", fontFamily: "var(--font-mono)" }}>
                                     {formatDateTime(h.createdAt)}
                                   </span>
                                   {h.autor && (
@@ -587,7 +587,7 @@ export function ResumoMapa({ data, podeAnalisar }: { data: Data; podeAnalisar: b
                               style={{
                                 border: "1px solid #DDD8CE",
                                 background: "#fff",
-                                color: "#12455E",
+                                color: "#E01B22",
                                 borderRadius: 4,
                                 padding: "8px 12px",
                                 fontSize: 12,
@@ -608,8 +608,8 @@ export function ResumoMapa({ data, podeAnalisar }: { data: Data; podeAnalisar: b
                   <button
                     onClick={() => router.push(`/analise/${lote.statusAtual!.protocolo}`)}
                     style={{
-                      border: "1px solid #12455E",
-                      background: "#12455E",
+                      border: "1px solid #E01B22",
+                      background: "#E01B22",
                       color: "#fff",
                       borderRadius: 4,
                       padding: "10px 14px",
@@ -644,7 +644,7 @@ export function ResumoMapa({ data, podeAnalisar }: { data: Data; podeAnalisar: b
                 <div key={q.nome} style={{ padding: "13px 18px", borderBottom: "1px solid #F1EEE7", display: "flex", flexDirection: "column", gap: 8 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
                     <div style={{ fontWeight: 600, fontSize: 13.5 }}>{q.nome}</div>
-                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 11.5, color: "#6B7480" }}>{q.resumo}</div>
+                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 11.5, color: "#7A7472" }}>{q.resumo}</div>
                   </div>
                   <div style={{ display: "flex", height: 7, borderRadius: 4, overflow: "hidden", background: "#EDE9E1" }}>
                     {q.barras.map((b, i) => (
@@ -656,7 +656,7 @@ export function ResumoMapa({ data, podeAnalisar }: { data: Data; podeAnalisar: b
             </div>
             {data.prazosEmRisco.length > 0 && (
               <div style={{ padding: "14px 18px", display: "flex", flexDirection: "column", gap: 6 }}>
-                <div style={{ fontSize: 11, letterSpacing: ".16em", textTransform: "uppercase", color: "#6B7480" }}>Prazos em risco</div>
+                <div style={{ fontSize: 11, letterSpacing: ".16em", textTransform: "uppercase", color: "#7A7472" }}>Prazos em risco</div>
                 {data.prazosEmRisco.map((p, i) => (
                   <div key={i} style={{ fontSize: 12.5, color: p.cor, lineHeight: 1.45 }}>
                     {p.texto}

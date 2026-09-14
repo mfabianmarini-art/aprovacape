@@ -39,8 +39,8 @@ export function FilaTable({ fila }: { fila: Fila }) {
               key={e}
               onClick={() => setEmpreendimentoFiltro(e)}
               style={{
-                border: `1px solid ${empreendimentoFiltro === e ? "#B4711A" : "#DDD8CE"}`,
-                background: empreendimentoFiltro === e ? "#B4711A" : "#FFFFFF",
+                border: `1px solid ${empreendimentoFiltro === e ? "#E01B22" : "#DDD8CE"}`,
+                background: empreendimentoFiltro === e ? "#E01B22" : "#FFFFFF",
                 color: empreendimentoFiltro === e ? "#FFFFFF" : "#4A5563",
                 borderRadius: 20,
                 padding: "6px 13px",
@@ -59,8 +59,8 @@ export function FilaTable({ fila }: { fila: Fila }) {
             key={f}
             onClick={() => setFiltro(f)}
             style={{
-              border: `1px solid ${filtro === f ? "#12455E" : "#DDD8CE"}`,
-              background: filtro === f ? "#12455E" : "#FFFFFF",
+              border: `1px solid ${filtro === f ? "#E01B22" : "#DDD8CE"}`,
+              background: filtro === f ? "#E01B22" : "#FFFFFF",
               color: filtro === f ? "#FFFFFF" : "#4A5563",
               borderRadius: 20,
               padding: "6px 13px",
@@ -73,7 +73,7 @@ export function FilaTable({ fila }: { fila: Fila }) {
         ))}
       </div>
       {linhas.length === 0 && (
-        <div style={{ padding: 24, fontSize: 13, color: "#6B7480" }}>Nenhuma solicitação neste filtro.</div>
+        <div style={{ padding: 24, fontSize: 13, color: "#7A7472" }}>Nenhuma solicitação neste filtro.</div>
       )}
       {linhas.length > 0 && (
         <div className="table-scroll">
@@ -88,7 +88,7 @@ export function FilaTable({ fila }: { fila: Fila }) {
                 fontSize: 10.5,
                 letterSpacing: ".13em",
                 textTransform: "uppercase",
-                color: "#6B7480",
+                color: "#7A7472",
               }}
             >
               <div>Protocolo</div>
@@ -118,7 +118,7 @@ export function FilaTable({ fila }: { fila: Fila }) {
                     <div style={{ fontSize: 13.5, fontWeight: 600 }}>
                       {s.lote.quadra.nome} L{s.lote.numero}
                     </div>
-                    <div style={{ fontSize: 11.5, color: "#6B7480" }}>
+                    <div style={{ fontSize: 11.5, color: "#7A7472" }}>
                       {s.descricao.length > 40 ? s.descricao.slice(0, 40) + "…" : s.descricao} · RT {s.responsavelTecnicoNome}
                     </div>
                   </div>
@@ -147,8 +147,8 @@ export function FilaTable({ fila }: { fila: Fila }) {
                     <button
                       onClick={() => router.push(`/analise/${s.protocolo}`)}
                       style={{
-                        border: "1px solid #12455E",
-                        background: "#12455E",
+                        border: "1px solid #E01B22",
+                        background: "#E01B22",
                         color: "#fff",
                         borderRadius: 4,
                         padding: "7px 12px",

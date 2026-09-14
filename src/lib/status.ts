@@ -2,18 +2,18 @@ import type { SolicitacaoStatus, DocumentoTipo, SolicitacaoTipo, DocumentoTecnic
 
 export const STATUS_INFO: Record<SolicitacaoStatus, { label: string; bg: string; fg: string }> = {
   RASCUNHO: { label: "Rascunho", bg: "#E7E5DF", fg: "#5A6270" },
-  ENVIADA: { label: "Em análise", bg: "#DCE9F2", fg: "#12455E" },
-  ANALISE: { label: "Em análise técnica", bg: "#12455E", fg: "#FFFFFF" },
+  ENVIADA: { label: "Em análise", bg: "#CFD8DE", fg: "#2E4653" },
+  ANALISE: { label: "Em análise técnica", bg: "#E01B22", fg: "#FFFFFF" },
   COMPLEMENTO: { label: "Aguardando complementação", bg: "#F6E3C4", fg: "#8A5210" },
   APROVADA: { label: "Aprovada", bg: "#D8E9DA", fg: "#24603A" },
-  RESSALVAS: { label: "Aprovada com ressalvas", bg: "#E4EBD3", fg: "#4C6321" },
+  RESSALVAS: { label: "Aprovada com ressalvas", bg: "#EFF3C9", fg: "#5C6B12" },
   REPROVADA: { label: "Reprovada", bg: "#F3DAD6", fg: "#8C2B22" },
   ALVARA_CONFERENCIA: { label: "Alvará em conferência", bg: "#E4DCF0", fg: "#4B3A7A" },
   EXECUCAO: { label: "Obra aprovada", bg: "#DEDCF0", fg: "#3B3486" },
-  CONCLUIDA: { label: "Concluída / habite-se", bg: "#0E1B24", fg: "#FFFFFF" },
+  CONCLUIDA: { label: "Concluída / habite-se", bg: "#231F20", fg: "#FFFFFF" },
 };
 
-export const LIVRE_INFO = { label: "Sem solicitação", bg: "#EDE9E1", fg: "#6B7480" };
+export const LIVRE_INFO = { label: "Sem solicitação", bg: "#EDE9E1", fg: "#7A7472" };
 
 export const DOC_LABEL: Record<DocumentoTipo, { nome: string }> = {
   PROJETO_ARQUITETONICO: { nome: "Projeto arquitetônico" },

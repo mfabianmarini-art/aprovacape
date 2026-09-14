@@ -21,20 +21,20 @@ export function UsuariosSection({
 }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-      <div style={{ fontSize: 11, letterSpacing: ".14em", textTransform: "uppercase", color: "#6B7480" }}>Usuários deste empreendimento</div>
+      <div style={{ fontSize: 11, letterSpacing: ".14em", textTransform: "uppercase", color: "#7A7472" }}>Usuários deste empreendimento</div>
       <div className="layout-with-aside">
         <section style={{ background: "#fff", border: "1px solid #DDD8CE", borderRadius: 4, overflow: "hidden" }}>
           <div className="table-scroll">
             <div style={{ minWidth: 560 }}>
               <div
-                style={{ display: "grid", gridTemplateColumns: "1fr 165px 190px", padding: "11px 18px", background: "#FAF9F6", borderBottom: "1px solid #EDE9E1", fontSize: 10.5, letterSpacing: ".13em", textTransform: "uppercase", color: "#6B7480" }}
+                style={{ display: "grid", gridTemplateColumns: "1fr 165px 190px", padding: "11px 18px", background: "#FAF9F6", borderBottom: "1px solid #EDE9E1", fontSize: 10.5, letterSpacing: ".13em", textTransform: "uppercase", color: "#7A7472" }}
               >
                 <div>Usuário</div>
                 <div>Perfil</div>
                 <div>Vínculo</div>
               </div>
               {usuarios.length === 0 && (
-                <div style={{ padding: 24, fontSize: 13, color: "#6B7480" }}>
+                <div style={{ padding: 24, fontSize: 13, color: "#7A7472" }}>
                   Nenhum usuário vinculado a este empreendimento ainda.
                 </div>
               )}
@@ -50,7 +50,7 @@ export function UsuariosSection({
                   <div key={u.id} style={{ display: "grid", gridTemplateColumns: "1fr 165px 190px", alignItems: "center", padding: "13px 18px", borderBottom: "1px solid #F1EEE7" }}>
                     <div style={{ display: "flex", flexDirection: "column", gap: 2, paddingRight: 14 }}>
                       <div style={{ fontSize: 13.5, fontWeight: 600 }}>{u.name}</div>
-                      <div style={{ fontSize: 11.5, color: "#6B7480" }}>{u.email}</div>
+                      <div style={{ fontSize: 11.5, color: "#7A7472" }}>{u.email}</div>
                     </div>
                     <div>
                       <span style={{ display: "inline-block", padding: "4px 9px", borderRadius: 3, fontSize: 11.5, fontWeight: 600, background: cor.bg, color: cor.fg }}>

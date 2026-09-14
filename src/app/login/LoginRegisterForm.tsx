@@ -28,7 +28,7 @@ const labelTextStyle: React.CSSProperties = {
   fontSize: 11,
   letterSpacing: ".13em",
   textTransform: "uppercase",
-  color: "#6B7480",
+  color: "#7A7472",
 };
 
 export function LoginRegisterForm({ empreendimentos }: { empreendimentos: Empreendimento[] }) {
@@ -101,8 +101,8 @@ export function LoginRegisterForm({ empreendimentos }: { empreendimentos: Empree
             onClick={handleEntrar}
             disabled={entering}
             style={{
-              border: "1px solid #12455E",
-              background: "#12455E",
+              border: "1px solid #E01B22",
+              background: "#E01B22",
               color: "#fff",
               borderRadius: 4,
               padding: "12px 16px",
@@ -134,12 +134,12 @@ export function LoginRegisterForm({ empreendimentos }: { empreendimentos: Empree
               style={{
                 flex: 1,
                 border: 0,
-                borderBottom: `3px solid ${aba === id ? "#B4711A" : "transparent"}`,
+                borderBottom: `3px solid ${aba === id ? "#E01B22" : "transparent"}`,
                 background: "#fff",
                 padding: "15px 10px",
                 fontSize: 13,
                 fontWeight: 600,
-                color: aba === id ? "#0E1B24" : "#6B7480",
+                color: aba === id ? "#231F20" : "#7A7472",
                 cursor: "pointer",
               }}
             >
@@ -165,8 +165,8 @@ export function LoginRegisterForm({ empreendimentos }: { empreendimentos: Empree
               type="submit"
               disabled={loginPending}
               style={{
-                border: "1px solid #12455E",
-                background: "#12455E",
+                border: "1px solid #E01B22",
+                background: "#E01B22",
                 color: "#fff",
                 borderRadius: 4,
                 padding: "12px 16px",
@@ -178,11 +178,11 @@ export function LoginRegisterForm({ empreendimentos }: { empreendimentos: Empree
               {loginPending ? "Entrando…" : "Entrar"}
             </button>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, fontSize: 12.5 }}>
-              <span style={{ color: "#6B7480" }}>Esqueci minha senha</span>
+              <span style={{ color: "#7A7472" }}>Esqueci minha senha</span>
               <button
                 type="button"
                 onClick={() => setAba("cadastro")}
-                style={{ border: 0, background: "transparent", color: "#12455E", fontSize: 12.5, fontWeight: 600, cursor: "pointer", padding: 0 }}
+                style={{ border: 0, background: "transparent", color: "#E01B22", fontSize: 12.5, fontWeight: 600, cursor: "pointer", padding: 0 }}
               >
                 Primeiro acesso? Criar conta
               </button>
@@ -207,8 +207,8 @@ export function LoginRegisterForm({ empreendimentos }: { empreendimentos: Empree
                     onClick={() => setCadTipo(id)}
                     style={{
                       flex: 1,
-                      border: `1px solid ${cadTipo === id ? "#12455E" : "#DDD8CE"}`,
-                      background: cadTipo === id ? "#12455E" : "#FFFFFF",
+                      border: `1px solid ${cadTipo === id ? "#E01B22" : "#DDD8CE"}`,
+                      background: cadTipo === id ? "#E01B22" : "#FFFFFF",
                       color: cadTipo === id ? "#FFFFFF" : "#4A5563",
                       borderRadius: 4,
                       padding: "11px 10px",
@@ -340,7 +340,7 @@ export function LoginRegisterForm({ empreendimentos }: { empreendimentos: Empree
                       accept=".pdf,.doc,.docx,image/png,image/jpeg,image/webp"
                       style={{ ...inputStyle, background: "#fff", fontSize: 12.5 }}
                     />
-                    <span style={{ fontSize: 11.5, color: "#6B7480" }}>
+                    <span style={{ fontSize: 11.5, color: "#7A7472" }}>
                       Procuração ou contrato assinado pelo proprietário — PDF, Word ou imagem, até 10 MB.
                     </span>
                   </>
@@ -366,7 +366,7 @@ export function LoginRegisterForm({ empreendimentos }: { empreendimentos: Empree
                 name="aceite"
                 checked={aceite}
                 onChange={(e) => setAceite(e.target.checked)}
-                style={{ width: 15, height: 15, marginTop: 2, accentColor: "#12455E", cursor: "pointer" }}
+                style={{ width: 15, height: 15, marginTop: 2, accentColor: "#E01B22", cursor: "pointer" }}
               />
               <span style={{ fontSize: 12.5, lineHeight: 1.5, color: "#3B4653" }}>
                 Declaro que os dados informados são verdadeiros e autorizo a CAPE a tratá-los para a análise de
@@ -380,8 +380,8 @@ export function LoginRegisterForm({ empreendimentos }: { empreendimentos: Empree
               type="submit"
               disabled={!pronto || registerPending}
               style={{
-                border: "1px solid #12455E",
-                background: pronto ? "#12455E" : "#EDE9E1",
+                border: "1px solid #E01B22",
+                background: pronto ? "#E01B22" : "#EDE9E1",
                 color: pronto ? "#FFFFFF" : "#8B939C",
                 borderRadius: 4,
                 padding: "13px 16px",
@@ -414,10 +414,10 @@ function Shell({ children }: { children: React.ReactNode }) {
       }}
     >
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 5 }}>
-        <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 32, letterSpacing: ".14em", lineHeight: 1, color: "#0B2E3F" }}>
+        <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 32, letterSpacing: ".14em", lineHeight: 1, color: "#231F20" }}>
           CAPE
         </div>
-        <div style={{ fontSize: 10.5, letterSpacing: ".18em", textTransform: "uppercase", color: "#6B7480" }}>
+        <div style={{ fontSize: 10.5, letterSpacing: ".18em", textTransform: "uppercase", color: "#7A7472" }}>
           Aprova · Obras em lotes
         </div>
       </div>

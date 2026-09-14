@@ -359,7 +359,7 @@ export async function concluirObraAction(solicitacaoId: string) {
         solicitacaoId,
         tipo: "OBRA_CONCLUIDA",
         texto: "Obra concluída e solicitação arquivada pela CAPE.",
-        cor: "#0E1B24",
+        cor: "#231F20",
         autorId: session.user.id,
       },
     }),

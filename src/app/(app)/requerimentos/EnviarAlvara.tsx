@@ -34,7 +34,7 @@ export function EnviarAlvara({ solicitacaoId, recusa }: { solicitacaoId: string;
         />
         <label
           htmlFor={`alvara-${solicitacaoId}`}
-          style={{ border: "1px solid #DDD8CE", background: "#fff", color: "#12455E", borderRadius: 4, padding: "9px 14px", fontSize: 12.5, fontWeight: 600, cursor: "pointer" }}
+          style={{ border: "1px solid #DDD8CE", background: "#fff", color: "#E01B22", borderRadius: 4, padding: "9px 14px", fontSize: 12.5, fontWeight: 600, cursor: "pointer" }}
         >
           {escolhido ? "Trocar arquivo" : recusa ? "Escolher novo alvará" : "Escolher arquivo do alvará"}
         </label>
@@ -42,7 +42,7 @@ export function EnviarAlvara({ solicitacaoId, recusa }: { solicitacaoId: string;
         {escolhido ? (
           <span style={{ fontSize: 12, color: "#3B4653", fontFamily: "var(--font-mono)" }}>{escolhido}</span>
         ) : (
-          <span style={{ fontSize: 11.5, color: "#6B7480" }}>
+          <span style={{ fontSize: 11.5, color: "#7A7472" }}>
             PDF, até 5 MB. A CAPE confere antes de liberar o início da obra.
           </span>
         )}
@@ -53,7 +53,7 @@ export function EnviarAlvara({ solicitacaoId, recusa }: { solicitacaoId: string;
           <button
             type="submit"
             disabled={pending}
-            style={{ border: "1px solid #12455E", background: "#12455E", color: "#fff", borderRadius: 4, padding: "9px 16px", fontSize: 12.5, fontWeight: 600, cursor: pending ? "wait" : "pointer" }}
+            style={{ border: "1px solid #E01B22", background: "#E01B22", color: "#fff", borderRadius: 4, padding: "9px 16px", fontSize: 12.5, fontWeight: 600, cursor: pending ? "wait" : "pointer" }}
           >
             {pending ? "Enviando…" : "Confirmar envio do alvará"}
           </button>
@@ -67,7 +67,7 @@ export function EnviarAlvara({ solicitacaoId, recusa }: { solicitacaoId: string;
           >
             Cancelar
           </button>
-          <span style={{ fontSize: 11.5, color: "#6B7480" }}>
+          <span style={{ fontSize: 11.5, color: "#7A7472" }}>
             Depois de confirmar, a solicitação fica em conferência até a CAPE aceitar.
           </span>
         </div>

@@ -4,7 +4,7 @@ import { useActionState, useRef, useState } from "react";
 import { createEmpreendimentoAction, type CreateEmpreendimentoState } from "@/lib/actions/empreendimento-actions";
 
 const inputStyle: React.CSSProperties = { border: "1px solid #DDD8CE", borderRadius: 4, padding: "10px 11px", fontSize: 13.5, background: "#fff" };
-const labelTextStyle: React.CSSProperties = { fontSize: 11, letterSpacing: ".13em", textTransform: "uppercase", color: "#6B7480" };
+const labelTextStyle: React.CSSProperties = { fontSize: 11, letterSpacing: ".13em", textTransform: "uppercase", color: "#7A7472" };
 const dashedInputStyle: React.CSSProperties = { border: "1px dashed #C9C2B4", borderRadius: 4, padding: "8px 10px", fontSize: 13 };
 
 export function NovoEmpreendimentoForm() {
@@ -17,7 +17,7 @@ export function NovoEmpreendimentoForm() {
     return (
       <button
         onClick={() => setAberto(true)}
-        style={{ border: "1px solid #12455E", background: "#12455E", color: "#fff", borderRadius: 4, padding: "9px 14px", fontSize: 12.5, fontWeight: 600, cursor: "pointer" }}
+        style={{ border: "1px solid #E01B22", background: "#E01B22", color: "#fff", borderRadius: 4, padding: "9px 14px", fontSize: 12.5, fontWeight: 600, cursor: "pointer" }}
       >
         Novo empreendimento
       </button>
@@ -28,7 +28,7 @@ export function NovoEmpreendimentoForm() {
     <section style={{ background: "#fff", border: "1px solid #DDD8CE", borderTop: "3px solid #B4711A", borderRadius: 4, padding: 18, display: "flex", flexDirection: "column", gap: 13 }}>
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 10 }}>
         <div style={{ fontFamily: "var(--font-display)", fontSize: 17, fontWeight: 600, letterSpacing: ".04em", textTransform: "uppercase" }}>Novo empreendimento</div>
-        <button type="button" onClick={() => setAberto(false)} style={{ border: 0, background: "transparent", color: "#6B7480", fontSize: 12.5, cursor: "pointer" }}>
+        <button type="button" onClick={() => setAberto(false)} style={{ border: 0, background: "transparent", color: "#7A7472", fontSize: 12.5, cursor: "pointer" }}>
           cancelar
         </button>
       </div>
@@ -58,7 +58,7 @@ export function NovoEmpreendimentoForm() {
 
         <div style={{ display: "flex", flexDirection: "column", gap: 8, border: "1px solid #EDE9E1", borderRadius: 4, padding: 14, background: "#FAF9F6" }}>
           <span style={labelTextStyle}>Quadras</span>
-          <div style={{ fontSize: 11.5, color: "#6B7480", lineHeight: 1.4 }}>
+          <div style={{ fontSize: 11.5, color: "#7A7472", lineHeight: 1.4 }}>
             Nomeie cada quadra como preferir (A, B, A1, F2…) e informe a quantidade de lotes de cada uma — não precisam seguir uma sequência nem ter a mesma quantidade.
           </div>
           {quadras.map((id, i) => (
@@ -79,7 +79,7 @@ export function NovoEmpreendimentoForm() {
           <button
             type="button"
             onClick={() => setQuadras((qs) => [...qs, proximoId.current++])}
-            style={{ alignSelf: "flex-start", border: "1px dashed #C9C2B4", background: "#fff", color: "#12455E", borderRadius: 4, padding: "7px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer" }}
+            style={{ alignSelf: "flex-start", border: "1px dashed #C9C2B4", background: "#fff", color: "#E01B22", borderRadius: 4, padding: "7px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer" }}
           >
             + adicionar quadra
           </button>
@@ -89,11 +89,11 @@ export function NovoEmpreendimentoForm() {
         <button
           type="submit"
           disabled={pending}
-          style={{ border: "1px solid #12455E", background: "#12455E", color: "#fff", borderRadius: 4, padding: "11px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+          style={{ border: "1px solid #E01B22", background: "#E01B22", color: "#fff", borderRadius: 4, padding: "11px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
         >
           {pending ? "Criando…" : "Criar empreendimento"}
         </button>
-        <div style={{ fontSize: 11.5, color: "#6B7480", lineHeight: 1.45 }}>
+        <div style={{ fontSize: 11.5, color: "#7A7472", lineHeight: 1.45 }}>
           Planta e check-list são configurados depois, nas telas Empreendimentos e Check-lists.
         </div>
       </form>

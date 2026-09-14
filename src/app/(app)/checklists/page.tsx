@@ -35,7 +35,7 @@ export default async function ChecklistsPage({ searchParams }: { searchParams: P
       <>
         <ScreenHeader crumb="Empreendimentos" title="Check-lists por empreendimento" {...user} />
         <ScreenBody>
-          <div style={{ fontSize: 13.5, color: "#6B7480" }}>Nenhum empreendimento cadastrado ainda.</div>
+          <div style={{ fontSize: 13.5, color: "#7A7472" }}>Nenhum empreendimento cadastrado ainda.</div>
         </ScreenBody>
       </>
     );
@@ -47,7 +47,7 @@ export default async function ChecklistsPage({ searchParams }: { searchParams: P
     <>
       <ScreenHeader crumb="Empreendimentos" title="Check-lists por empreendimento" {...user} />
       <ScreenBody>
-        <a href={`/empreendimentos?emp=${emp.id}`} style={{ fontSize: 12.5, color: "#6B7480", alignSelf: "flex-start" }}>
+        <a href={`/empreendimentos?emp=${emp.id}`} style={{ fontSize: 12.5, color: "#7A7472", alignSelf: "flex-start" }}>
           ← Voltar a {emp.nome}
         </a>
         <EmpreendimentoSwitcher atualId={emp.id} opcoes={opcoes} />
@@ -56,12 +56,12 @@ export default async function ChecklistsPage({ searchParams }: { searchParams: P
             <div style={{ padding: "15px 18px", borderBottom: "1px solid #EDE9E1", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
               <div>
                 <div style={{ fontFamily: "var(--font-display)", fontSize: 17, fontWeight: 600, letterSpacing: ".04em", textTransform: "uppercase" }}>{emp.nome}</div>
-                <div style={{ fontSize: 11.5, color: "#6B7480" }}>
+                <div style={{ fontSize: 11.5, color: "#7A7472" }}>
                   {emp.categorias.length} categorias · {totalItens} itens
                 </div>
               </div>
               <form action={addCategoriaAction.bind(null, emp.id)}>
-                <button type="submit" style={{ border: "1px solid #12455E", background: "#12455E", color: "#fff", borderRadius: 4, padding: "9px 14px", fontSize: 12.5, fontWeight: 600, cursor: "pointer" }}>
+                <button type="submit" style={{ border: "1px solid #E01B22", background: "#E01B22", color: "#fff", borderRadius: 4, padding: "9px 14px", fontSize: 12.5, fontWeight: 600, cursor: "pointer" }}>
                   Nova categoria
                 </button>
               </form>
@@ -79,14 +79,14 @@ export default async function ChecklistsPage({ searchParams }: { searchParams: P
                       fontSize: 11,
                       letterSpacing: ".14em",
                       textTransform: "uppercase",
-                      color: "#12455E",
+                      color: "#E01B22",
                       fontWeight: 600,
                       padding: "4px 6px",
                       borderRadius: 3,
                       flex: 1,
                     }}
                   />
-                  <div style={{ fontSize: 11, color: "#6B7480", fontFamily: "var(--font-mono)" }}>{c.itens.length} itens</div>
+                  <div style={{ fontSize: 11, color: "#7A7472", fontFamily: "var(--font-mono)" }}>{c.itens.length} itens</div>
                   <form action={deleteCategoriaAction.bind(null, c.id)}>
                     <button type="submit" style={{ border: "1px solid #EDE9E1", background: "#fff", color: "#8C2B22", borderRadius: 4, padding: "5px 9px", fontSize: 12, cursor: "pointer" }}>
                       remover categoria
@@ -105,7 +105,7 @@ export default async function ChecklistsPage({ searchParams }: { searchParams: P
                         <EditableField
                           defaultValue={i.referencia}
                           onSave={updateItemAction.bind(null, i.id, "referencia")}
-                          style={{ border: "1px solid #EDE9E1", borderRadius: 4, padding: "8px 10px", fontSize: 12, color: "#6B7480", background: "#fff" }}
+                          style={{ border: "1px solid #EDE9E1", borderRadius: 4, padding: "8px 10px", fontSize: 12, color: "#7A7472", background: "#fff" }}
                         />
                         <form action={deleteItemAction.bind(null, i.id)}>
                           <button type="submit" style={{ border: "1px solid #EDE9E1", background: "#fff", color: "#8C2B22", borderRadius: 4, padding: "7px 0", fontSize: 13, cursor: "pointer", width: "100%" }}>
@@ -118,7 +118,7 @@ export default async function ChecklistsPage({ searchParams }: { searchParams: P
                       <form key={c.itens.length} action={addItemAction.bind(null, c.id)} style={{ display: "grid", gridTemplateColumns: "1fr 220px auto", gap: 8 }}>
                         <input name="texto" placeholder="Novo item…" required style={{ border: "1px dashed #C9C2B4", borderRadius: 4, padding: "8px 10px", fontSize: 13 }} />
                         <input name="referencia" placeholder="Referência (art.)" style={{ border: "1px dashed #C9C2B4", borderRadius: 4, padding: "8px 10px", fontSize: 12 }} />
-                        <button type="submit" style={{ border: "1px dashed #C9C2B4", background: "#fff", color: "#12455E", borderRadius: 4, padding: "8px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+                        <button type="submit" style={{ border: "1px dashed #C9C2B4", background: "#fff", color: "#E01B22", borderRadius: 4, padding: "8px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
                           + item
                         </button>
                       </form>
@@ -130,9 +130,9 @@ export default async function ChecklistsPage({ searchParams }: { searchParams: P
           </section>
           <aside style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <section style={{ background: "#fff", border: "1px solid #DDD8CE", borderRadius: 4, padding: "16px 17px", display: "flex", flexDirection: "column", gap: 9 }}>
-              <div style={{ fontSize: 11, letterSpacing: ".14em", textTransform: "uppercase", color: "#6B7480" }}>Aplicado a</div>
+              <div style={{ fontSize: 11, letterSpacing: ".14em", textTransform: "uppercase", color: "#7A7472" }}>Aplicado a</div>
               <div style={{ fontSize: 13, fontWeight: 600 }}>{emp.nome}</div>
-              <div style={{ fontSize: 11.5, color: "#6B7480", lineHeight: 1.45 }}>
+              <div style={{ fontSize: 11.5, color: "#7A7472", lineHeight: 1.45 }}>
                 Cada empreendimento tem seu próprio check-list. Alterações valem para solicitações novas; as em andamento seguem os itens já vinculados.
               </div>
             </section>

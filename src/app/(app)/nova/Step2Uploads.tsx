@@ -39,11 +39,11 @@ function UploadRow({ solicitacaoId, tipo, existente }: { solicitacaoId: string; 
       <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
         <div style={{ fontSize: 13.5, fontWeight: 600 }}>
           {DOC_LABEL[tipo].nome}{" "}
-          <span style={{ fontSize: 11.5, fontWeight: 400, color: "#6B7480", fontFamily: "var(--font-mono)" }}>
+          <span style={{ fontSize: 11.5, fontWeight: 400, color: "#7A7472", fontFamily: "var(--font-mono)" }}>
             {formatosAceitos(tipo)}
           </span>
         </div>
-        <div style={{ fontSize: 11.5, color: "#6B7480" }}>{existente ? existente.nomeArquivo : DICAS[tipo]}</div>
+        <div style={{ fontSize: 11.5, color: "#7A7472" }}>{existente ? existente.nomeArquivo : DICAS[tipo]}</div>
         {state?.error && <div style={{ fontSize: 11.5, color: "#8C2B22" }}>{state.error}</div>}
       </div>
       <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 10 }}>
@@ -59,7 +59,7 @@ function UploadRow({ solicitacaoId, tipo, existente }: { solicitacaoId: string; 
         />
         <label
           htmlFor={`file-${tipo}`}
-          style={{ border: "1px solid #DDD8CE", background: "#fff", color: "#12455E", borderRadius: 4, padding: "7px 11px", fontSize: 12, fontWeight: 600, cursor: pending ? "wait" : "pointer" }}
+          style={{ border: "1px solid #DDD8CE", background: "#fff", color: "#E01B22", borderRadius: 4, padding: "7px 11px", fontSize: 12, fontWeight: 600, cursor: pending ? "wait" : "pointer" }}
         >
           {pending ? "Enviando…" : existente ? "Substituir" : "Selecionar arquivo"}
         </label>
@@ -86,14 +86,14 @@ export function Step2Uploads({ rascunho }: { rascunho: Rascunho }) {
         <div style={{ display: "flex", gap: 9 }}>
           <a
             href="/nova"
-            style={{ border: "1px solid #DDD8CE", background: "#fff", color: "#12455E", borderRadius: 4, padding: "10px 16px", fontSize: 13, fontWeight: 600, textDecoration: "none" }}
+            style={{ border: "1px solid #DDD8CE", background: "#fff", color: "#E01B22", borderRadius: 4, padding: "10px 16px", fontSize: 13, fontWeight: 600, textDecoration: "none" }}
           >
             Voltar
           </a>
           {pendentes === 0 && (
             <a
               href={`/nova?rascunho=${rascunho.id}&passo=3`}
-              style={{ border: "1px solid #12455E", background: "#12455E", color: "#fff", borderRadius: 4, padding: "10px 18px", fontSize: 13, fontWeight: 600, textDecoration: "none" }}
+              style={{ border: "1px solid #E01B22", background: "#E01B22", color: "#fff", borderRadius: 4, padding: "10px 18px", fontSize: 13, fontWeight: 600, textDecoration: "none" }}
             >
               Continuar
             </a>

@@ -25,7 +25,7 @@ export function ScreenHeader({
       }}
     >
       <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-        <div style={{ fontSize: 10.5, letterSpacing: ".18em", textTransform: "uppercase", color: "#6B7480" }}>
+        <div style={{ fontSize: 10.5, letterSpacing: ".18em", textTransform: "uppercase", color: "#7A7472" }}>
           {crumb}
         </div>
         <h1
@@ -44,14 +44,14 @@ export function ScreenHeader({
       <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
         <div style={{ textAlign: "right", lineHeight: 1.3 }}>
           <div style={{ fontSize: 13, fontWeight: 600 }}>{nome}</div>
-          <div style={{ fontSize: 11.5, color: "#6B7480" }}>{papel}</div>
+          <div style={{ fontSize: 11.5, color: "#7A7472" }}>{papel}</div>
         </div>
         <div
           style={{
             width: 38,
             height: 38,
             borderRadius: "50%",
-            background: "#12455E",
+            background: "#E01B22",
             color: "#fff",
             display: "grid",
             placeItems: "center",

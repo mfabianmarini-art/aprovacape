@@ -25,7 +25,7 @@ export function DocumentosList({ documentos, podeGerenciar }: { documentos: Docu
         Manual, convenção e regras
       </div>
       {documentos.length === 0 && (
-        <div style={{ padding: 24, fontSize: 13, color: "#6B7480" }}>Nenhum documento enviado ainda.</div>
+        <div style={{ padding: 24, fontSize: 13, color: "#7A7472" }}>Nenhum documento enviado ainda.</div>
       )}
       {documentos.map((d) => (
         <div
@@ -43,18 +43,18 @@ export function DocumentosList({ documentos, podeGerenciar }: { documentos: Docu
                   fontWeight: 600,
                   letterSpacing: ".04em",
                   textTransform: "uppercase",
-                  background: "#DCE9F2",
-                  color: "#12455E",
+                  background: "#CFD8DE",
+                  color: "#E01B22",
                 }}
               >
                 {CATEGORIA_DOC_TECNICO_LABEL[d.categoria]}
               </span>
-              <span style={{ fontSize: 13.5, fontWeight: 600, color: "#12455E" }}>{d.titulo}</span>
+              <span style={{ fontSize: 13.5, fontWeight: 600, color: "#E01B22" }}>{d.titulo}</span>
             </div>
             {d.descricao && (
               <div style={{ fontSize: 12.5, color: "#3B4653", lineHeight: 1.45, whiteSpace: "pre-line" }}>{d.descricao}</div>
             )}
-            <div style={{ fontSize: 11.5, color: "#6B7480" }}>
+            <div style={{ fontSize: 11.5, color: "#7A7472" }}>
               {d.nomeArquivo} · {formatKB(d.tamanhoBytes)} · enviado por {d.enviadoPor.name} em {formatDate(d.createdAt)}
             </div>
           </a>

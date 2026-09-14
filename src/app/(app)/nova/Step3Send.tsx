@@ -5,7 +5,7 @@ import { enviarSolicitacaoAction } from "@/lib/actions/nova-actions";
 import type { Role } from "@/generated/prisma/enums";
 
 const inputStyle: React.CSSProperties = { border: "1px solid #DDD8CE", borderRadius: 4, padding: "10px 11px", fontSize: 13.5 };
-const labelTextStyle: React.CSSProperties = { fontSize: 11, letterSpacing: ".13em", textTransform: "uppercase", color: "#6B7480" };
+const labelTextStyle: React.CSSProperties = { fontSize: 11, letterSpacing: ".13em", textTransform: "uppercase", color: "#7A7472" };
 
 const DECLARACOES = [
   { id: "d1", texto: "Declaro que a aprovação pela CAPE não substitui as aprovações legais junto aos órgãos públicos competentes, cabendo a mim e ao responsável técnico a regularidade legal da obra." },
@@ -51,7 +51,7 @@ export function Step3Send({
               name={d.id}
               checked={decl[d.id]}
               onChange={(e) => setDecl((s) => ({ ...s, [d.id]: e.target.checked }))}
-              style={{ width: 16, height: 16, marginTop: 2, accentColor: "#12455E", cursor: "pointer" }}
+              style={{ width: 16, height: 16, marginTop: 2, accentColor: "#E01B22", cursor: "pointer" }}
             />
             <span style={{ fontSize: 12.5, lineHeight: 1.5, color: "#3B4653" }}>{d.texto}</span>
           </label>
@@ -67,7 +67,7 @@ export function Step3Send({
         <div style={{ display: "flex", gap: 9 }}>
           <a
             href={`/nova?rascunho=${rascunho.id}&passo=2`}
-            style={{ border: "1px solid #DDD8CE", background: "#fff", color: "#12455E", borderRadius: 4, padding: "10px 16px", fontSize: 13, fontWeight: 600, textDecoration: "none" }}
+            style={{ border: "1px solid #DDD8CE", background: "#fff", color: "#E01B22", borderRadius: 4, padding: "10px 16px", fontSize: 13, fontWeight: 600, textDecoration: "none" }}
           >
             Voltar
           </a>
@@ -75,8 +75,8 @@ export function Step3Send({
             type="submit"
             disabled={!podeEnviar || pending}
             style={{
-              border: "1px solid #12455E",
-              background: podeEnviar ? "#12455E" : "#EDE9E1",
+              border: "1px solid #E01B22",
+              background: podeEnviar ? "#E01B22" : "#EDE9E1",
               color: podeEnviar ? "#FFFFFF" : "#8B939C",
               borderRadius: 4,
               padding: "10px 18px",

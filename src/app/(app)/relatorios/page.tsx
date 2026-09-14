@@ -42,7 +42,7 @@ export default async function RelatoriosPage({
       <>
         <ScreenHeader crumb="Gestão" title="Relatórios" {...user} />
         <ScreenBody>
-          <div style={{ fontSize: 13.5, color: "#6B7480" }}>Nenhum empreendimento acessível à sua conta.</div>
+          <div style={{ fontSize: 13.5, color: "#7A7472" }}>Nenhum empreendimento acessível à sua conta.</div>
         </ScreenBody>
       </>
     );
@@ -68,27 +68,27 @@ export default async function RelatoriosPage({
         >
           <input type="hidden" name="emp" value={atual.id} />
           <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-            <span style={{ fontSize: 10.5, letterSpacing: ".1em", textTransform: "uppercase", color: "#6B7480" }}>De</span>
+            <span style={{ fontSize: 10.5, letterSpacing: ".1em", textTransform: "uppercase", color: "#7A7472" }}>De</span>
             <input type="date" name="de" defaultValue={de} style={{ border: "1px solid #DDD8CE", borderRadius: 4, padding: "8px 10px", fontSize: 12.5, fontFamily: "var(--font-mono)" }} />
           </label>
           <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-            <span style={{ fontSize: 10.5, letterSpacing: ".1em", textTransform: "uppercase", color: "#6B7480" }}>Até</span>
+            <span style={{ fontSize: 10.5, letterSpacing: ".1em", textTransform: "uppercase", color: "#7A7472" }}>Até</span>
             <input type="date" name="ate" defaultValue={ate} style={{ border: "1px solid #DDD8CE", borderRadius: 4, padding: "8px 10px", fontSize: 12.5, fontFamily: "var(--font-mono)" }} />
           </label>
           <button
             type="submit"
-            style={{ border: "1px solid #12455E", background: "#12455E", color: "#fff", borderRadius: 4, padding: "9px 16px", fontSize: 12.5, fontWeight: 600, cursor: "pointer" }}
+            style={{ border: "1px solid #E01B22", background: "#E01B22", color: "#fff", borderRadius: 4, padding: "9px 16px", fontSize: 12.5, fontWeight: 600, cursor: "pointer" }}
           >
             Aplicar período
           </button>
-          <span style={{ fontSize: 11.5, color: "#6B7480" }}>
+          <span style={{ fontSize: 11.5, color: "#7A7472" }}>
             Sem período informado, os últimos 30 dias.
           </span>
         </form>
 
         <section style={{ display: "flex", flexDirection: "column", gap: 11 }}>
           <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-            <div style={{ fontSize: 11, letterSpacing: ".14em", textTransform: "uppercase", color: "#6B7480" }}>
+            <div style={{ fontSize: 11, letterSpacing: ".14em", textTransform: "uppercase", color: "#7A7472" }}>
               Atividade da CAPE no período
             </div>
             <div style={{ fontSize: 12, color: "#4A5563" }}>
@@ -100,7 +100,7 @@ export default async function RelatoriosPage({
         </section>
 
         <section style={{ display: "flex", flexDirection: "column", gap: 11 }}>
-          <div style={{ fontSize: 11, letterSpacing: ".14em", textTransform: "uppercase", color: "#6B7480" }}>
+          <div style={{ fontSize: 11, letterSpacing: ".14em", textTransform: "uppercase", color: "#7A7472" }}>
             Panorama do empreendimento — situação de hoje
           </div>
           <Placar itens={rel.panorama} />
@@ -111,7 +111,7 @@ export default async function RelatoriosPage({
             Irregularidades registradas no período
           </div>
           {rel.irregularidades.length === 0 && (
-            <div style={{ padding: 22, fontSize: 13, color: "#6B7480" }}>
+            <div style={{ padding: 22, fontSize: 13, color: "#7A7472" }}>
               Nenhuma irregularidade registrada entre as datas selecionadas.
             </div>
           )}
@@ -121,7 +121,7 @@ export default async function RelatoriosPage({
                 <span style={{ fontSize: 13, fontWeight: 600, color: irr.regularizadaEm ? "#4A5563" : "#8C2B22" }}>
                   {IRREGULARIDADE_LABEL[irr.tipo]}
                 </span>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 11.5, color: "#6B7480" }}>
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: 11.5, color: "#7A7472" }}>
                   {irr.solicitacao.protocolo} · {irr.solicitacao.lote.quadra.nome} L{irr.solicitacao.lote.numero}
                 </span>
                 <span
@@ -131,7 +131,7 @@ export default async function RelatoriosPage({
                 </span>
               </div>
               <div style={{ fontSize: 12.5, color: "#3B4653", lineHeight: 1.5, whiteSpace: "pre-line" }}>{irr.descricao}</div>
-              <div style={{ fontSize: 11, color: "#6B7480", fontFamily: "var(--font-mono)" }}>
+              <div style={{ fontSize: 11, color: "#7A7472", fontFamily: "var(--font-mono)" }}>
                 {formatDateTime(irr.createdAt)} · {irr.registradaPor.name}
               </div>
             </div>

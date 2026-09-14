@@ -19,16 +19,16 @@ body {
   margin: 0;
   background: #f4f2ed;
   font-family: var(--font-plex-sans), system-ui, sans-serif;
-  color: #0e1b24;
+  color: #231F20;
   -webkit-font-smoothing: antialiased;
 }
 
 a {
-  color: #12455e;
+  color: #E01B22;
   text-decoration: none;
 }
 a:hover {
-  color: #b4711a;
+  color: #8E0F14;
 }
 
 button {
@@ -126,7 +126,7 @@ textarea {
     z-index: 50;
     transform: translateX(-100%);
     transition: transform 0.22s ease;
-    box-shadow: 2px 0 28px rgba(11, 46, 63, 0.35);
+    box-shadow: 2px 0 28px rgba(35, 31, 32, 0.35);
   }
 
   .app-sidebar[data-open="true"] {
@@ -152,7 +152,7 @@ textarea {
     display: block;
     position: fixed;
     inset: 0;
-    background: rgba(11, 46, 63, 0.45);
+    background: rgba(35, 31, 32, 0.45);
     z-index: 40;
   }
 

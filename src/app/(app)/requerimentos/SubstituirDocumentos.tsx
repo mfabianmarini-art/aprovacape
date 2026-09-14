@@ -44,16 +44,16 @@ function Linha({
       }}
     >
       <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
-        <div style={{ fontSize: 12.5, fontWeight: 600, color: liberado ? "#0E1B24" : "#7A828C" }}>
+        <div style={{ fontSize: 12.5, fontWeight: 600, color: liberado ? "#231F20" : "#7A828C" }}>
           {DOC_LABEL[tipo].nome}
           {liberado && (
-            <span style={{ fontSize: 11, fontWeight: 400, color: "#6B7480", fontFamily: "var(--font-mono)" }}>
+            <span style={{ fontSize: 11, fontWeight: 400, color: "#7A7472", fontFamily: "var(--font-mono)" }}>
               {" "}
               {formatosAceitos(tipo)}
             </span>
           )}
         </div>
-        <div style={{ fontSize: 11.5, color: "#6B7480", overflow: "hidden", textOverflow: "ellipsis" }}>
+        <div style={{ fontSize: 11.5, color: "#7A7472", overflow: "hidden", textOverflow: "ellipsis" }}>
           {doc ? doc.nomeArquivo : "Ainda não enviado"}
         </div>
         {state?.error && <div style={{ fontSize: 11.5, color: "#8C2B22" }}>{state.error}</div>}
@@ -113,7 +113,7 @@ export function SubstituirDocumentos({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      <div style={{ fontSize: 11, letterSpacing: ".13em", textTransform: "uppercase", color: "#6B7480" }}>
+      <div style={{ fontSize: 11, letterSpacing: ".13em", textTransform: "uppercase", color: "#7A7472" }}>
         {devolvidaNoChecklist
           ? "Substituir documentos antes de reenviar"
           : `Substituir ${alvos.length === 1 ? "o documento apontado" : "os documentos apontados"} antes de reenviar`}

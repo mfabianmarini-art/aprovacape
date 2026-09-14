@@ -52,8 +52,8 @@ export default async function NovaPage({
                 const ativo = passo === p.n;
                 const content = (
                   <div style={{ display: "flex", flexDirection: "column", gap: 3, alignItems: "flex-start" }}>
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "#6B7480" }}>{String(p.n).padStart(2, "0")}</span>
-                    <span style={{ fontSize: 12.5, fontWeight: 600, color: ativo ? "#0E1B24" : "#6B7480" }}>{p.label}</span>
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "#7A7472" }}>{String(p.n).padStart(2, "0")}</span>
+                    <span style={{ fontSize: 12.5, fontWeight: 600, color: ativo ? "#231F20" : "#7A7472" }}>{p.label}</span>
                   </div>
                 );
                 return disponivel ? (
@@ -62,7 +62,7 @@ export default async function NovaPage({
                     href={href}
                     style={{
                       flex: 1,
-                      borderBottom: `3px solid ${ativo ? "#B4711A" : "transparent"}`,
+                      borderBottom: `3px solid ${ativo ? "#E01B22" : "transparent"}`,
                       background: "#fff",
                       padding: "14px 10px",
                       textDecoration: "none",
@@ -87,21 +87,21 @@ export default async function NovaPage({
             {emp && (
               <>
                 <section style={{ background: "#fff", border: "1px solid #DDD8CE", borderRadius: 4, padding: "16px 17px", display: "flex", flexDirection: "column", gap: 10 }}>
-                  <div style={{ fontSize: 11, letterSpacing: ".14em", textTransform: "uppercase", color: "#6B7480" }}>Taxa de análise</div>
+                  <div style={{ fontSize: 11, letterSpacing: ".14em", textTransform: "uppercase", color: "#7A7472" }}>Taxa de análise</div>
                   <div style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 600 }}>{formatBRL(emp.taxaAnaliseCent)}</div>
                   <div style={{ fontSize: 11.5, color: "#4A5563", lineHeight: 1.45 }}>
                     Valor configurado para este empreendimento. Reunião presencial, se solicitada, {formatBRL(emp.taxaVisitaCent)} por visita.
                   </div>
                 </section>
                 <section style={{ background: "#fff", border: "1px solid #DDD8CE", borderRadius: 4, padding: "16px 17px", display: "flex", flexDirection: "column", gap: 8 }}>
-                  <div style={{ fontSize: 11, letterSpacing: ".14em", textTransform: "uppercase", color: "#6B7480" }}>Prazos</div>
+                  <div style={{ fontSize: 11, letterSpacing: ".14em", textTransform: "uppercase", color: "#7A7472" }}>Prazos</div>
                   <div style={{ fontSize: 12.5, color: "#3B4653", lineHeight: 1.5 }}>
                     Análise em até {emp.prazoDias} dias corridos após a entrega completa do check-list. Reanálise também em {emp.prazoDias} dias. Correções do proprietário: até {emp.prazoComplementoDias} dias.
                   </div>
                 </section>
               </>
             )}
-            <section style={{ background: "#0B2E3F", color: "#fff", borderRadius: 4, padding: "16px 17px", fontSize: 12.5, lineHeight: 1.5 }}>
+            <section style={{ background: "#231F20", color: "#fff", borderRadius: 4, padding: "16px 17px", fontSize: 12.5, lineHeight: 1.5 }}>
               A aprovação da CAPE não substitui a aprovação da Prefeitura. O início da obra depende do projeto aprovado e do alvará de execução.
             </section>
           </aside>

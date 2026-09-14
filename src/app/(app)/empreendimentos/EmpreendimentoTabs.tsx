@@ -46,14 +46,14 @@ export function EmpreendimentoTabs({
                   alignItems: "flex-start",
                   gap: 3,
                   border: 0,
-                  borderBottom: `3px solid ${ativa ? "#B4711A" : "transparent"}`,
+                  borderBottom: `3px solid ${ativa ? "#E01B22" : "transparent"}`,
                   background: "#fff",
                   padding: "14px 16px",
                   cursor: "pointer",
                   whiteSpace: "nowrap",
                 }}
               >
-                <span style={{ fontSize: 13, fontWeight: 600, color: ativa ? "#0E1B24" : "#6B7480" }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: ativa ? "#231F20" : "#7A7472" }}>
                   {t.label}
                   {contagem != null && <span style={{ fontWeight: 400, color: "#8B939C" }}> · {contagem}</span>}
                 </span>
