@@ -25,5 +25,7 @@ export const proxy = auth((req) => {
 });
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|plantas/).*)"],
+  // cape-logo.png precisa ficar público: a própria tela de login (não autenticada) o
+  // exibe, então redirecioná-lo para /login quebraria a imagem antes mesmo de logar.
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|cape-logo.png|plantas/).*)"],
 };

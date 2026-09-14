@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import {
   loginAction,
   registerAction,
@@ -414,9 +415,7 @@ function Shell({ children }: { children: React.ReactNode }) {
       }}
     >
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 5 }}>
-        <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 32, letterSpacing: ".14em", lineHeight: 1, color: "#231F20" }}>
-          CAPE
-        </div>
+        <Image src="/cape-logo.png" alt="CAPE" width={76} height={76} priority style={{ display: "block" }} />
         <div style={{ fontSize: 10.5, letterSpacing: ".18em", textTransform: "uppercase", color: "#7A7472" }}>
           Aprova · Obras em lotes
         </div>

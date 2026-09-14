@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import Image from "next/image";
 import { signOutAction } from "@/lib/actions/auth-actions";
 
 export type NavEntry = { path: string; label: string; count: string; separadorAntes?: boolean; alerta?: boolean };
@@ -57,11 +58,9 @@ export function Sidebar({ nav }: { nav: NavEntry[] }) {
         }}
       >
         <div style={{ padding: "0 20px 22px", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 27, letterSpacing: ".14em", lineHeight: 1 }}>
-              CAPE
-            </div>
-            <div style={{ fontSize: 10.5, letterSpacing: ".18em", textTransform: "uppercase", color: "#A89F9F" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <Image src="/cape-logo.png" alt="CAPE" width={42} height={42} priority style={{ flex: "none", display: "block" }} />
+            <div style={{ fontSize: 10.5, letterSpacing: ".18em", textTransform: "uppercase", color: "#A89F9F", lineHeight: 1.35 }}>
               Aprova · Obras em lotes
             </div>
           </div>
