@@ -33,7 +33,7 @@ export default async function ChecklistsPage({ searchParams }: { searchParams: P
   if (!emp) {
     return (
       <>
-        <ScreenHeader crumb="Configuração" title="Check-lists por empreendimento" {...user} />
+        <ScreenHeader crumb="Empreendimentos" title="Check-lists por empreendimento" {...user} />
         <ScreenBody>
           <div style={{ fontSize: 13.5, color: "#6B7480" }}>Nenhum empreendimento cadastrado ainda.</div>
         </ScreenBody>
@@ -45,8 +45,11 @@ export default async function ChecklistsPage({ searchParams }: { searchParams: P
 
   return (
     <>
-      <ScreenHeader crumb="Configuração" title="Check-lists por empreendimento" {...user} />
+      <ScreenHeader crumb="Empreendimentos" title="Check-lists por empreendimento" {...user} />
       <ScreenBody>
+        <a href={`/empreendimentos?emp=${emp.id}`} style={{ fontSize: 12.5, color: "#6B7480", alignSelf: "flex-start" }}>
+          ← Voltar a {emp.nome}
+        </a>
         <EmpreendimentoSwitcher atualId={emp.id} opcoes={opcoes} />
         <div className="layout-with-aside" style={{ "--aside-w": "300px" } as React.CSSProperties}>
           <section style={{ background: "#fff", border: "1px solid #DDD8CE", borderRadius: 4 }}>

@@ -55,7 +55,25 @@ export default async function EmpreendimentosPage({ searchParams }: { searchPara
       <ScreenBody>
         <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
           <EmpreendimentoSwitcher atualId={emp.id} opcoes={opcoes} />
-          {isAdmin && <NovoEmpreendimentoForm />}
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <a
+              href={`/checklists?emp=${emp.id}`}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                border: "1px solid #12455E",
+                background: "#fff",
+                color: "#12455E",
+                borderRadius: 4,
+                padding: "9px 14px",
+                fontSize: 12.5,
+                fontWeight: 600,
+              }}
+            >
+              Check-lists de {emp.nome}
+            </a>
+            {isAdmin && <NovoEmpreendimentoForm />}
+          </div>
         </div>
         <div className="layout-with-aside">
           <section style={{ background: "#fff", border: "1px solid #DDD8CE", borderRadius: 4 }}>

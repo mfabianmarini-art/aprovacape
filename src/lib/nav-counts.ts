@@ -30,7 +30,6 @@ export async function getNavCounts(role: Role, userId: string): Promise<Record<S
     requerimentos: String(meusPedidos),
     nova: "",
     empreendimentos: String(empreendimentos),
-    checklists: String(empreendimentos),
     usuarios: String(equipeCape),
     documentos: "",
     relatorios: "",

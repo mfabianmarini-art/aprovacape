@@ -8,7 +8,6 @@ export type ScreenId =
   | "requerimentos"
   | "nova"
   | "empreendimentos"
-  | "checklists"
   | "usuarios"
   | "documentos"
   | "relatorios";
@@ -45,8 +44,10 @@ export const SCREENS: Array<{
   },
   { id: "requerimentos", label: "Meus requerimentos", path: "/requerimentos", roles: ["PROPRIETARIO", "RESPONSAVEL_TECNICO"] },
   { id: "nova", label: "Nova solicitação", path: "/nova", roles: ["PROPRIETARIO", "RESPONSAVEL_TECNICO"] },
+  // Check-lists não tem entrada própria no menu: cada empreendimento segue sua própria
+  // norma, então o check-list é aberto a partir do card do empreendimento, na tela
+  // Empreendimentos — não faz sentido navegar até ele sem já estar olhando um empreendimento.
   { id: "empreendimentos", label: "Empreendimentos", path: "/empreendimentos", roles: ["ADMIN_CAPE", "CAPE_ANALISTA"] },
-  { id: "checklists", label: "Check-lists", path: "/checklists", roles: ["ADMIN_CAPE", "CAPE_ANALISTA"] },
   // Só a equipe CAPE, que atende todos os empreendimentos. Síndico, proprietário e RT
   // pertencem a um empreendimento e são geridos dentro dele, na tela Empreendimentos.
   { id: "usuarios", label: "Equipe CAPE", path: "/usuarios", roles: ["ADMIN_CAPE", "CAPE_ANALISTA"] },
