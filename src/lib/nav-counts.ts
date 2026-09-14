@@ -40,7 +40,8 @@ export function navWithCounts(role: Role, counts: Record<ScreenId, string>) {
   return SCREENS.filter((s) => s.roles.includes(role)).map((s) => ({
     path: s.path,
     label: s.labelPorPapel?.[role] ?? s.label,
-    count: counts[s.id],
+    count: s.mostrarContador ? counts[s.id] : "",
     separadorAntes: s.separadorAntes ?? false,
+    alerta: s.alertaContador ?? false,
   }));
 }

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { signOutAction } from "@/lib/actions/auth-actions";
 
-export type NavEntry = { path: string; label: string; count: string; separadorAntes?: boolean };
+export type NavEntry = { path: string; label: string; count: string; separadorAntes?: boolean; alerta?: boolean };
 
 export function Sidebar({ nav }: { nav: NavEntry[] }) {
   const pathname = usePathname();
@@ -90,6 +90,9 @@ export function Sidebar({ nav }: { nav: NavEntry[] }) {
         <nav style={{ display: "flex", flexDirection: "column", gap: 2, padding: "0 10px", overflowY: "auto" }}>
           {nav.map((n) => {
             const active = pathname === n.path || pathname.startsWith(n.path + "/");
+            // "" (sem contador) e "0" (contador zerado) não acendem o alerta — só uma
+            // solicitação de fato parada esperando decisão da CAPE.
+            const pendente = n.alerta && !!n.count && n.count !== "0";
             return (
               <div key={n.path}>
                 {n.separadorAntes && (
@@ -108,9 +111,9 @@ export function Sidebar({ nav }: { nav: NavEntry[] }) {
                     padding: "10px 12px",
                     borderRadius: 6,
                     fontSize: 13.5,
-                    fontWeight: active ? 600 : 400,
+                    fontWeight: active || pendente ? 600 : 400,
                     background: active ? "rgba(255,255,255,.14)" : "transparent",
-                    color: active ? "#FFFFFF" : "#C7D8E0",
+                    color: active ? "#FFFFFF" : pendente ? "#FFFFFF" : "#C7D8E0",
                   }}
                 >
                   <span
@@ -119,11 +122,29 @@ export function Sidebar({ nav }: { nav: NavEntry[] }) {
                       height: 6,
                       borderRadius: "50%",
                       flex: "none",
-                      background: active ? "#B4711A" : "rgba(255,255,255,.28)",
+                      background: active ? "#B4711A" : pendente ? "#E0A030" : "rgba(255,255,255,.28)",
                     }}
                   />
                   <span style={{ flex: 1 }}>{n.label}</span>
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "#8FB0BF" }}>{n.count}</span>
+                  {n.count !== "" && (
+                    <span
+                      className={pendente ? "nav-badge-alert" : undefined}
+                      style={{
+                        fontFamily: "var(--font-mono)",
+                        fontSize: 11,
+                        fontWeight: pendente ? 700 : 400,
+                        lineHeight: 1,
+                        color: pendente ? "#0B2E3F" : "#8FB0BF",
+                        background: pendente ? "#E0A030" : "transparent",
+                        borderRadius: pendente ? 999 : 0,
+                        padding: pendente ? "3px 7px" : 0,
+                        minWidth: pendente ? 18 : undefined,
+                        textAlign: "center",
+                      }}
+                    >
+                      {n.count}
+                    </span>
+                  )}
                 </button>
               </div>
             );

@@ -23,13 +23,35 @@ export const SCREENS: Array<{
   // Abre um respiro visual antes deste item na barra lateral (ver Sidebar.tsx) — separa
   // o que a equipe CAPE usa no dia a dia do que é consultado com menos frequência.
   separadorAntes?: boolean;
+  // Some dos outros itens de propósito: um número em cada entrada do menu vira ruído.
+  // Só as três telas de fila (vínculo, obra, obras em andamento) mostram contador.
+  mostrarContador?: boolean;
+  // Das que mostram contador, só vínculo e obra pendente de aprovação viram alerta
+  // (badge destacado, pulsando) quando o contador é maior que zero — são pedidos
+  // parados esperando uma decisão da CAPE. "Obras em andamento" é acompanhamento, não
+  // uma fila de aprovação, então mantém o número mas sem o alerta.
+  alertaContador?: boolean;
 }> = [
   { id: "resumo", label: "Resumo dos Loteamentos", path: "/resumo", roles: ["ADMIN_CAPE", "CAPE_ANALISTA", "SINDICO"] },
-  { id: "vinculos", label: "Aprovação de Vínculo", path: "/vinculos", roles: ["ADMIN_CAPE", "CAPE_ANALISTA"] },
-  { id: "fila", label: "Aprovação de Obra", path: "/fila", roles: ["ADMIN_CAPE", "CAPE_ANALISTA"] },
+  {
+    id: "vinculos",
+    label: "Aprovação de Vínculo",
+    path: "/vinculos",
+    roles: ["ADMIN_CAPE", "CAPE_ANALISTA"],
+    mostrarContador: true,
+    alertaContador: true,
+  },
+  {
+    id: "fila",
+    label: "Aprovação de Obra",
+    path: "/fila",
+    roles: ["ADMIN_CAPE", "CAPE_ANALISTA"],
+    mostrarContador: true,
+    alertaContador: true,
+  },
   // Obra liberada sai da fila: não há mais nada a analisar nela, o que existe é
   // acompanhamento de execução (irregularidades e conclusão).
-  { id: "obras", label: "Obras em andamento", path: "/obras", roles: ["ADMIN_CAPE", "CAPE_ANALISTA"] },
+  { id: "obras", label: "Obras em andamento", path: "/obras", roles: ["ADMIN_CAPE", "CAPE_ANALISTA"], mostrarContador: true },
   { id: "relatorios", label: "Relatórios", path: "/relatorios", roles: ["ADMIN_CAPE", "CAPE_ANALISTA", "SINDICO"] },
   // Admin/Analista CAPE cadastram e consultam os documentos dentro de Empreendimentos,
   // então para eles esta aba seria redundante.
