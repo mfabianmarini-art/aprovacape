@@ -20,14 +20,26 @@ export const SCREENS: Array<{
   // Mesma tela, nome diferente conforme quem olha: o síndico publica documentos ali,
   // enquanto proprietário e RT a consultam como as normas que o projeto precisa atender.
   labelPorPapel?: Partial<Record<Role, string>>;
+  // Abre um respiro visual antes deste item na barra lateral (ver Sidebar.tsx) — separa
+  // o que a equipe CAPE usa no dia a dia do que é consultado com menos frequência.
+  separadorAntes?: boolean;
 }> = [
-  { id: "resumo", label: "Resumo do loteamento", path: "/resumo", roles: ["ADMIN_CAPE", "CAPE_ANALISTA", "SINDICO"] },
-  { id: "fila", label: "Fila de análise", path: "/fila", roles: ["ADMIN_CAPE", "CAPE_ANALISTA"] },
+  { id: "resumo", label: "Resumo dos Loteamentos", path: "/resumo", roles: ["ADMIN_CAPE", "CAPE_ANALISTA", "SINDICO"] },
+  { id: "vinculos", label: "Aprovação de Vínculo", path: "/vinculos", roles: ["ADMIN_CAPE", "CAPE_ANALISTA"] },
+  { id: "fila", label: "Aprovação de Obra", path: "/fila", roles: ["ADMIN_CAPE", "CAPE_ANALISTA"] },
   // Obra liberada sai da fila: não há mais nada a analisar nela, o que existe é
   // acompanhamento de execução (irregularidades e conclusão).
   { id: "obras", label: "Obras em andamento", path: "/obras", roles: ["ADMIN_CAPE", "CAPE_ANALISTA"] },
-  { id: "vinculos", label: "Vínculos a validar", path: "/vinculos", roles: ["ADMIN_CAPE", "CAPE_ANALISTA"] },
-  { id: "relatorios", label: "Relatório", path: "/relatorios", roles: ["ADMIN_CAPE", "CAPE_ANALISTA", "SINDICO"] },
+  // Daqui para baixo: itens de uso menos frequente para a equipe CAPE (Relatórios,
+  // Empreendimentos, Cadastrar Usuário) — separadorAntes abre o respiro visual que os
+  // afasta dos quatro de cima.
+  {
+    id: "relatorios",
+    label: "Relatórios",
+    path: "/relatorios",
+    roles: ["ADMIN_CAPE", "CAPE_ANALISTA", "SINDICO"],
+    separadorAntes: true,
+  },
   // Admin/Analista CAPE cadastram e consultam os documentos dentro de Empreendimentos,
   // então para eles esta aba seria redundante.
   //
@@ -50,7 +62,7 @@ export const SCREENS: Array<{
   { id: "empreendimentos", label: "Empreendimentos", path: "/empreendimentos", roles: ["ADMIN_CAPE", "CAPE_ANALISTA"] },
   // Só a equipe CAPE, que atende todos os empreendimentos. Síndico, proprietário e RT
   // pertencem a um empreendimento e são geridos dentro dele, na tela Empreendimentos.
-  { id: "usuarios", label: "Equipe CAPE", path: "/usuarios", roles: ["ADMIN_CAPE", "CAPE_ANALISTA"] },
+  { id: "usuarios", label: "Cadastrar Usuário", path: "/usuarios", roles: ["ADMIN_CAPE", "CAPE_ANALISTA"] },
 ];
 
 export function screensForRole(role: Role) {

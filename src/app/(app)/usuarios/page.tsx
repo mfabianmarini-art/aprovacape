@@ -13,7 +13,7 @@ export default async function UsuariosPage() {
 
   return (
     <>
-      <ScreenHeader crumb="Configuração" title="Equipe CAPE" {...user} />
+      <ScreenHeader crumb="Configuração" title="Cadastrar Usuário" {...user} />
       <ScreenBody>
         <div className="layout-with-aside" style={{ "--aside-w": "330px" } as React.CSSProperties}>
           <section style={{ background: "#fff", border: "1px solid #DDD8CE", borderRadius: 4, overflow: "hidden" }}>

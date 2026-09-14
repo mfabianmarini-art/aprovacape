@@ -40,7 +40,7 @@ export default async function RelatoriosPage({
   if (!atual) {
     return (
       <>
-        <ScreenHeader crumb="Gestão" title="Relatório do empreendimento" {...user} />
+        <ScreenHeader crumb="Gestão" title="Relatórios" {...user} />
         <ScreenBody>
           <div style={{ fontSize: 13.5, color: "#6B7480" }}>Nenhum empreendimento acessível à sua conta.</div>
         </ScreenBody>
@@ -58,7 +58,7 @@ export default async function RelatoriosPage({
 
   return (
     <>
-      <ScreenHeader crumb="Gestão" title="Relatório do empreendimento" {...user} />
+      <ScreenHeader crumb="Gestão" title="Relatórios" {...user} />
       <ScreenBody>
         <EmpreendimentoSwitcher atualId={atual.id} opcoes={opcoes} />
 

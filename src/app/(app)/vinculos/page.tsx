@@ -14,7 +14,7 @@ export default async function VinculosPage() {
 
   return (
     <>
-      <ScreenHeader crumb="Análise" title="Vínculos a validar" {...user} />
+      <ScreenHeader crumb="Análise" title="Aprovação de Vínculo" {...user} />
       <ScreenBody>
         <div style={{ fontSize: 13, color: "#4A5563", lineHeight: 1.5 }}>
           Proprietários e responsáveis técnicos se cadastram sozinhos e já acessam a plataforma. A CAPE confere o

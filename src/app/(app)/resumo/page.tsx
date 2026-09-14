@@ -18,7 +18,7 @@ export default async function ResumoPage({ searchParams }: { searchParams: Promi
   if (!atual) {
     return (
       <>
-        <ScreenHeader crumb="CAPE Aprova" title="Resumo do loteamento" {...user} />
+        <ScreenHeader crumb="CAPE Aprova" title="Resumo dos Loteamentos" {...user} />
         <ScreenBody>
           <div style={{ fontSize: 13.5, color: "#6B7480" }}>
             Nenhum empreendimento cadastrado ainda.
@@ -32,7 +32,7 @@ export default async function ResumoPage({ searchParams }: { searchParams: Promi
   if (!data) {
     return (
       <>
-        <ScreenHeader crumb="CAPE Aprova" title="Resumo do loteamento" {...user} />
+        <ScreenHeader crumb="CAPE Aprova" title="Resumo dos Loteamentos" {...user} />
         <ScreenBody>
           <div style={{ fontSize: 13.5, color: "#6B7480" }}>
             Nenhum empreendimento cadastrado ainda.

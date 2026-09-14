@@ -11,7 +11,7 @@ export default async function FilaPage() {
 
   return (
     <>
-      <ScreenHeader crumb="CAPE · Análise técnica" title="Fila de solicitações" {...user} />
+      <ScreenHeader crumb="CAPE · Análise técnica" title="Aprovação de Obra" {...user} />
       <ScreenBody>
         <FilaTable fila={fila} />
       </ScreenBody>

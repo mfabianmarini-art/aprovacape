@@ -41,5 +41,6 @@ export function navWithCounts(role: Role, counts: Record<ScreenId, string>) {
     path: s.path,
     label: s.labelPorPapel?.[role] ?? s.label,
     count: counts[s.id],
+    separadorAntes: s.separadorAntes ?? false,
   }));
 }

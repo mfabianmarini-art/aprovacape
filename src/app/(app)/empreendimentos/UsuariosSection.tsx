@@ -72,7 +72,7 @@ export function UsuariosSection({
             <section style={{ background: "#FDF8EE", border: "1px solid #E8D7B4", borderRadius: 4, padding: "16px 17px", fontSize: 12.5, color: "#6B4A11", lineHeight: 1.5 }}>
               {pendentes} vínculo(s) deste empreendimento aguardando validação. A análise é feita em{" "}
               <Link href="/vinculos" style={{ color: "#6B4A11", fontWeight: 600 }}>
-                Vínculos a validar
+                Aprovação de Vínculo
               </Link>
               , que reúne os pedidos de todos os empreendimentos.
             </section>

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { signOutAction } from "@/lib/actions/auth-actions";
 
-export type NavEntry = { path: string; label: string; count: string };
+export type NavEntry = { path: string; label: string; count: string; separadorAntes?: boolean };
 
 export function Sidebar({ nav }: { nav: NavEntry[] }) {
   const pathname = usePathname();
@@ -91,37 +91,41 @@ export function Sidebar({ nav }: { nav: NavEntry[] }) {
           {nav.map((n) => {
             const active = pathname === n.path || pathname.startsWith(n.path + "/");
             return (
-              <button
-                key={n.path}
-                onClick={() => router.push(n.path)}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 10,
-                  width: "100%",
-                  textAlign: "left",
-                  border: 0,
-                  cursor: "pointer",
-                  padding: "10px 12px",
-                  borderRadius: 6,
-                  fontSize: 13.5,
-                  fontWeight: active ? 600 : 400,
-                  background: active ? "rgba(255,255,255,.14)" : "transparent",
-                  color: active ? "#FFFFFF" : "#C7D8E0",
-                }}
-              >
-                <span
+              <div key={n.path}>
+                {n.separadorAntes && (
+                  <div style={{ margin: "10px 12px 12px", borderTop: "1px solid rgba(255,255,255,.14)" }} />
+                )}
+                <button
+                  onClick={() => router.push(n.path)}
                   style={{
-                    width: 6,
-                    height: 6,
-                    borderRadius: "50%",
-                    flex: "none",
-                    background: active ? "#B4711A" : "rgba(255,255,255,.28)",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    width: "100%",
+                    textAlign: "left",
+                    border: 0,
+                    cursor: "pointer",
+                    padding: "10px 12px",
+                    borderRadius: 6,
+                    fontSize: 13.5,
+                    fontWeight: active ? 600 : 400,
+                    background: active ? "rgba(255,255,255,.14)" : "transparent",
+                    color: active ? "#FFFFFF" : "#C7D8E0",
                   }}
-                />
-                <span style={{ flex: 1 }}>{n.label}</span>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "#8FB0BF" }}>{n.count}</span>
-              </button>
+                >
+                  <span
+                    style={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: "50%",
+                      flex: "none",
+                      background: active ? "#B4711A" : "rgba(255,255,255,.28)",
+                    }}
+                  />
+                  <span style={{ flex: 1 }}>{n.label}</span>
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "#8FB0BF" }}>{n.count}</span>
+                </button>
+              </div>
             );
           })}
         </nav>
