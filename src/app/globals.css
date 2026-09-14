@@ -168,6 +168,16 @@ textarea {
     font-size: 23px;
   }
 
+  /* Cargo ("Admin CAPE" etc.) some no celular: o nome + avatar já bastam para saber
+     quem está logado, e sobra espaço para o título — que agora quebra linha aqui em
+     vez de empurrar todo o bloco do usuário para uma linha abaixo. */
+  .screen-user {
+    gap: 8px;
+  }
+  .screen-user-papel {
+    display: none;
+  }
+
   .layout-with-aside,
   .resumo-grid {
     grid-template-columns: 1fr;
