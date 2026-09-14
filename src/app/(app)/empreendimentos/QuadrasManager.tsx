@@ -57,6 +57,9 @@ export function QuadrasManager({
   const action = addQuadraAction.bind(null, empreendimentoId);
   const [state, formAction, pending] = useActionState<QuadraState, FormData>(action, null);
   const [expandidas, setExpandidas] = useState<Set<string>>(new Set());
+  // Com dezenas de quadras, a lista inteira sempre aberta dominava a tela e empurrava
+  // usuários/documentos para baixo. Por padrão mostra só o resumo; edição é opt-in.
+  const [editando, setEditando] = useState(false);
 
   function alternar(id: string) {
     setExpandidas((atual) => {
@@ -67,13 +70,50 @@ export function QuadrasManager({
     });
   }
 
+  const totalLotesDeclarados = quadras.reduce((a, q) => a + q.total, 0);
+  const totalLotesCadastrados = quadras.reduce((a, q) => a + q.lotes.length, 0);
+  const totalLotesVinculados = quadras.reduce((a, q) => a + q.lotes.filter((l) => l.proprietarioNome || l.rtNome).length, 0);
+
+  const stats: { rotulo: string; valor: number }[] = [
+    { rotulo: "Quadras", valor: quadras.length },
+    { rotulo: "Lotes declarados", valor: totalLotesDeclarados },
+    { rotulo: "Lotes cadastrados", valor: totalLotesCadastrados },
+    { rotulo: "Lotes vinculados", valor: totalLotesVinculados },
+  ];
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-      <div style={{ fontSize: 11, letterSpacing: ".14em", textTransform: "uppercase", color: "#6B7480" }}>Quadras e lotes</div>
-      {quadras.length === 0 && (
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 22, flexWrap: "wrap" }}>
+          {stats.map((s) => (
+            <div key={s.rotulo} style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 600, lineHeight: 1 }}>{s.valor}</div>
+              <div style={{ fontSize: 10.5, letterSpacing: ".08em", textTransform: "uppercase", color: "#6B7480" }}>{s.rotulo}</div>
+            </div>
+          ))}
+        </div>
+        <button
+          type="button"
+          onClick={() => setEditando((v) => !v)}
+          style={{
+            border: `1px solid ${editando ? "#DDD8CE" : "#12455E"}`,
+            background: editando ? "#fff" : "#12455E",
+            color: editando ? "#4A5563" : "#fff",
+            borderRadius: 4,
+            padding: "9px 14px",
+            fontSize: 12.5,
+            fontWeight: 600,
+            cursor: "pointer",
+            flex: "none",
+          }}
+        >
+          {editando ? "Recolher" : "Editar quadras e lotes"}
+        </button>
+      </div>
+      {!editando && quadras.length === 0 && (
         <div style={{ fontSize: 12.5, color: "#6B7480" }}>Nenhuma quadra cadastrada ainda.</div>
       )}
-      {quadras.map((q) => {
+      {editando && quadras.map((q) => {
         const temLotes = q.lotes.length > 0;
         const aberta = expandidas.has(q.id);
         return (
@@ -132,30 +172,34 @@ export function QuadrasManager({
           </div>
         );
       })}
-      <form action={formAction} style={{ display: "grid", gridTemplateColumns: "1fr 90px auto", gap: 8 }}>
-        <input
-          name="nome"
-          placeholder="Nome da quadra (A, B, A1, F2…)"
-          required
-          style={{ border: "1px dashed #C9C2B4", borderRadius: 4, padding: "8px 10px", fontSize: 13 }}
-        />
-        <input
-          name="totalLotes"
-          type="number"
-          min={1}
-          placeholder="Lotes"
-          required
-          style={{ border: "1px dashed #C9C2B4", borderRadius: 4, padding: "8px 10px", fontSize: 13, fontFamily: "var(--font-mono)" }}
-        />
-        <button
-          type="submit"
-          disabled={pending}
-          style={{ border: "1px dashed #C9C2B4", background: "#fff", color: "#12455E", borderRadius: 4, padding: "8px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer" }}
-        >
-          {pending ? "Adicionando…" : "+ quadra"}
-        </button>
-      </form>
-      {state?.error && <div style={{ fontSize: 11.5, color: "#8C2B22" }}>{state.error}</div>}
+      {editando && (
+        <>
+          <form action={formAction} style={{ display: "grid", gridTemplateColumns: "1fr 90px auto", gap: 8 }}>
+            <input
+              name="nome"
+              placeholder="Nome da quadra (A, B, A1, F2…)"
+              required
+              style={{ border: "1px dashed #C9C2B4", borderRadius: 4, padding: "8px 10px", fontSize: 13 }}
+            />
+            <input
+              name="totalLotes"
+              type="number"
+              min={1}
+              placeholder="Lotes"
+              required
+              style={{ border: "1px dashed #C9C2B4", borderRadius: 4, padding: "8px 10px", fontSize: 13, fontFamily: "var(--font-mono)" }}
+            />
+            <button
+              type="submit"
+              disabled={pending}
+              style={{ border: "1px dashed #C9C2B4", background: "#fff", color: "#12455E", borderRadius: 4, padding: "8px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer" }}
+            >
+              {pending ? "Adicionando…" : "+ quadra"}
+            </button>
+          </form>
+          {state?.error && <div style={{ fontSize: 11.5, color: "#8C2B22" }}>{state.error}</div>}
+        </>
+      )}
     </div>
   );
 }

@@ -14,6 +14,7 @@ import { QuadrasManager } from "./QuadrasManager";
 import { DocumentosList } from "../documentos/DocumentosList";
 import { DocumentoUploadForm } from "../documentos/DocumentoUploadForm";
 import { UsuariosSection } from "./UsuariosSection";
+import { EmpreendimentoTabs } from "./EmpreendimentoTabs";
 
 export default async function EmpreendimentosPage({ searchParams }: { searchParams: Promise<{ emp?: string }> }) {
   const session = await requireRole("ADMIN_CAPE", "CAPE_ANALISTA");
@@ -75,43 +76,67 @@ export default async function EmpreendimentosPage({ searchParams }: { searchPara
             {isAdmin && <NovoEmpreendimentoForm />}
           </div>
         </div>
-        <div className="layout-with-aside">
-          <section style={{ background: "#fff", border: "1px solid #DDD8CE", borderRadius: 4 }}>
-            <div style={{ padding: "15px 18px", borderBottom: "1px solid #EDE9E1", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-              <div style={{ fontFamily: "var(--font-display)", fontSize: 17, fontWeight: 600, letterSpacing: ".04em", textTransform: "uppercase" }}>{emp.nome}</div>
-              <div style={{ fontSize: 11.5, color: "#6B7480", fontFamily: "var(--font-mono)" }}>
-                {emp.cidade}/{emp.uf} · {totalLotes} lotes
-              </div>
-            </div>
-            <EmpreendimentoForm
-              id={emp.id}
-              taxaAnaliseCent={emp.taxaAnaliseCent}
-              prazoDias={emp.prazoDias}
-              reenviosSemTaxa={emp.reenviosSemTaxa}
-              taxaVisitaCent={emp.taxaVisitaCent}
-            />
-            <div style={{ padding: "0 20px 20px" }}>
-              <QuadrasManager empreendimentoId={emp.id} quadras={quadrasCfg} plantaImageUrl={emp.plantaImageUrl} />
-            </div>
-          </section>
-          <aside style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <PlantaUpload empreendimentoId={emp.id} plantaImageUrl={emp.plantaImageUrl} />
-          </aside>
-        </div>
-        <UsuariosSection
-          empreendimentoId={emp.id}
-          usuarios={usuarios}
-          pendentes={pendentes}
-          sindicos={sindicos}
-          sindicoAtual={emp.sindico && { id: emp.sindico.id, name: emp.sindico.name, email: emp.sindico.email }}
-        />
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <div style={{ fontSize: 11, letterSpacing: ".14em", textTransform: "uppercase", color: "#6B7480" }}>Documentos técnicos</div>
-          <div className="layout-with-aside">
-            <DocumentosList documentos={documentos} podeGerenciar />
-            <DocumentoUploadForm empreendimentoId={emp.id} />
+
+        {/* Identidade do empreendimento fica visível o tempo todo, independente da aba
+            aberta — nas abas embaixo, só o conteúdo troca. */}
+        <div
+          style={{
+            background: "#fff",
+            border: "1px solid #DDD8CE",
+            borderRadius: 4,
+            padding: "15px 18px",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: 12,
+            flexWrap: "wrap",
+          }}
+        >
+          <div style={{ fontFamily: "var(--font-display)", fontSize: 17, fontWeight: 600, letterSpacing: ".04em", textTransform: "uppercase" }}>{emp.nome}</div>
+          <div style={{ fontSize: 11.5, color: "#6B7480", fontFamily: "var(--font-mono)" }}>
+            {emp.cidade}/{emp.uf} · {totalLotes} lotes
           </div>
         </div>
+
+        <EmpreendimentoTabs
+          contagens={{ quadras: quadrasCfg.length, usuarios: usuarios.length, documentos: documentos.length }}
+          config={
+            <div className="layout-with-aside" style={{ padding: 20 }}>
+              <EmpreendimentoForm
+                id={emp.id}
+                taxaAnaliseCent={emp.taxaAnaliseCent}
+                prazoDias={emp.prazoDias}
+                reenviosSemTaxa={emp.reenviosSemTaxa}
+                taxaVisitaCent={emp.taxaVisitaCent}
+              />
+              <aside style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <PlantaUpload empreendimentoId={emp.id} plantaImageUrl={emp.plantaImageUrl} />
+              </aside>
+            </div>
+          }
+          quadras={
+            <div style={{ padding: 20 }}>
+              <QuadrasManager empreendimentoId={emp.id} quadras={quadrasCfg} plantaImageUrl={emp.plantaImageUrl} />
+            </div>
+          }
+          usuarios={
+            <div style={{ padding: 20 }}>
+              <UsuariosSection
+                empreendimentoId={emp.id}
+                usuarios={usuarios}
+                pendentes={pendentes}
+                sindicos={sindicos}
+                sindicoAtual={emp.sindico && { id: emp.sindico.id, name: emp.sindico.name, email: emp.sindico.email }}
+              />
+            </div>
+          }
+          documentos={
+            <div className="layout-with-aside" style={{ padding: 20 }}>
+              <DocumentosList documentos={documentos} podeGerenciar />
+              <DocumentoUploadForm empreendimentoId={emp.id} />
+            </div>
+          }
+        />
       </ScreenBody>
     </>
   );

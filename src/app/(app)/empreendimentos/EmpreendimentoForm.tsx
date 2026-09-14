@@ -26,7 +26,7 @@ export function EmpreendimentoForm({
   const [state, formAction, pending] = useActionState(updateEmpreendimentoAction, null as { error?: string; ok?: boolean } | null);
 
   return (
-    <form action={formAction} style={{ padding: 20, display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 16 }}>
+    <form action={formAction} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 16 }}>
       <input type="hidden" name="empreendimentoId" value={id} />
       <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         <span style={labelTextStyle}>Taxa de análise (R$)</span>
