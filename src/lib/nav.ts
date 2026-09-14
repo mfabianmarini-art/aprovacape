@@ -30,16 +30,7 @@ export const SCREENS: Array<{
   // Obra liberada sai da fila: não há mais nada a analisar nela, o que existe é
   // acompanhamento de execução (irregularidades e conclusão).
   { id: "obras", label: "Obras em andamento", path: "/obras", roles: ["ADMIN_CAPE", "CAPE_ANALISTA"] },
-  // Daqui para baixo: itens de uso menos frequente para a equipe CAPE (Relatórios,
-  // Empreendimentos, Cadastrar Usuário) — separadorAntes abre o respiro visual que os
-  // afasta dos quatro de cima.
-  {
-    id: "relatorios",
-    label: "Relatórios",
-    path: "/relatorios",
-    roles: ["ADMIN_CAPE", "CAPE_ANALISTA", "SINDICO"],
-    separadorAntes: true,
-  },
+  { id: "relatorios", label: "Relatórios", path: "/relatorios", roles: ["ADMIN_CAPE", "CAPE_ANALISTA", "SINDICO"] },
   // Admin/Analista CAPE cadastram e consultam os documentos dentro de Empreendimentos,
   // então para eles esta aba seria redundante.
   //
@@ -59,7 +50,11 @@ export const SCREENS: Array<{
   // Check-lists não tem entrada própria no menu: cada empreendimento segue sua própria
   // norma, então o check-list é aberto a partir do card do empreendimento, na tela
   // Empreendimentos — não faz sentido navegar até ele sem já estar olhando um empreendimento.
-  { id: "empreendimentos", label: "Empreendimentos", path: "/empreendimentos", roles: ["ADMIN_CAPE", "CAPE_ANALISTA"] },
+  //
+  // Daqui para baixo: itens de uso menos frequente para a equipe CAPE (Empreendimentos,
+  // Cadastrar Usuário) — separadorAntes abre o respiro visual que os afasta dos cinco de
+  // cima (Resumo, Aprovação de Vínculo, Aprovação de Obra, Obras em andamento, Relatórios).
+  { id: "empreendimentos", label: "Empreendimentos", path: "/empreendimentos", roles: ["ADMIN_CAPE", "CAPE_ANALISTA"], separadorAntes: true },
   // Só a equipe CAPE, que atende todos os empreendimentos. Síndico, proprietário e RT
   // pertencem a um empreendimento e são geridos dentro dele, na tela Empreendimentos.
   { id: "usuarios", label: "Cadastrar Usuário", path: "/usuarios", roles: ["ADMIN_CAPE", "CAPE_ANALISTA"] },
