@@ -11,13 +11,28 @@ type Rascunho = {
 };
 
 const DICAS: Record<DocumentoTipo, string> = {
-  PROJETO_ARQUITETONICO: "Plantas, cortes, elevações e implantação no lote",
-  ART_RRT: "Anotação de responsabilidade técnica quitada",
+  PROJETO_ARQUITETONICO: "Plantas, cortes, elevações e implantação no lote. Aceita DWG salvo em AutoCAD 2010/LT2010 — os demais documentos do check-list são só PDF.",
+  ART_RRT_PROJETO: "Anotação de responsabilidade técnica quitada, do autor do projeto",
+  ART_RRT_EXECUCAO: "Anotação de responsabilidade técnica quitada, de quem executa a obra",
   MEMORIAL_DESCRITIVO: "Materiais, acabamentos e sistema construtivo",
-  PROJETO_ESTRUTURAL: "Fundações, arrimos e estrutura, assinado pelo RT",
+  PROJETO_PAISAGISTICO: "Implantação de jardins, paisagismo e áreas externas",
+  CAPA_IPTU: "Capa do carnê ou guia do IPTU do lote",
+  MATRICULA: "Matrícula atualizada do lote no cartório de registro de imóveis",
+  LEVANTAMENTO_PLANIALTIMETRICO: "Levantamento planialtimétrico cadastral do lote",
+  OUTROS: "Qualquer documento adicional relevante para a análise",
 };
 
-function UploadRow({ solicitacaoId, tipo, existente }: { solicitacaoId: string; tipo: DocumentoTipo; existente?: { nomeArquivo: string } }) {
+function UploadRow({
+  solicitacaoId,
+  tipo,
+  existente,
+  obrigatorio = true,
+}: {
+  solicitacaoId: string;
+  tipo: DocumentoTipo;
+  existente?: { nomeArquivo: string };
+  obrigatorio?: boolean;
+}) {
   const action = uploadDocumentoAction.bind(null, solicitacaoId, tipo);
   const [state, formAction, pending] = useActionState(action, null as { error?: string } | null);
   const ok = !!existente && !state?.error;
@@ -42,17 +57,22 @@ function UploadRow({ solicitacaoId, tipo, existente }: { solicitacaoId: string; 
           <span style={{ fontSize: 11.5, fontWeight: 400, color: "#7A7472", fontFamily: "var(--font-mono)" }}>
             {formatosAceitos(tipo)}
           </span>
+          {!obrigatorio && (
+            <span style={{ fontSize: 11, fontWeight: 400, color: "#8B939C" }}> · opcional</span>
+          )}
         </div>
         <div style={{ fontSize: 11.5, color: "#7A7472" }}>{existente ? existente.nomeArquivo : DICAS[tipo]}</div>
         {state?.error && <div style={{ fontSize: 11.5, color: "#8C2B22" }}>{state.error}</div>}
       </div>
       <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 10 }}>
-        <span style={{ fontSize: 11.5, fontFamily: "var(--font-mono)", color: ok ? "#24603A" : "#8A5210" }}>{ok ? "enviado" : "pendente"}</span>
+        <span style={{ fontSize: 11.5, fontFamily: "var(--font-mono)", color: ok ? "#24603A" : obrigatorio ? "#8A5210" : "#8B939C" }}>
+          {ok ? "enviado" : obrigatorio ? "pendente" : "não enviado"}
+        </span>
         <input
           type="file"
           name="arquivo"
           accept={DOC_REGRAS[tipo].extensoes.join(",")}
-          required
+          required={obrigatorio}
           style={{ display: "none" }}
           id={`file-${tipo}`}
           onChange={(e) => e.currentTarget.form?.requestSubmit()}
@@ -71,17 +91,17 @@ function UploadRow({ solicitacaoId, tipo, existente }: { solicitacaoId: string; 
 export function Step2Uploads({ rascunho }: { rascunho: Rascunho }) {
   const enviados = DOC_ORDER.filter((t) => rascunho.documentos.find((d) => d.tipo === t)).length;
   const pendentes = DOC_ORDER.length - enviados;
+  const outros = rascunho.documentos.find((d) => d.tipo === "OUTROS");
 
   return (
     <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 12 }}>
       {DOC_ORDER.map((tipo) => (
         <UploadRow key={tipo} solicitacaoId={rascunho.id} tipo={tipo} existente={rascunho.documentos.find((d) => d.tipo === tipo)} />
       ))}
+      <UploadRow solicitacaoId={rascunho.id} tipo="OUTROS" existente={outros} obrigatorio={false} />
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 14, flexWrap: "wrap", borderTop: "1px solid #EDE9E1", paddingTop: 16 }}>
         <div style={{ fontSize: 12.5, color: "#4A5563" }}>
-          {pendentes === 0
-            ? "Todos os documentos do check-list foram anexados."
-            : `${pendentes} documento(s) pendente(s). Projetos aceitam DWG salvo em AutoCAD 2010; os demais, PDF.`}
+          {pendentes === 0 ? "Todos os documentos obrigatórios do check-list foram anexados." : `${pendentes} documento(s) obrigatório(s) pendente(s).`}
         </div>
         <div style={{ display: "flex", gap: 9 }}>
           <a

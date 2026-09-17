@@ -13,13 +13,9 @@ import type { DocumentoTipo } from "@/generated/prisma/enums";
 
 const rascunhoSchema = z.object({
   loteId: z.string().min(1),
-  tipo: z.enum(["OBRA_NOVA", "REFORMA", "AMPLIACAO", "DEMOLICAO", "MURO"]),
-  areaConstruida: z.coerce.number().positive(),
+  tipo: z.enum(["OBRA_NOVA", "REFORMA", "AMPLIACAO", "DEMOLICAO", "MURO", "PAISAGISMO"]),
+  areaIntervencao: z.coerce.number().positive(),
   descricao: z.string().min(10, "Descreva a obra com mais detalhes"),
-  // O gestor CAPE só cadastra a quadra e o número do lote — endereço e área do lote em si
-  // (diferente da área construída da obra, acima) são preenchidos aqui pelo proprietário/RT.
-  rua: z.string().trim().min(1, "Informe o endereço do lote"),
-  areaLote: z.coerce.number().positive("Informe a área do lote"),
 });
 
 export async function criarRascunhoAction(_prev: unknown, formData: FormData) {
@@ -31,26 +27,20 @@ export async function criarRascunhoAction(_prev: unknown, formData: FormData) {
   const isOwner = lote.proprietarioId === session.user.id || lote.rtId === session.user.id;
   if (!isOwner) return { error: "Este lote não está vinculado à sua conta." };
 
-  const sol = await prisma.$transaction(async (tx) => {
-    await tx.lote.update({
-      where: { id: lote.id },
-      data: { rua: parsed.data.rua, areaM2: parsed.data.areaLote },
-    });
-    return tx.solicitacao.create({
-      data: {
-        protocolo: `RASCUNHO-${Date.now()}`,
-        loteId: lote.id,
-        tipo: parsed.data.tipo,
-        areaConstruida: parsed.data.areaConstruida,
-        descricao: parsed.data.descricao,
-        status: "RASCUNHO",
-        prazoDias: 10,
-        criadoPorId: session.user.id,
-        responsavelTecnicoNome: "",
-        responsavelTecnicoRegistro: "",
-        responsavelTecnicoEmail: "",
-      },
-    });
+  const sol = await prisma.solicitacao.create({
+    data: {
+      protocolo: `RASCUNHO-${Date.now()}`,
+      loteId: lote.id,
+      tipo: parsed.data.tipo,
+      areaIntervencao: parsed.data.areaIntervencao,
+      descricao: parsed.data.descricao,
+      status: "RASCUNHO",
+      prazoDias: 10,
+      criadoPorId: session.user.id,
+      responsavelTecnicoNome: "",
+      responsavelTecnicoRegistro: "",
+      responsavelTecnicoEmail: "",
+    },
   });
 
   redirect(`/nova?rascunho=${sol.id}&passo=2`);
@@ -99,9 +89,12 @@ export async function uploadDocumentoAction(solicitacaoId: string, tipo: Documen
 
 const enviarSchema = z.object({
   solicitacaoId: z.string().min(1),
-  rtNome: z.string().min(3, "Informe o responsável técnico"),
-  rtRegistro: z.string().min(3, "Informe o registro CAU/CREA"),
-  rtEmail: z.string().email("E-mail inválido"),
+  rtNome: z.string().min(3, "Informe o responsável técnico pelo projeto"),
+  rtRegistro: z.string().min(3, "Informe o registro CAU/CREA do responsável técnico pelo projeto"),
+  rtEmail: z.string().email("E-mail inválido para o responsável técnico pelo projeto"),
+  rtExecNome: z.string().min(3, "Informe o responsável técnico pela execução"),
+  rtExecRegistro: z.string().min(3, "Informe o registro CAU/CREA do responsável técnico pela execução"),
+  rtExecEmail: z.string().email("E-mail inválido para o responsável técnico pela execução"),
   d1: z.literal("on"),
   d2: z.literal("on"),
   d3: z.literal("on"),
@@ -145,6 +138,9 @@ export async function enviarSolicitacaoAction(_prev: unknown, formData: FormData
         responsavelTecnicoNome: parsed.data.rtNome,
         responsavelTecnicoRegistro: parsed.data.rtRegistro,
         responsavelTecnicoEmail: parsed.data.rtEmail,
+        rtExecucaoNome: parsed.data.rtExecNome,
+        rtExecucaoRegistro: parsed.data.rtExecRegistro,
+        rtExecucaoEmail: parsed.data.rtExecEmail,
       },
     }),
     prisma.historicoEvento.create({

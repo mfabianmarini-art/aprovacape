@@ -116,7 +116,7 @@ function ObraLinha({ obra }: { obra: Obra }) {
             {obra.lote.quadra.nome} L{obra.lote.numero}
           </div>
           <div style={{ fontSize: 11.5, color: "#7A7472" }}>
-            {TIPO_LABEL[obra.tipo]} · {obra.areaConstruida} m² · RT {obra.responsavelTecnicoNome}
+            {TIPO_LABEL[obra.tipo]} · {obra.areaIntervencao} m² · RT {obra.responsavelTecnicoNome}
           </div>
         </div>
         <div style={{ fontSize: 12, color: "#4A5563", fontFamily: "var(--font-mono)", paddingRight: 12 }}>

@@ -17,25 +17,42 @@ export const LIVRE_INFO = { label: "Sem solicitação", bg: "#EDE9E1", fg: "#7A7
 
 export const DOC_LABEL: Record<DocumentoTipo, { nome: string }> = {
   PROJETO_ARQUITETONICO: { nome: "Projeto arquitetônico" },
-  ART_RRT: { nome: "ART / RRT do responsável técnico" },
+  ART_RRT_PROJETO: { nome: "ART/RRT do responsável técnico pelo projeto" },
+  ART_RRT_EXECUCAO: { nome: "ART/RRT do responsável técnico pela execução" },
   MEMORIAL_DESCRITIVO: { nome: "Memorial descritivo" },
-  PROJETO_ESTRUTURAL: { nome: "Projeto estrutural" },
+  PROJETO_PAISAGISTICO: { nome: "Projeto paisagístico" },
+  CAPA_IPTU: { nome: "Capa do IPTU" },
+  MATRICULA: { nome: "Matrícula do lote" },
+  LEVANTAMENTO_PLANIALTIMETRICO: { nome: "Levantamento planialtimétrico" },
+  OUTROS: { nome: "Outros documentos" },
 };
 
+// Todos obrigatórios, exceto OUTROS — que fica fora desta lista para não entrar na
+// conferência documental nem travar o envio da solicitação.
 export const DOC_ORDER: DocumentoTipo[] = [
   "PROJETO_ARQUITETONICO",
-  "ART_RRT",
+  "ART_RRT_PROJETO",
+  "ART_RRT_EXECUCAO",
   "MEMORIAL_DESCRITIVO",
-  "PROJETO_ESTRUTURAL",
+  "PROJETO_PAISAGISTICO",
+  "CAPA_IPTU",
+  "MATRICULA",
+  "LEVANTAMENTO_PLANIALTIMETRICO",
 ];
 
 // Formato e tamanho aceitos por documento. Projetos podem vir em DWG para a CAPE
-// conferir no CAD; ART e memorial são leitura, então só PDF.
+// conferir no CAD; os demais são leitura, então só PDF. OUTROS aceita imagem também,
+// por ser o campo livre para o que não se encaixa nos demais.
 export const DOC_REGRAS: Record<DocumentoTipo, { extensoes: readonly string[]; maxMB: number }> = {
   PROJETO_ARQUITETONICO: { extensoes: [".pdf", ".dwg"], maxMB: 5 },
-  ART_RRT: { extensoes: [".pdf"], maxMB: 5 },
+  ART_RRT_PROJETO: { extensoes: [".pdf"], maxMB: 5 },
+  ART_RRT_EXECUCAO: { extensoes: [".pdf"], maxMB: 5 },
   MEMORIAL_DESCRITIVO: { extensoes: [".pdf"], maxMB: 5 },
-  PROJETO_ESTRUTURAL: { extensoes: [".pdf", ".dwg"], maxMB: 5 },
+  PROJETO_PAISAGISTICO: { extensoes: [".pdf", ".dwg"], maxMB: 5 },
+  CAPA_IPTU: { extensoes: [".pdf"], maxMB: 5 },
+  MATRICULA: { extensoes: [".pdf"], maxMB: 5 },
+  LEVANTAMENTO_PLANIALTIMETRICO: { extensoes: [".pdf", ".dwg"], maxMB: 5 },
+  OUTROS: { extensoes: [".pdf", ".dwg", ".jpg", ".jpeg", ".png"], maxMB: 10 },
 };
 
 export const IRREGULARIDADE_LABEL: Record<IrregularidadeTipo, string> = {
@@ -60,6 +77,7 @@ export const TIPO_LABEL: Record<SolicitacaoTipo, string> = {
   AMPLIACAO: "Ampliação",
   DEMOLICAO: "Demolição",
   MURO: "Muro / fechamento",
+  PAISAGISMO: "Paisagismo",
 };
 
 export const CATEGORIA_DOC_TECNICO_LABEL: Record<DocumentoTecnicoCategoria, string> = {

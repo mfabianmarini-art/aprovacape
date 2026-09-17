@@ -97,7 +97,8 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
     ["Empreendimento", sol.lote.empreendimento.nome],
     ["Lote", `${sol.lote.quadra.nome} L${sol.lote.numero}`],
     ["Proprietário", sol.lote.proprietario?.name ?? "—"],
-    ["Responsável técnico", `${sol.responsavelTecnicoNome} · ${sol.responsavelTecnicoRegistro}`],
+    ["RT do projeto", `${sol.responsavelTecnicoNome} · ${sol.responsavelTecnicoRegistro}`],
+    ["RT da execução", `${sol.rtExecucaoNome} · ${sol.rtExecucaoRegistro}`],
     ["Tipo de obra", TIPO_LABEL[sol.tipo]],
     ["Protocolado em", formatDate(sol.createdAt)],
     ["Prazo de análise", `${sol.prazoDias} dias corridos`],
@@ -374,6 +375,23 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
                     </div>
                   );
                 })}
+                {sol.documentos.find((d) => d.tipo === "OUTROS") && (
+                  <div style={{ display: "grid", gridTemplateColumns: "26px 1fr 132px", alignItems: "center", gap: 12, padding: "13px 18px", borderBottom: "1px solid #F1EEE7" }}>
+                    <span />
+                    <span style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                      <span style={{ fontSize: 13.5, fontWeight: 600 }}>{DOC_LABEL.OUTROS.nome}</span>
+                      <span style={{ fontSize: 11.5, color: "#7A7472", fontFamily: "var(--font-mono)" }}>não obrigatório · não entra na conferência acima</span>
+                    </span>
+                    <a
+                      href={`/api/files/${sol.documentos.find((d) => d.tipo === "OUTROS")!.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ fontSize: 12, fontWeight: 600, justifySelf: "end" }}
+                    >
+                      abrir
+                    </a>
+                  </div>
+                )}
               </div>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14, padding: "14px 18px", flexWrap: "wrap" }}>
                 <div style={{ fontSize: 12.5, color: "#4A5563", maxWidth: "60ch", lineHeight: 1.45 }}>

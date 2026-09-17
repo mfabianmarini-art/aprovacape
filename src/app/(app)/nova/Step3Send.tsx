@@ -10,7 +10,7 @@ const labelTextStyle: React.CSSProperties = { fontSize: 11, letterSpacing: ".13e
 const DECLARACOES = [
   { id: "d1", texto: "Declaro que a aprovação pela CAPE não substitui as aprovações legais junto aos órgãos públicos competentes, cabendo a mim e ao responsável técnico a regularidade legal da obra." },
   { id: "d2", texto: "Declaro ciência de que o início da obra depende da apresentação do projeto aprovado pela Prefeitura e do respectivo alvará de execução." },
-  { id: "d3", texto: "Declaro ciência de que alterações no projeto aprovado pela Prefeitura em relação ao aprovado pelo residencial exigem nova análise e substituição do projeto." },
+  { id: "d3", texto: "Declaro ciência de que alterações no projeto aprovado pela Prefeitura em relação ao aprovado pelo residencial exigem substituição do projeto." },
 ] as const;
 
 export function Step3Send({
@@ -27,19 +27,41 @@ export function Step3Send({
   return (
     <form action={formAction} style={{ padding: 20, display: "flex", flexDirection: "column", gap: 16 }}>
       <input type="hidden" name="solicitacaoId" value={rascunho.id} />
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 16 }}>
-        <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <span style={labelTextStyle}>Responsável técnico</span>
-          <input name="rtNome" required defaultValue={sessionUser.role === "RESPONSAVEL_TECNICO" ? sessionUser.name : ""} style={inputStyle} />
-        </label>
-        <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <span style={labelTextStyle}>Registro CAU / CREA</span>
-          <input name="rtRegistro" required style={{ ...inputStyle, fontFamily: "var(--font-mono)" }} />
-        </label>
-        <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <span style={labelTextStyle}>E-mail para notificações</span>
-          <input name="rtEmail" required type="email" style={inputStyle} />
-        </label>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <span style={labelTextStyle}>Responsável técnico pelo projeto</span>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 16 }}>
+          <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <span style={labelTextStyle}>Nome</span>
+            <input name="rtNome" required defaultValue={sessionUser.role === "RESPONSAVEL_TECNICO" ? sessionUser.name : ""} style={inputStyle} />
+          </label>
+          <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <span style={labelTextStyle}>Registro CAU / CREA</span>
+            <input name="rtRegistro" required style={{ ...inputStyle, fontFamily: "var(--font-mono)" }} />
+          </label>
+          <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <span style={labelTextStyle}>E-mail para notificações</span>
+            <input name="rtEmail" required type="email" style={inputStyle} />
+          </label>
+        </div>
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <span style={labelTextStyle}>Responsável técnico pela execução</span>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 16 }}>
+          <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <span style={labelTextStyle}>Nome</span>
+            <input name="rtExecNome" required style={inputStyle} />
+          </label>
+          <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <span style={labelTextStyle}>Registro CAU / CREA</span>
+            <input name="rtExecRegistro" required style={{ ...inputStyle, fontFamily: "var(--font-mono)" }} />
+          </label>
+          <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <span style={labelTextStyle}>E-mail para notificações</span>
+            <input name="rtExecEmail" required type="email" style={inputStyle} />
+          </label>
+        </div>
       </div>
 
       <div style={{ background: "#FAF9F6", border: "1px solid #EDE9E1", borderRadius: 4, padding: "16px 18px", display: "flex", flexDirection: "column", gap: 9 }}>

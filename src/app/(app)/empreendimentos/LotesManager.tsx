@@ -58,7 +58,7 @@ export function LotesManager({
             <div style={{ display: "grid", gridTemplateColumns: "60px 1fr 28px", gap: 8, alignItems: "center" }}>
               <EditableField defaultValue={l.numero} onSave={updateLoteAction.bind(null, l.id, "numero")} style={{ ...campoStyle, fontFamily: "var(--font-mono)", fontWeight: 600 }} />
               <span style={{ fontSize: 11.5, color: l.rua ? "#4A5563" : "#8B939C", fontStyle: l.rua ? "normal" : "italic" }}>
-                {l.rua ? `${l.rua} · ${l.areaM2?.toLocaleString("pt-BR")} m²` : "endereço e área: preenchidos pelo proprietário/RT na solicitação"}
+                {l.rua ? `${l.rua} · ${l.areaM2?.toLocaleString("pt-BR")} m²` : "sem endereço e área cadastrados"}
               </span>
               <form action={deleteLoteAction.bind(null, l.id)}>
                 <button
@@ -107,9 +107,6 @@ export function LotesManager({
 
       <form action={formAction} style={{ display: "flex", flexDirection: "column", gap: 8, border: "1px dashed #C9C2B4", borderRadius: 4, padding: 12 }}>
         <div style={{ fontSize: 10.5, letterSpacing: ".13em", textTransform: "uppercase", color: "#7A7472" }}>Novo lote</div>
-        <div style={{ fontSize: 11, color: "#7A7472" }}>
-          Endereço e área ficam a cargo do proprietário/RT, na primeira solicitação de obra deste lote.
-        </div>
         <input name="numero" placeholder="Número" required style={{ border: "1px solid #DDD8CE", borderRadius: 4, padding: "8px 9px", fontSize: 13, fontFamily: "var(--font-mono)" }} />
         <PlantaPinPicker plantaImageUrl={plantaImageUrl} value={novaPos} onChange={setNovaPos} />
         <input type="hidden" name="posX" value={novaPos?.x ?? ""} />

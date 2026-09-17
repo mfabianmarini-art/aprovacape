@@ -7,8 +7,6 @@ import { TIPO_LABEL } from "@/lib/status";
 type Lote = {
   id: string;
   numero: string;
-  rua: string | null;
-  areaM2: number | null;
   quadra: { nome: string };
   empreendimento: { nome: string };
 };
@@ -19,7 +17,6 @@ const labelTextStyle: React.CSSProperties = { fontSize: 11, letterSpacing: ".13e
 export function Step1Form({ lotes }: { lotes: Lote[] }) {
   const [state, formAction, pending] = useActionState(criarRascunhoAction, null as { error?: string } | null);
   const [loteId, setLoteId] = useState(lotes[0]?.id ?? "");
-  const loteAtual = lotes.find((l) => l.id === loteId);
 
   if (lotes.length === 0) {
     return (
@@ -37,34 +34,9 @@ export function Step1Form({ lotes }: { lotes: Lote[] }) {
           {lotes.map((l) => (
             <option key={l.id} value={l.id}>
               {l.empreendimento.nome} · {l.quadra.nome} L{l.numero}
-              {l.rua ? ` — ${l.rua}` : ""}
             </option>
           ))}
         </select>
-      </label>
-      <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <span style={labelTextStyle}>Endereço do lote</span>
-        <input
-          key={`rua-${loteId}`}
-          name="rua"
-          required
-          defaultValue={loteAtual?.rua ?? ""}
-          placeholder="Rua, número, referência"
-          style={inputStyle}
-        />
-      </label>
-      <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <span style={labelTextStyle}>Área do lote (m²)</span>
-        <input
-          key={`areaLote-${loteId}`}
-          name="areaLote"
-          required
-          type="number"
-          step="0.01"
-          min="0"
-          defaultValue={loteAtual?.areaM2 ?? ""}
-          style={{ ...inputStyle, fontFamily: "var(--font-mono)" }}
-        />
       </label>
       <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         <span style={labelTextStyle}>Tipo de solicitação</span>
@@ -77,8 +49,8 @@ export function Step1Form({ lotes }: { lotes: Lote[] }) {
         </select>
       </label>
       <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <span style={labelTextStyle}>Área construída (m²)</span>
-        <input name="areaConstruida" required type="number" step="0.01" min="0" style={{ ...inputStyle, fontFamily: "var(--font-mono)" }} />
+        <span style={labelTextStyle}>Área de intervenção (m²)</span>
+        <input name="areaIntervencao" required type="number" step="0.01" min="0" style={{ ...inputStyle, fontFamily: "var(--font-mono)" }} />
       </label>
       <label style={{ display: "flex", flexDirection: "column", gap: 6, gridColumn: "1/-1" }}>
         <span style={labelTextStyle}>Descrição da obra</span>

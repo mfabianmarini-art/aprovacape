@@ -335,7 +335,7 @@ async function main() {
           protocolo,
           loteId: lote.id,
           tipo: tipoPorObra(eventosDoProtocolo[0][2]),
-          areaConstruida: Math.round(areaM2 * 0.14 * 10) / 10,
+          areaIntervencao: Math.round(areaM2 * 0.14 * 10) / 10,
           descricao: eventosDoProtocolo[0][2],
           status: solStatus,
           prazoDias: 10,
@@ -345,6 +345,9 @@ async function main() {
           responsavelTecnicoNome: rtNome,
           responsavelTecnicoRegistro: rt ? "CAU A123456-7" : "—",
           responsavelTecnicoEmail: rt ? `${rtNome.toLowerCase().replace(/[^a-z]+/g, ".")}@estudio.arq.br` : "",
+          rtExecucaoNome: rtNome,
+          rtExecucaoRegistro: rt ? "CAU A123456-7" : "—",
+          rtExecucaoEmail: rt ? `${rtNome.toLowerCase().replace(/[^a-z]+/g, ".")}@estudio.arq.br` : "",
           documentacaoValidada: isAtiva ? status !== "ENVIADA" : true,
         },
       });
@@ -501,7 +504,7 @@ async function main() {
       protocolo: "SOL-2026-050",
       loteId: loteAlto1.id,
       tipo: "OBRA_NOVA",
-      areaConstruida: 58,
+      areaIntervencao: 58,
       descricao: "Obra nova 210 m² protocolada.",
       status: "ANALISE",
       prazoDias: empAltoDaSerra.prazoDias,
@@ -510,6 +513,9 @@ async function main() {
       responsavelTecnicoNome: igor.name,
       responsavelTecnicoRegistro: "CAU A667788-9",
       responsavelTecnicoEmail: igor.email,
+      rtExecucaoNome: igor.name,
+      rtExecucaoRegistro: "CAU A667788-9",
+      rtExecucaoEmail: igor.email,
       documentacaoValidada: true,
     },
   });
@@ -530,7 +536,7 @@ async function main() {
       protocolo: "SOL-2026-051",
       loteId: loteAlto2.id,
       tipo: "REFORMA",
-      areaConstruida: 22,
+      areaIntervencao: 22,
       descricao: "Reforma de fachada protocolada. Taxa de análise a pagar.",
       status: "ENVIADA",
       prazoDias: empAltoDaSerra.prazoDias,
@@ -539,6 +545,9 @@ async function main() {
       responsavelTecnicoNome: patricia.name,
       responsavelTecnicoRegistro: "—",
       responsavelTecnicoEmail: patricia.email,
+      rtExecucaoNome: patricia.name,
+      rtExecucaoRegistro: "—",
+      rtExecucaoEmail: patricia.email,
       documentacaoValidada: false,
     },
   });
@@ -569,9 +578,13 @@ async function main() {
 
 const DOC_ORDER: DocumentoTipo[] = [
   "PROJETO_ARQUITETONICO",
-  "ART_RRT",
+  "ART_RRT_PROJETO",
+  "ART_RRT_EXECUCAO",
   "MEMORIAL_DESCRITIVO",
-  "PROJETO_ESTRUTURAL",
+  "PROJETO_PAISAGISTICO",
+  "CAPA_IPTU",
+  "MATRICULA",
+  "LEVANTAMENTO_PLANIALTIMETRICO",
 ];
 
 main()

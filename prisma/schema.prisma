@@ -62,6 +62,7 @@ enum SolicitacaoTipo {
   AMPLIACAO
   DEMOLICAO
   MURO
+  PAISAGISMO
 }
 
 // Mirrors the ST map in the prototype's script block.
@@ -82,9 +83,15 @@ enum SolicitacaoStatus {
 
 enum DocumentoTipo {
   PROJETO_ARQUITETONICO
-  ART_RRT
+  ART_RRT_PROJETO
+  ART_RRT_EXECUCAO
   MEMORIAL_DESCRITIVO
-  PROJETO_ESTRUTURAL
+  PROJETO_PAISAGISTICO
+  CAPA_IPTU
+  MATRICULA
+  LEVANTAMENTO_PLANIALTIMETRICO
+  // Único documento não obrigatório do check-list.
+  OUTROS
 }
 
 enum ChecklistItemStatus {
@@ -225,7 +232,9 @@ model Solicitacao {
   loteId           String
   lote             Lote              @relation(fields: [loteId], references: [id])
   tipo             SolicitacaoTipo
-  areaConstruida   Float
+  // Chamada de "área de intervenção" na UI: cobre também obras que não constroem área
+  // nova (demolição, muro, paisagismo), então "área construída" deixou de fazer sentido.
+  areaIntervencao  Float
   descricao        String
   status           SolicitacaoStatus @default(ENVIADA)
   prazoDias        Int
@@ -237,9 +246,14 @@ model Solicitacao {
   pago             Boolean           @default(false)
   criadoPorId      String
   criadoPor        User              @relation("SolicitacaoCriadaPor", fields: [criadoPorId], references: [id])
+  // RT do projeto.
   responsavelTecnicoNome String
   responsavelTecnicoRegistro String
   responsavelTecnicoEmail String
+  // RT da execução — pode ser outro profissional que o do projeto.
+  rtExecucaoNome     String @default("")
+  rtExecucaoRegistro String @default("")
+  rtExecucaoEmail    String @default("")
   documentacaoValidada Boolean       @default(false)
 
   // Alvará de execução da Prefeitura. O arquivo vive no Blob como os demais; o status

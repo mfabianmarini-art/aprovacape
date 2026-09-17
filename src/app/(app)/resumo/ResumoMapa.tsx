@@ -483,7 +483,7 @@ export function ResumoMapa({ data, podeAnalisar }: { data: Data; podeAnalisar: b
                           <div style={{ display: "flex", flexDirection: "column", gap: 9, paddingBottom: 13 }}>
                             <Bloco titulo="Obra">
                               <Campo k="Tipo" v={TIPO_LABEL[s.tipo]} />
-                              <Campo k="Área construída" v={`${s.areaConstruida.toLocaleString("pt-BR")} m²`} />
+                              <Campo k="Área de intervenção" v={`${s.areaIntervencao.toLocaleString("pt-BR")} m²`} />
                               <Campo k="Área do lote" v={lote.areaM2 != null ? `${lote.areaM2.toLocaleString("pt-BR")} m²` : "—"} />
                               <Campo k="Endereço" v={lote.rua ?? "—"} />
                             </Bloco>
@@ -506,10 +506,16 @@ export function ResumoMapa({ data, podeAnalisar }: { data: Data; podeAnalisar: b
                               </div>
                             )}
 
-                            <Bloco titulo="Responsável técnico">
+                            <Bloco titulo="Responsável técnico pelo projeto">
                               <Campo k="Nome" v={s.responsavelTecnicoNome || "—"} />
                               <Campo k="Registro" v={s.responsavelTecnicoRegistro || "—"} />
                               <Campo k="E-mail" v={s.responsavelTecnicoEmail || "—"} />
+                            </Bloco>
+
+                            <Bloco titulo="Responsável técnico pela execução">
+                              <Campo k="Nome" v={s.rtExecucaoNome || "—"} />
+                              <Campo k="Registro" v={s.rtExecucaoRegistro || "—"} />
+                              <Campo k="E-mail" v={s.rtExecucaoEmail || "—"} />
                               <Campo k="RT do lote" v={lote.rt?.name ?? "—"} />
                             </Bloco>
 

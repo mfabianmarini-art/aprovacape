@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/require-role";
 import { saveUploadedFile } from "@/lib/upload";
 import { extensaoDe } from "@/lib/upload-documento";
+import { DOC_ORDER } from "@/lib/status";
 
 async function loadOwnedSolicitacao(session: Awaited<ReturnType<typeof requireRole>>, solicitacaoId: string) {
   const sol = await prisma.solicitacao.findUniqueOrThrow({ where: { id: solicitacaoId }, include: { lote: true } });
@@ -29,7 +30,9 @@ export async function reenviarComplementacaoAction(solicitacaoId: string) {
   // demais seguem com a validação que o analista deu. Invalidar todo mundo aqui obrigava
   // a CAPE a reconferir arquivos intactos a cada rodada.
   const documentos = await prisma.solicitacaoDocumento.findMany({ where: { solicitacaoId: sol.id } });
-  const todosValidados = documentos.length > 0 && documentos.every((d) => d.validado);
+  // OUTROS não entra na conferência documental (não é obrigatório e não tem checkbox de
+  // validação), então não pode impedir `documentacaoValidada` de fechar.
+  const todosValidados = DOC_ORDER.every((t) => documentos.find((d) => d.tipo === t)?.validado);
 
   await prisma.$transaction([
     prisma.solicitacao.update({
@@ -47,7 +50,7 @@ export async function reenviarComplementacaoAction(solicitacaoId: string) {
         solicitacaoId: sol.id,
         tipo: "REENVIO_RECEBIDO",
         texto: (() => {
-          const trocados = documentos.filter((d) => !d.validado).length;
+          const trocados = DOC_ORDER.filter((t) => !documentos.find((d) => d.tipo === t)?.validado).length;
           const oQue = trocados === 0 ? "sem troca de arquivos" : `${trocados} documento(s) a reanalisar`;
           return conta
             ? `Reenvio ${reenvios} de ${emp.reenviosSemTaxa} recebido — ${oQue}.`

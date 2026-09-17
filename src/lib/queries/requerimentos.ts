@@ -6,7 +6,9 @@ export async function getMeusRequerimentos(userId: string) {
     orderBy: { createdAt: "desc" },
     include: {
       lote: { include: { quadra: true, empreendimento: true } },
-      historico: { orderBy: { createdAt: "desc" }, take: 1 },
+      // Histórico completo: o card minimizado expande para mostrar tanto o andamento da
+      // solicitação quanto o da análise, que vivem no mesmo stream de eventos.
+      historico: { orderBy: { createdAt: "desc" }, include: { autor: { select: { name: true, role: true } } } },
       // Todos os documentos: os com `observacao` viram a lista de pendências, e em
       // COMPLEMENTO a pessoa precisa da lista inteira para poder substituir qualquer um.
       documentos: { select: { id: true, tipo: true, nomeArquivo: true, observacao: true, validado: true } },
