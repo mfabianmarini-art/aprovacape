@@ -26,6 +26,37 @@ export default async function RequerimentosPage() {
       <ScreenHeader crumb="Meus lotes" title="Requerimentos" {...user} />
       <ScreenBody>
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {/* Conta nova: o cadastro cria só o acesso, o vínculo com o lote é pedido
+              aqui. Sem este aviso a tela abriria vazia, sem dizer o que fazer. */}
+          {lotes.length === 0 && !pendente && (
+            <div
+              style={{
+                background: "#fff",
+                border: "1px solid #DDD8CE",
+                borderTop: "3px solid #E01B22",
+                borderRadius: 4,
+                padding: "18px 20px",
+                display: "flex",
+                flexDirection: "column",
+                gap: 10,
+                alignItems: "flex-start",
+              }}
+            >
+              <div style={{ fontFamily: "var(--font-display)", fontSize: 17, fontWeight: 600, letterSpacing: ".04em", textTransform: "uppercase" }}>
+                Nenhum lote vinculado ainda
+              </div>
+              <div style={{ fontSize: 12.5, color: "#4A5563", lineHeight: 1.5, maxWidth: "70ch" }}>
+                Peça o vínculo com o seu lote para consultar as normas do empreendimento e abrir solicitações
+                de obra. A CAPE analisa o pedido e, aprovado, o lote passa a aparecer aqui.
+              </div>
+              <a
+                href="/vinculo"
+                style={{ border: "1px solid #E01B22", background: "#E01B22", color: "#fff", borderRadius: 4, padding: "10px 16px", fontSize: 13, fontWeight: 600, textDecoration: "none" }}
+              >
+                Solicitar vínculo com um lote
+              </a>
+            </div>
+          )}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap", fontSize: 12.5 }}>
             <span style={{ color: pendente ? "#8A5210" : "#4A5563" }}>
               {pendente ? (

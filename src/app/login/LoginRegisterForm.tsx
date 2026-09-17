@@ -10,15 +10,7 @@ import {
   type LoginState,
   type RegisterState,
 } from "@/lib/actions/auth-actions";
-import { ProprietarioDeclaradoFields } from "@/components/ProprietarioDeclaradoFields";
 
-type Empreendimento = {
-  id: string;
-  nome: string;
-  cidade: string;
-  uf: string;
-  quadras: { id: string; nome: string; lotes: { id: string; numero: string }[] }[];
-};
 
 const inputStyle: React.CSSProperties = {
   border: "1px solid #DDD8CE",
@@ -33,13 +25,9 @@ const labelTextStyle: React.CSSProperties = {
   color: "#7A7472",
 };
 
-export function LoginRegisterForm({ empreendimentos }: { empreendimentos: Empreendimento[] }) {
+export function LoginRegisterForm() {
   const [aba, setAba] = useState<"cadastro" | "login">("login");
   const [cadTipo, setCadTipo] = useState<"prop" | "rt">("prop");
-  const [empId, setEmpId] = useState(empreendimentos[0]?.id ?? "");
-  const emp = empreendimentos.find((e) => e.id === empId) ?? empreendimentos[0];
-  const [quadraId, setQuadraId] = useState(emp?.quadras[0]?.id ?? "");
-  const quadra = emp?.quadras.find((q) => q.id === quadraId) ?? emp?.quadras[0];
   const [aceite, setAceite] = useState(false);
 
   const [loginState, loginFormAction, loginPending] = useActionState<LoginState, FormData>(loginAction, null);
@@ -57,8 +45,9 @@ export function LoginRegisterForm({ empreendimentos }: { empreendimentos: Empree
   function handleEntrar() {
     if (!registerState?.ok) return;
     startEntering(async () => {
-      const to = await loginAndRedirectAction(registerState.identifier!, registerState.password!);
-      router.push(to);
+      await loginAndRedirectAction(registerState.identifier!, registerState.password!);
+      // Conta recém-criada não tem lote: o próximo passo é pedir o vínculo, não a home.
+      router.push("/vinculo");
     });
   }
 
@@ -80,7 +69,7 @@ export function LoginRegisterForm({ empreendimentos }: { empreendimentos: Empree
           }}
         >
           <div style={{ fontFamily: "var(--font-display)", fontSize: 24, fontWeight: 600, lineHeight: 1.1 }}>
-            Cadastro enviado
+            Conta criada
           </div>
           <div style={{ fontSize: 13.5, lineHeight: 1.6, color: "#3B4653" }}>
             Sua conta foi criada para <strong>{registerState.identifier}</strong> e já está pronta para uso.
@@ -96,8 +85,8 @@ export function LoginRegisterForm({ empreendimentos }: { empreendimentos: Empree
               color: "#6B4A11",
             }}
           >
-            Ao entrar você já pode abrir uma nova solicitação de obra para o lote informado. A CAPE confere o
-            vínculo em paralelo e entra em contato caso a comprovação não corresponda ao lote.
+            Ao entrar, o próximo passo é pedir o vínculo com o seu lote. A CAPE analisa o pedido e, aprovado, o
+            lote passa a aparecer em Nova solicitação.
           </div>
           <button
             onClick={handleEntrar}
@@ -113,7 +102,7 @@ export function LoginRegisterForm({ empreendimentos }: { empreendimentos: Empree
               cursor: "pointer",
             }}
           >
-            {entering ? "Entrando…" : "Entrar na plataforma"}
+            {entering ? "Entrando…" : "Entrar e pedir vínculo com o lote"}
           </button>
         </div>
       </Shell>
@@ -286,86 +275,19 @@ export function LoginRegisterForm({ empreendimentos }: { empreendimentos: Empree
                 <input name="confirmarSenha" required type="password" style={inputStyle} />
               </label>
             </div>
-
-            <div style={{ border: "1px solid #DDD8CE", borderRadius: 4, padding: 16, display: "flex", flexDirection: "column", gap: 12, background: "#FAF9F6" }}>
-              <div style={labelTextStyle}>Vínculo com o lote</div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 90px 90px", gap: 10 }}>
-                <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  <span style={{ ...labelTextStyle, fontSize: 10.5 }}>Empreendimento</span>
-                  <select
-                    value={empId}
-                    onChange={(e) => {
-                      setEmpId(e.target.value);
-                      const next = empreendimentos.find((x) => x.id === e.target.value);
-                      setQuadraId(next?.quadras[0]?.id ?? "");
-                    }}
-                    style={{ ...inputStyle, padding: "10px 11px", background: "#fff" }}
-                  >
-                    {empreendimentos.map((e) => (
-                      <option key={e.id} value={e.id}>
-                        {e.nome} — {e.cidade}/{e.uf}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  <span style={{ ...labelTextStyle, fontSize: 10.5 }}>Quadra</span>
-                  <select value={quadraId} onChange={(e) => setQuadraId(e.target.value)} style={{ ...inputStyle, padding: "10px 8px", background: "#fff" }}>
-                    {emp?.quadras.map((q) => (
-                      <option key={q.id} value={q.id}>
-                        {q.nome}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  <span style={{ ...labelTextStyle, fontSize: 10.5 }}>Lote</span>
-                  <select name="loteId" style={{ ...inputStyle, padding: "10px 8px", background: "#fff" }}>
-                    {quadra?.lotes.map((l) => (
-                      <option key={l.id} value={l.id}>
-                        {l.numero}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-              <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                <span style={{ ...labelTextStyle, fontSize: 10.5 }}>
-                  {cadTipo === "rt" ? "Autorização do proprietário" : "Matrícula do lote"}
-                </span>
-                {cadTipo === "rt" ? (
-                  <>
-                    <input
-                      name="autorizacao"
-                      type="file"
-                      required
-                      accept=".pdf,.doc,.docx,image/png,image/jpeg,image/webp"
-                      style={{ ...inputStyle, background: "#fff", fontSize: 12.5 }}
-                    />
-                    <span style={{ fontSize: 11.5, color: "#7A7472" }}>
-                      Procuração ou contrato assinado pelo proprietário — PDF, Word ou imagem, até 10 MB.
-                    </span>
-                  </>
-                ) : (
-                  <input
-                    name="comprovacao"
-                    required
-                    placeholder="000.000"
-                    style={{ ...inputStyle, background: "#fff" }}
-                  />
-                )}
-              </label>
-              {cadTipo === "rt" && (
-                <ProprietarioDeclaradoFields
-                  inputStyle={{ ...inputStyle, background: "#fff" }}
-                  labelStyle={{ ...labelTextStyle, fontSize: 10.5 }}
-                />
-              )}
-              <div style={{ fontSize: 12, lineHeight: 1.5, color: "#4A5563" }}>
-                {cadTipo === "rt"
-                  ? "O responsável técnico é vinculado ao lote por documento de autorização do proprietário. A CAPE confere o documento contra os dados informados antes de liberar o envio de projetos."
-                  : "Informe a matrícula do lote no cartório de registro de imóveis. A CAPE confere o vínculo em paralelo ao seu acesso."}
-              </div>
+            <div
+              style={{
+                background: "#FDF8EE",
+                border: "1px solid #E8D7B4",
+                borderRadius: 4,
+                padding: "14px 16px",
+                fontSize: 12.5,
+                lineHeight: 1.55,
+                color: "#6B4A11",
+              }}
+            >
+              O vínculo com o lote é pedido depois, já dentro da plataforma, em uma tela própria. Assim você
+              cria a conta agora e pede o vínculo quando tiver a documentação do lote em mãos.
             </div>
 
             <label style={{ display: "grid", gridTemplateColumns: "18px 1fr", gap: 10, alignItems: "start", cursor: "pointer" }}>

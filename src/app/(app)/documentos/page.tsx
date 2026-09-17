@@ -28,7 +28,7 @@ export default async function DocumentosPage({ searchParams }: { searchParams: P
         <ScreenBody>
           <div style={{ fontSize: 13.5, color: "#7A7472" }}>
             {ehConsulta
-              ? "Nenhum lote informado na sua conta ainda — escolha o empreendimento, a quadra e o lote no cadastro para consultar as normas do empreendimento."
+              ? "Nenhum lote vinculado à sua conta ainda. Peça o vínculo com o seu lote em Meus requerimentos para consultar as normas do empreendimento."
               : "Nenhum empreendimento cadastrado ainda."}
           </div>
         </ScreenBody>

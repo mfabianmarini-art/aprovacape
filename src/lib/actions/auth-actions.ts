@@ -7,13 +7,6 @@ import { prisma } from "@/lib/prisma";
 import { signIn, signOut } from "@/lib/auth";
 import { homeForRole } from "@/lib/nav";
 import { UF_REGEX } from "@/lib/registro-profissional";
-import { saveUploadedFile } from "@/lib/upload";
-import { autorizacaoInvalida } from "@/lib/vinculo-comprovacao";
-import {
-  camposProprietarioDeclarado,
-  proprietarioDeclaradoInvalido,
-  dadosProprietarioParaGravar,
-} from "@/lib/proprietario-declarado";
 
 export type LoginState = { error?: string; redirectTo?: string } | null;
 
@@ -54,14 +47,7 @@ const registerSchema = z
     registroUf: z.string().trim().toUpperCase().optional(),
     senha: z.string().min(8, "Mínimo 8 caracteres"),
     confirmarSenha: z.string(),
-    loteId: z.string().min(1, "Selecione o lote"),
-    comprovacao: z.string().optional(),
-    ...camposProprietarioDeclarado,
     aceite: z.literal("on", { message: "É necessário aceitar os termos" }),
-  })
-  .refine((d) => d.tipo !== "prop" || (d.comprovacao && d.comprovacao.length > 0), {
-    message: "Informe a matrícula do lote",
-    path: ["comprovacao"],
   })
   .refine((d) => d.senha === d.confirmarSenha, { message: "As senhas não coincidem", path: ["confirmarSenha"] })
   .refine((d) => d.tipo !== "rt" || d.conselho, { message: "Selecione o conselho (CREA ou CAU)", path: ["conselho"] })
@@ -89,18 +75,6 @@ export async function registerAction(_prev: RegisterState, formData: FormData): 
     return { error: "Já existe uma conta com este e-mail ou CPF." };
   }
 
-  // O RT anexa a autorização do proprietário. Este formulário é público, então o
-  // arquivo só sobe depois das demais validações, e com tipo e tamanho restritos.
-  let autorizacao: Awaited<ReturnType<typeof saveUploadedFile>> | null = null;
-  if (d.tipo === "rt") {
-    const semProprietario = proprietarioDeclaradoInvalido(d);
-    if (semProprietario) return { error: semProprietario };
-    const file = formData.get("autorizacao");
-    if (!(file instanceof File) || file.size === 0) return { error: "Anexe a autorização do proprietário." };
-    const invalido = autorizacaoInvalida(file);
-    if (invalido) return { error: invalido };
-    autorizacao = await saveUploadedFile(file, "vinculos");
-  }
 
   const passwordHash = await bcrypt.hash(d.senha, 10);
   await prisma.user.create({
@@ -115,14 +89,6 @@ export async function registerAction(_prev: RegisterState, formData: FormData): 
       conselho: d.tipo === "rt" ? d.conselho : null,
       registroNumero: d.tipo === "rt" ? d.registroNumero : null,
       registroUf: d.tipo === "rt" ? d.registroUf : null,
-      vinculoStatus: "PENDENTE",
-      vinculoLoteId: d.loteId,
-      vinculoSolicitadoEm: new Date(),
-      vinculoComprovacao: d.comprovacao ?? null,
-      vinculoArquivoNome: autorizacao?.nomeArquivo ?? null,
-      vinculoArquivoCaminho: autorizacao?.caminhoArquivo ?? null,
-      vinculoArquivoTamanho: autorizacao?.tamanhoBytes ?? null,
-      ...dadosProprietarioParaGravar(d, d.tipo === "rt"),
     },
   });
 
