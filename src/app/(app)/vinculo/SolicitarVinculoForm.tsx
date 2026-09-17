@@ -75,7 +75,7 @@ export function SolicitarVinculoForm({ empreendimentos, ehRT }: { empreendimento
       </div>
 
       <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <span style={labelTextStyle}>{ehRT ? "Autorização do proprietário" : "Matrícula do lote ou código de convite"}</span>
+        <span style={labelTextStyle}>{ehRT ? "Autorização do proprietário" : "Matrícula do lote"}</span>
         {ehRT ? (
           <>
             <input name="autorizacao" type="file" required accept={ACCEPT_AUTORIZACAO} style={{ ...inputStyle, fontSize: 12.5 }} />
@@ -84,7 +84,7 @@ export function SolicitarVinculoForm({ empreendimentos, ehRT }: { empreendimento
             </span>
           </>
         ) : (
-          <input name="comprovacao" required placeholder="000.000 / CONV-0000" style={inputStyle} />
+          <input name="comprovacao" required placeholder="000.000" style={inputStyle} />
         )}
       </label>
 

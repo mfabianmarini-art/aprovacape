@@ -124,7 +124,7 @@ model User {
   vinculoStatus     VinculoStatus?
   vinculoLoteId     String?
   vinculoLote       Lote?          @relation("VinculoLote", fields: [vinculoLoteId], references: [id])
-  // Proprietário comprova por texto (matrícula/código de convite); o RT anexa a
+  // Proprietário comprova pela matrícula do lote; o RT anexa a
   // autorização assinada pelo proprietário.
   vinculoComprovacao String?
   vinculoArquivoNome     String?

@@ -54,7 +54,7 @@ const registerSchema = z
     aceite: z.literal("on", { message: "É necessário aceitar os termos" }),
   })
   .refine((d) => d.tipo !== "prop" || (d.comprovacao && d.comprovacao.length > 0), {
-    message: "Informe a matrícula do lote ou o código de convite",
+    message: "Informe a matrícula do lote",
     path: ["comprovacao"],
   })
   .refine((d) => d.senha === d.confirmarSenha, { message: "As senhas não coincidem", path: ["confirmarSenha"] })

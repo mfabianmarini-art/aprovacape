@@ -51,7 +51,7 @@ export async function solicitarVinculoAction(_prev: VinculoState, formData: Form
     if (invalido) return { error: invalido };
     autorizacao = await saveUploadedFile(file, "vinculos");
   } else if (!d.comprovacao) {
-    return { error: "Informe a matrícula do lote ou o código de convite." };
+    return { error: "Informe a matrícula do lote." };
   }
 
   await prisma.user.update({

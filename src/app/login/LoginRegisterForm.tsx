@@ -330,7 +330,7 @@ export function LoginRegisterForm({ empreendimentos }: { empreendimentos: Empree
               </div>
               <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 <span style={{ ...labelTextStyle, fontSize: 10.5 }}>
-                  {cadTipo === "rt" ? "Autorização do proprietário" : "Matrícula do lote ou código de convite"}
+                  {cadTipo === "rt" ? "Autorização do proprietário" : "Matrícula do lote"}
                 </span>
                 {cadTipo === "rt" ? (
                   <>
@@ -349,7 +349,7 @@ export function LoginRegisterForm({ empreendimentos }: { empreendimentos: Empree
                   <input
                     name="comprovacao"
                     required
-                    placeholder="000.000 / CONV-0000"
+                    placeholder="000.000"
                     style={{ ...inputStyle, background: "#fff" }}
                   />
                 )}
@@ -357,7 +357,7 @@ export function LoginRegisterForm({ empreendimentos }: { empreendimentos: Empree
               <div style={{ fontSize: 12, lineHeight: 1.5, color: "#4A5563" }}>
                 {cadTipo === "rt"
                   ? "O responsável técnico é vinculado ao lote pelo proprietário ou por documento de autorização. A CAPE confere antes de liberar o envio de projetos."
-                  : "Use a matrícula do lote ou o código de convite enviado pela administração do residencial. A CAPE confere o vínculo em paralelo ao seu acesso."}
+                  : "Informe a matrícula do lote no cartório de registro de imóveis. A CAPE confere o vínculo em paralelo ao seu acesso."}
               </div>
             </div>
 
