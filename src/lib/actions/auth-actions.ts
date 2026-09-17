@@ -9,6 +9,11 @@ import { homeForRole } from "@/lib/nav";
 import { UF_REGEX } from "@/lib/registro-profissional";
 import { saveUploadedFile } from "@/lib/upload";
 import { autorizacaoInvalida } from "@/lib/vinculo-comprovacao";
+import {
+  camposProprietarioDeclarado,
+  proprietarioDeclaradoInvalido,
+  dadosProprietarioParaGravar,
+} from "@/lib/proprietario-declarado";
 
 export type LoginState = { error?: string; redirectTo?: string } | null;
 
@@ -51,6 +56,7 @@ const registerSchema = z
     confirmarSenha: z.string(),
     loteId: z.string().min(1, "Selecione o lote"),
     comprovacao: z.string().optional(),
+    ...camposProprietarioDeclarado,
     aceite: z.literal("on", { message: "É necessário aceitar os termos" }),
   })
   .refine((d) => d.tipo !== "prop" || (d.comprovacao && d.comprovacao.length > 0), {
@@ -87,6 +93,8 @@ export async function registerAction(_prev: RegisterState, formData: FormData): 
   // arquivo só sobe depois das demais validações, e com tipo e tamanho restritos.
   let autorizacao: Awaited<ReturnType<typeof saveUploadedFile>> | null = null;
   if (d.tipo === "rt") {
+    const semProprietario = proprietarioDeclaradoInvalido(d);
+    if (semProprietario) return { error: semProprietario };
     const file = formData.get("autorizacao");
     if (!(file instanceof File) || file.size === 0) return { error: "Anexe a autorização do proprietário." };
     const invalido = autorizacaoInvalida(file);
@@ -114,6 +122,7 @@ export async function registerAction(_prev: RegisterState, formData: FormData): 
       vinculoArquivoNome: autorizacao?.nomeArquivo ?? null,
       vinculoArquivoCaminho: autorizacao?.caminhoArquivo ?? null,
       vinculoArquivoTamanho: autorizacao?.tamanhoBytes ?? null,
+      ...dadosProprietarioParaGravar(d, d.tipo === "rt"),
     },
   });
 

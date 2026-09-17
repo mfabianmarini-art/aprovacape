@@ -10,6 +10,7 @@ import {
   type LoginState,
   type RegisterState,
 } from "@/lib/actions/auth-actions";
+import { ProprietarioDeclaradoFields } from "@/components/ProprietarioDeclaradoFields";
 
 type Empreendimento = {
   id: string;
@@ -354,9 +355,15 @@ export function LoginRegisterForm({ empreendimentos }: { empreendimentos: Empree
                   />
                 )}
               </label>
+              {cadTipo === "rt" && (
+                <ProprietarioDeclaradoFields
+                  inputStyle={{ ...inputStyle, background: "#fff" }}
+                  labelStyle={{ ...labelTextStyle, fontSize: 10.5 }}
+                />
+              )}
               <div style={{ fontSize: 12, lineHeight: 1.5, color: "#4A5563" }}>
                 {cadTipo === "rt"
-                  ? "O responsável técnico é vinculado ao lote pelo proprietário ou por documento de autorização. A CAPE confere antes de liberar o envio de projetos."
+                  ? "O responsável técnico é vinculado ao lote por documento de autorização do proprietário. A CAPE confere o documento contra os dados informados antes de liberar o envio de projetos."
                   : "Informe a matrícula do lote no cartório de registro de imóveis. A CAPE confere o vínculo em paralelo ao seu acesso."}
               </div>
             </div>

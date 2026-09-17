@@ -137,6 +137,16 @@ export function VinculosTable({ pendentes }: { pendentes: Pendentes }) {
                           ? lotesJa.map((l) => `${l.empreendimento.nome} · ${l.quadra.nome} L${l.numero}`).join(", ")
                           : "nenhum — cadastro novo",
                       ],
+                      // Declarados pelo RT: é contra estes dados que a autorização
+                      // anexada precisa bater.
+                      ...(p.vinculoPropNome
+                        ? ([
+                            ["Proprietário declarado", p.vinculoPropNome],
+                            ["CPF do proprietário", p.vinculoPropCpf ?? "—"],
+                            ["E-mail do proprietário", p.vinculoPropEmail ?? "—"],
+                            ["Telefone do proprietário", p.vinculoPropTelefone ?? "—"],
+                          ] as const)
+                        : []),
                     ] as const
                   ).map(([k, v]) => (
                     <div key={k} style={{ display: "grid", gridTemplateColumns: "140px 1fr", gap: 10, fontSize: 12.5 }}>

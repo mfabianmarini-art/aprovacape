@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { solicitarVinculoAction, type VinculoState } from "@/lib/actions/vinculo-actions";
 import { ACCEPT_AUTORIZACAO } from "@/lib/vinculo-comprovacao";
+import { ProprietarioDeclaradoFields } from "@/components/ProprietarioDeclaradoFields";
 import type { getEmpreendimentosParaVinculo } from "@/lib/queries/vinculo";
 
 type Empreendimentos = Awaited<ReturnType<typeof getEmpreendimentosParaVinculo>>;
@@ -87,6 +88,8 @@ export function SolicitarVinculoForm({ empreendimentos, ehRT }: { empreendimento
           <input name="comprovacao" required placeholder="000.000" style={inputStyle} />
         )}
       </label>
+
+      {ehRT && <ProprietarioDeclaradoFields inputStyle={inputStyle} labelStyle={labelTextStyle} />}
 
       {state?.error && <div style={{ fontSize: 12.5, color: "#8C2B22" }}>{state.error}</div>}
 

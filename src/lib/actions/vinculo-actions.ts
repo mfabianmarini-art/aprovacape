@@ -6,10 +6,16 @@ import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/require-role";
 import { saveUploadedFile } from "@/lib/upload";
 import { autorizacaoInvalida } from "@/lib/vinculo-comprovacao";
+import {
+  camposProprietarioDeclarado,
+  proprietarioDeclaradoInvalido,
+  dadosProprietarioParaGravar,
+} from "@/lib/proprietario-declarado";
 
 const schema = z.object({
   loteId: z.string().min(1, "Selecione o lote"),
   comprovacao: z.string().trim().optional(),
+  ...camposProprietarioDeclarado,
 });
 
 export type VinculoState = { error?: string; ok?: boolean } | null;
@@ -45,6 +51,8 @@ export async function solicitarVinculoAction(_prev: VinculoState, formData: Form
 
   let autorizacao: Awaited<ReturnType<typeof saveUploadedFile>> | null = null;
   if (ehRT) {
+    const semProprietario = proprietarioDeclaradoInvalido(d);
+    if (semProprietario) return { error: semProprietario };
     const file = formData.get("autorizacao");
     if (!(file instanceof File) || file.size === 0) return { error: "Anexe a autorização do proprietário." };
     const invalido = autorizacaoInvalida(file);
@@ -64,6 +72,7 @@ export async function solicitarVinculoAction(_prev: VinculoState, formData: Form
       vinculoArquivoNome: autorizacao?.nomeArquivo ?? null,
       vinculoArquivoCaminho: autorizacao?.caminhoArquivo ?? null,
       vinculoArquivoTamanho: autorizacao?.tamanhoBytes ?? null,
+      ...dadosProprietarioParaGravar(d, ehRT),
       // A revisão gravada era do pedido anterior.
       vinculoRevisadoPorId: null,
       vinculoRevisadoEm: null,

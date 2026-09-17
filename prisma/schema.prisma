@@ -130,6 +130,12 @@ model User {
   vinculoArquivoNome     String?
   vinculoArquivoCaminho  String?
   vinculoArquivoTamanho  Int?
+  // Dados do proprietário, declarados pelo RT ao pedir vínculo. A autorização é um
+  // arquivo assinado; sem saber quem assinou, a CAPE não tem contra quem conferi-lo.
+  vinculoPropNome        String?
+  vinculoPropCpf         String?
+  vinculoPropEmail       String?
+  vinculoPropTelefone    String?
   // Quando o pedido atual foi feito. Usuário já cadastrado pede vínculo com outro lote
   // reaproveitando estes campos (um pedido por vez), então createdAt não serve mais.
   vinculoSolicitadoEm    DateTime?
