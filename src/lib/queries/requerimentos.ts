@@ -2,7 +2,15 @@ import { prisma } from "@/lib/prisma";
 
 export async function getMeusRequerimentos(userId: string) {
   return prisma.solicitacao.findMany({
-    where: { lote: { OR: [{ proprietarioId: userId }, { rtId: userId }] }, status: { not: "RASCUNHO" } },
+    // Vinculado ao lote hoje, ou autor do protocolo. A segunda metade existe porque o
+    // lote guarda um único RT: quando a CAPE aprova a troca de profissional, filtrar só
+    // pelo vínculo atual apagaria da tela do RT anterior tudo que ele protocolou,
+    // inclusive o que ainda está em análise. Ver é diferente de agir — as ações seguem
+    // exigindo vínculo com o lote (loadOwnedSolicitacao).
+    where: {
+      OR: [{ lote: { OR: [{ proprietarioId: userId }, { rtId: userId }] } }, { criadoPorId: userId }],
+      status: { not: "RASCUNHO" },
+    },
     orderBy: { createdAt: "desc" },
     include: {
       lote: { include: { quadra: true, empreendimento: true } },

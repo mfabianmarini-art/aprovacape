@@ -79,7 +79,13 @@ export default async function RequerimentosPage() {
             <div style={{ fontSize: 13.5, color: "#7A7472" }}>Nenhuma solicitação enviada ainda.</div>
           )}
           {pedidos.map((s) => (
-            <RequerimentoCard key={s.id} s={s} />
+            <RequerimentoCard
+              key={s.id}
+              s={s}
+              // Aparece na lista por ter protocolado, mas o lote hoje é de outro
+              // responsável: pode acompanhar, não agir.
+              somenteLeitura={s.lote.proprietarioId !== session.user.id && s.lote.rtId !== session.user.id}
+            />
           ))}
           <div style={{ background: "#FDF8EE", border: "1px solid #E8D7B4", borderRadius: 4, padding: "15px 18px", fontSize: 12.5, color: "#6B4A11", lineHeight: 1.5, maxWidth: "92ch" }}>
             <strong>Só contam como reenvio as devoluções da etapa de análise técnica (check-list).</strong> Quando a

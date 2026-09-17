@@ -13,19 +13,55 @@ export async function aprovarVinculoAction(userId: string) {
   const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
   if (!user.vinculoLoteId) return;
 
+  const ehRT = user.role === "RESPONSAVEL_TECNICO";
+  const lote = await prisma.lote.findUniqueOrThrow({
+    where: { id: user.vinculoLoteId },
+    include: {
+      quadra: { select: { nome: true } },
+      rt: { select: { id: true, name: true } },
+      proprietario: { select: { id: true, name: true } },
+    },
+  });
+
+  // O lote guarda um único RT e um único proprietário: aprovar sobre lote ocupado
+  // substitui a pessoa que estava lá, e ela perde as ações sobre as solicitações em
+  // curso. A troca fica no histórico do lote para não acontecer em silêncio.
+  const anterior = ehRT ? lote.rt : lote.proprietario;
+  const substitui = anterior && anterior.id !== userId ? anterior : null;
+  const solicitacoesDoLote = substitui
+    ? await prisma.solicitacao.findMany({
+        where: { loteId: lote.id, status: { not: "RASCUNHO" } },
+        select: { id: true },
+      })
+    : [];
+
+  const papel = ehRT ? "Responsável técnico" : "Proprietário";
   await prisma.$transaction([
     prisma.user.update({
       where: { id: userId },
       data: { vinculoStatus: "APROVADO", vinculoRevisadoPorId: session.user.id, vinculoRevisadoEm: new Date() },
     }),
     prisma.lote.update({
-      where: { id: user.vinculoLoteId },
-      data: user.role === "RESPONSAVEL_TECNICO" ? { rtId: userId } : { proprietarioId: userId },
+      where: { id: lote.id },
+      data: ehRT ? { rtId: userId } : { proprietarioId: userId },
     }),
+    ...solicitacoesDoLote.map((s) =>
+      prisma.historicoEvento.create({
+        data: {
+          solicitacaoId: s.id,
+          tipo: "VINCULO_SUBSTITUIDO",
+          texto: `${papel} do lote alterado pela CAPE: de ${substitui!.name} para ${user.name}. As ações desta solicitação passam para o novo responsável.`,
+          cor: "#B4711A",
+          autorId: session.user.id,
+        },
+      }),
+    ),
   ]);
 
   revalidatePath("/vinculos");
   revalidatePath("/empreendimentos");
+  revalidatePath("/requerimentos");
+  revalidatePath("/resumo");
 }
 
 export async function recusarVinculoAction(userId: string) {

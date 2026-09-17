@@ -44,6 +44,8 @@ enum EventoTipo {
   IRREGULARIDADE_REGISTRADA
   IRREGULARIDADE_REGULARIZADA
   OBRA_CONCLUIDA
+  // Troca de responsável pelo lote aprovada pela CAPE.
+  VINCULO_SUBSTITUIDO
 }
 
 enum IrregularidadeTipo {

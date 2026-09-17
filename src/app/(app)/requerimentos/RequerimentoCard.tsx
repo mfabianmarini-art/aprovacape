@@ -21,7 +21,7 @@ const MENSAGEM_PADRAO: Record<string, string> = {
   CONCLUIDA: "Solicitação concluída.",
 };
 
-export function RequerimentoCard({ s }: { s: Pedido }) {
+export function RequerimentoCard({ s, somenteLeitura }: { s: Pedido; somenteLeitura?: boolean }) {
   const [aberto, setAberto] = useState(false);
   const info = STATUS_INFO[s.status];
   const mensagem = s.status === "COMPLEMENTO" || s.status === "REPROVADA" ? s.historico[0]?.texto ?? MENSAGEM_PADRAO[s.status] : MENSAGEM_PADRAO[s.status];
@@ -140,11 +140,18 @@ export function RequerimentoCard({ s }: { s: Pedido }) {
               </div>
             )}
 
-            {s.status === "COMPLEMENTO" && (
+            {somenteLeitura && (
+              <div style={{ fontSize: 12.5, color: "#6B4A11", background: "#FDF8EE", border: "1px solid #E8D7B4", borderRadius: 4, padding: "12px 14px", lineHeight: 1.45 }}>
+                Este lote está vinculado a outro responsável hoje. Você continua vendo o que protocolou, mas as
+                ações da solicitação passaram para quem está vinculado ao lote.
+              </div>
+            )}
+
+            {s.status === "COMPLEMENTO" && !somenteLeitura && (
               <SubstituirDocumentos solicitacaoId={s.id} documentos={s.documentos} devolvidaNoChecklist={s.devolvidaNoChecklist} />
             )}
 
-            {s.status === "COMPLEMENTO" && (
+            {s.status === "COMPLEMENTO" && !somenteLeitura && (
               <div style={{ display: "flex", gap: 9, flexWrap: "wrap" }}>
                 <form action={reenviarComplementacaoAction.bind(null, s.id)}>
                   <button
@@ -157,7 +164,9 @@ export function RequerimentoCard({ s }: { s: Pedido }) {
               </div>
             )}
 
-            {(s.status === "APROVADA" || s.status === "RESSALVAS") && <EnviarAlvara solicitacaoId={s.id} recusa={s.alvaraRecusa} />}
+            {(s.status === "APROVADA" || s.status === "RESSALVAS") && !somenteLeitura && (
+              <EnviarAlvara solicitacaoId={s.id} recusa={s.alvaraRecusa} />
+            )}
 
             {s.status === "ALVARA_CONFERENCIA" && (
               <div style={{ fontSize: 12.5, color: "#4B3A7A", background: "#F3F0F9", border: "1px solid #D9D1EC", borderRadius: 4, padding: "12px 14px", lineHeight: 1.45 }}>

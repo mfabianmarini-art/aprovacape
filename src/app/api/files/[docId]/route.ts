@@ -20,6 +20,10 @@ export async function GET(_req: Request, { params }: { params: Promise<{ docId: 
     session.user.role === "ADMIN_CAPE" ||
     session.user.role === "CAPE_ANALISTA" ||
     session.user.role === "SINDICO" ||
+    // Autor do protocolo continua lendo o que enviou mesmo depois de perder o vínculo:
+    // o lote guarda um único RT, e a troca de profissional não apaga o que o anterior
+    // protocolou. Ler o próprio envio não é agir sobre a solicitação.
+    doc.solicitacao.criadoPorId === session.user.id ||
     lote.proprietarioId === session.user.id ||
     lote.rtId === session.user.id;
   if (!podeVer) return new NextResponse("Sem permissão.", { status: 403 });
