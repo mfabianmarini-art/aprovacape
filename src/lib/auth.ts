@@ -3,6 +3,7 @@ import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { ondeIdentificador } from "@/lib/identificador-login";
 
 const credentialsSchema = z.object({
   identifier: z.string().min(1),
@@ -31,7 +32,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const { identifier, password } = parsed.data;
 
         const user = await prisma.user.findFirst({
-          where: { OR: [{ email: identifier }, { cpf: identifier }] },
+          where: ondeIdentificador(identifier),
         });
         if (!user) return null;
 

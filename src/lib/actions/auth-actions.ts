@@ -7,6 +7,8 @@ import { prisma } from "@/lib/prisma";
 import { signIn, signOut } from "@/lib/auth";
 import { homeForRole } from "@/lib/nav";
 import { UF_REGEX } from "@/lib/registro-profissional";
+import { cpfValido, digitosCpf } from "@/lib/cpf";
+import { ondeIdentificador } from "@/lib/identificador-login";
 
 export type LoginState = { error?: string; redirectTo?: string } | null;
 
@@ -20,7 +22,7 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
     if (error instanceof AuthError) {
       // O authorize() recusa sem dizer por quê; sem isto, uma conta bloqueada receberia
       // "senha inválida" e a pessoa seguiria tentando contra o bloqueio.
-      const user = await prisma.user.findFirst({ where: { OR: [{ email: identifier }, { cpf: identifier }] } });
+      const user = await prisma.user.findFirst({ where: ondeIdentificador(identifier) });
       if (user?.bloqueadoAte && user.bloqueadoAte > new Date()) {
         const minutos = Math.max(1, Math.ceil((user.bloqueadoAte.getTime() - Date.now()) / 60000));
         return { error: `Muitas tentativas seguidas. Acesso bloqueado por mais ${minutos} minuto(s) por segurança.` };
@@ -30,7 +32,7 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
     throw error;
   }
 
-  const user = await prisma.user.findFirst({ where: { OR: [{ email: identifier }, { cpf: identifier }] } });
+  const user = await prisma.user.findFirst({ where: ondeIdentificador(identifier) });
   return { redirectTo: user ? homeForRole(user.role) : "/login" };
 }
 
@@ -38,7 +40,7 @@ const registerSchema = z
   .object({
     tipo: z.enum(["prop", "rt"]),
     nome: z.string().min(3, "Informe o nome completo"),
-    cpf: z.string().min(11, "CPF inválido"),
+    cpf: z.string().transform(digitosCpf).refine(cpfValido, "CPF inválido"),
     nascimento: z.string().min(1, "Informe a data de nascimento"),
     telefone: z.string().min(8, "Informe o telefone"),
     email: z.string().email("E-mail inválido"),
@@ -97,7 +99,7 @@ export async function registerAction(_prev: RegisterState, formData: FormData): 
 
 export async function loginAndRedirectAction(identifier: string, password: string) {
   await signIn("credentials", { identifier, password, redirect: false });
-  const user = await prisma.user.findFirst({ where: { OR: [{ email: identifier }, { cpf: identifier }] } });
+  const user = await prisma.user.findFirst({ where: ondeIdentificador(identifier) });
   return user ? homeForRole(user.role) : "/login";
 }
 

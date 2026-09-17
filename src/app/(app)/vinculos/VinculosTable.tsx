@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ROLE_LABEL, ROLE_COLOR } from "@/lib/nav";
 import { formatDate, formatDataPura } from "@/lib/status";
+import { formatarCpf, mesmoCpf } from "@/lib/cpf";
 import { formatRegistro } from "@/lib/registro-profissional";
 import { aprovarVinculoAction, recusarVinculoAction } from "@/lib/actions/usuarios-actions";
 import type { getVinculosPendentes } from "@/lib/queries/usuarios";
@@ -51,6 +52,14 @@ export function VinculosTable({ pendentes }: { pendentes: Pendentes }) {
         const lotesJa = ehRT ? p.lotesComoRT : p.lotesComoProprietario;
         // Aprovar grava este usuário em Lote.proprietarioId/rtId por cima de quem estiver lá.
         const ocupante = ehRT ? p.vinculoLote?.rt?.name : p.vinculoLote?.proprietario?.name;
+        // O lote já tem proprietário cadastrado e o RT declarou outro CPF: a autorização
+        // anexada não pode ser conferida contra o dono do lote, então a aprovação trava
+        // até alguém resolver a divergência.
+        const donoDoLote = p.vinculoLote?.proprietario ?? null;
+        const divergenciaProprietario =
+          ehRT && donoDoLote?.cpf && p.vinculoPropCpf && !mesmoCpf(donoDoLote.cpf, p.vinculoPropCpf)
+            ? donoDoLote
+            : null;
         return (
           <div key={p.id} style={{ borderBottom: "1px solid #F1EEE7" }}>
             <button
@@ -120,7 +129,7 @@ export function VinculosTable({ pendentes }: { pendentes: Pendentes }) {
                       ["Nome", p.name],
                       ["E-mail", p.email],
                       ["Telefone", p.phone],
-                      ["CPF", p.cpf],
+                      ["CPF", formatarCpf(p.cpf)],
                       ["Nascimento", formatDataPura(p.birthDate)],
                       ["Perfil", ROLE_LABEL[p.role]],
                       ...(registro ? [["Registro", registro] as const] : []),
@@ -142,7 +151,7 @@ export function VinculosTable({ pendentes }: { pendentes: Pendentes }) {
                       ...(p.vinculoPropNome
                         ? ([
                             ["Proprietário declarado", p.vinculoPropNome],
-                            ["CPF do proprietário", p.vinculoPropCpf ?? "—"],
+                            ["CPF do proprietário", p.vinculoPropCpf ? formatarCpf(p.vinculoPropCpf) : "—"],
                             ["E-mail do proprietário", p.vinculoPropEmail ?? "—"],
                             ["Telefone do proprietário", p.vinculoPropTelefone ?? "—"],
                           ] as const)
@@ -198,19 +207,36 @@ export function VinculosTable({ pendentes }: { pendentes: Pendentes }) {
                       Este lote já tem {ehRT ? "RT" : "proprietário"}: <strong>{ocupante}</strong>. Aprovar substitui esse vínculo.
                     </div>
                   )}
-                  <form action={aprovarVinculoAction.bind(null, p.id)}>
+                  {divergenciaProprietario && (
+                    <div style={{ fontSize: 12, color: "#8C2B22", background: "#FDF6F5", border: "1px solid #E8C9C4", borderRadius: 4, padding: "11px 12px", lineHeight: 1.5, display: "flex", flexDirection: "column", gap: 5 }}>
+                      <strong>O proprietário declarado não é o proprietário do lote.</strong>
+                      <span>
+                        Cadastrado no lote: {divergenciaProprietario.name} · {formatarCpf(divergenciaProprietario.cpf)}
+                      </span>
+                      <span>
+                        Declarado no pedido: {p.vinculoPropNome} · {formatarCpf(p.vinculoPropCpf ?? "")}
+                      </span>
+                      <span>
+                        A autorização anexada não pode ser conferida contra o dono do lote. Recuse o pedido ou
+                        corrija o cadastro antes de aprovar.
+                      </span>
+                    </div>
+                  )}
+                  <form action={divergenciaProprietario ? undefined : aprovarVinculoAction.bind(null, p.id)}>
                     <button
                       type="submit"
+                      disabled={!!divergenciaProprietario}
+                      title={divergenciaProprietario ? "Resolva a divergência de proprietário antes de aprovar." : undefined}
                       style={{
                         width: "100%",
-                        border: "1px solid #24603A",
-                        background: "#24603A",
-                        color: "#fff",
+                        border: `1px solid ${divergenciaProprietario ? "#DDD8CE" : "#24603A"}`,
+                        background: divergenciaProprietario ? "#fff" : "#24603A",
+                        color: divergenciaProprietario ? "#B0AAA0" : "#fff",
                         borderRadius: 4,
                         padding: "10px 12px",
                         fontSize: 12.5,
                         fontWeight: 600,
-                        cursor: "pointer",
+                        cursor: divergenciaProprietario ? "not-allowed" : "pointer",
                       }}
                     >
                       Aprovar vínculo

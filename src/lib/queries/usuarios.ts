@@ -39,7 +39,7 @@ export async function getVinculosPendentes() {
           quadra: true,
           empreendimento: true,
           // Quem já ocupa o lote: aprovar substitui, e o analista precisa ver isso antes.
-          proprietario: { select: { name: true } },
+          proprietario: { select: { name: true, cpf: true } },
           rt: { select: { name: true } },
         },
       },

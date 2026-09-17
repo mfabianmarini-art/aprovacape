@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { cpfValido, digitosCpf } from "@/lib/cpf";
 
 // Dados do proprietário que o responsável técnico declara ao pedir vínculo. A
 // autorização que ele anexa é um documento assinado; sem saber de quem é a assinatura,
@@ -19,23 +20,22 @@ export type ProprietarioDeclarado = {
   propTelefone?: string;
 };
 
-const digitos = (s: string) => s.replace(/\D/g, "");
-
 // Primeira mensagem de erro, ou null quando está tudo preenchido.
 export function proprietarioDeclaradoInvalido(d: ProprietarioDeclarado): string | null {
   if (!d.propNome || d.propNome.length < 3) return "Informe o nome completo do proprietário.";
-  if (digitos(d.propCpf ?? "").length !== 11) return "Informe o CPF do proprietário.";
+  if (!cpfValido(d.propCpf ?? "")) return "CPF do proprietário inválido — confira os números.";
   if (!z.string().email().safeParse(d.propEmail ?? "").success) return "Informe um e-mail válido do proprietário.";
-  if (digitos(d.propTelefone ?? "").length < 10) return "Informe o telefone do proprietário, com DDD.";
+  if ((d.propTelefone ?? "").replace(/\D/g, "").length < 10) return "Informe o telefone do proprietário, com DDD.";
   return null;
 }
 
 // O slot vinculo* do User é reaproveitado a cada pedido, então um pedido de proprietário
-// precisa apagar o que um pedido anterior de RT deixou.
+// precisa apagar o que um pedido anterior de RT deixou. O CPF vai só em dígitos, para
+// poder ser comparado com o do proprietário cadastrado no lote.
 export function dadosProprietarioParaGravar(d: ProprietarioDeclarado, ehRT: boolean) {
   return {
     vinculoPropNome: ehRT ? (d.propNome ?? null) : null,
-    vinculoPropCpf: ehRT ? (d.propCpf ?? null) : null,
+    vinculoPropCpf: ehRT && d.propCpf ? digitosCpf(d.propCpf) : null,
     vinculoPropEmail: ehRT ? (d.propEmail ?? null) : null,
     vinculoPropTelefone: ehRT ? (d.propTelefone ?? null) : null,
   };

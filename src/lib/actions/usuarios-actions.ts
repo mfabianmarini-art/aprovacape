@@ -7,6 +7,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/require-role";
 import { UF_REGEX } from "@/lib/registro-profissional";
+import { mesmoCpf } from "@/lib/cpf";
 
 export async function aprovarVinculoAction(userId: string) {
   const session = await requireRole("ADMIN_CAPE", "CAPE_ANALISTA");
@@ -19,10 +20,17 @@ export async function aprovarVinculoAction(userId: string) {
     include: {
       quadra: { select: { nome: true } },
       rt: { select: { id: true, name: true } },
-      proprietario: { select: { id: true, name: true } },
+      proprietario: { select: { id: true, name: true, cpf: true } },
     },
   });
 
+
+  // Trava do servidor, não só do botão: o lote tem proprietário cadastrado e o RT
+  // declarou outro CPF, então a autorização anexada não tem contra quem ser conferida.
+  // Resolver a divergência é decisão humana — recusar o pedido ou corrigir o cadastro.
+  if (ehRT && lote.proprietario?.cpf && user.vinculoPropCpf && !mesmoCpf(lote.proprietario.cpf, user.vinculoPropCpf)) {
+    return;
+  }
   // O lote guarda um único RT e um único proprietário: aprovar sobre lote ocupado
   // substitui a pessoa que estava lá, e ela perde as ações sobre as solicitações em
   // curso. A troca fica no histórico do lote para não acontecer em silêncio.
