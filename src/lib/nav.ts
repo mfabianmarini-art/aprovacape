@@ -31,6 +31,8 @@ export const SCREENS: Array<{
   // parados esperando uma decisão da CAPE. "Obras em andamento" é acompanhamento, não
   // uma fila de aprovação, então mantém o número mas sem o alerta.
   alertaContador?: boolean;
+  // Ação principal do papel: pintada de vermelho na barra lateral (ver Sidebar.tsx).
+  destaque?: boolean;
 }> = [
   { id: "resumo", label: "Resumo dos Loteamentos", path: "/resumo", roles: ["ADMIN_CAPE", "CAPE_ANALISTA", "SINDICO"] },
   {
@@ -53,13 +55,13 @@ export const SCREENS: Array<{
   // acompanhamento de execução (irregularidades e conclusão).
   { id: "obras", label: "Obras em andamento", path: "/obras", roles: ["ADMIN_CAPE", "CAPE_ANALISTA"], mostrarContador: true },
   { id: "relatorios", label: "Relatórios", path: "/relatorios", roles: ["ADMIN_CAPE", "CAPE_ANALISTA", "SINDICO"] },
+  // Menu de proprietário e RT, nesta ordem: Meus requerimentos, Normas para aprovação,
+  // Nova solicitação. homeForRole usa o primeiro item da lista filtrada, então
+  // "requerimentos" é também a tela de entrada deles.
+  { id: "requerimentos", label: "Meus requerimentos", path: "/requerimentos", roles: ["PROPRIETARIO", "RESPONSAVEL_TECNICO"] },
   // Admin/Analista CAPE cadastram e consultam os documentos dentro de Empreendimentos,
-  // então para eles esta aba seria redundante.
-  //
-  // Posição: vem antes de "requerimentos"/"nova" para abrir o menu de proprietário e RT
-  // — é a referência que eles consultam antes de elaborar o projeto, e homeForRole usa o
-  // primeiro item da lista filtrada, então também vira a tela de entrada deles. Fica
-  // depois de "resumo" para não mudar a home do síndico, que também enxerga esta aba.
+  // então para eles esta aba seria redundante. Fica depois de "resumo" para não mudar a
+  // home do síndico, que também enxerga esta aba.
   {
     id: "documentos",
     label: "Documentos técnicos",
@@ -67,8 +69,7 @@ export const SCREENS: Array<{
     roles: ["SINDICO", "PROPRIETARIO", "RESPONSAVEL_TECNICO"],
     labelPorPapel: { PROPRIETARIO: "Normas para aprovação", RESPONSAVEL_TECNICO: "Normas para aprovação" },
   },
-  { id: "requerimentos", label: "Meus requerimentos", path: "/requerimentos", roles: ["PROPRIETARIO", "RESPONSAVEL_TECNICO"] },
-  { id: "nova", label: "Nova solicitação", path: "/nova", roles: ["PROPRIETARIO", "RESPONSAVEL_TECNICO"] },
+  { id: "nova", label: "Nova solicitação", path: "/nova", roles: ["PROPRIETARIO", "RESPONSAVEL_TECNICO"], destaque: true },
   // Check-lists não tem entrada própria no menu: cada empreendimento segue sua própria
   // norma, então o check-list é aberto a partir do card do empreendimento, na tela
   // Empreendimentos — não faz sentido navegar até ele sem já estar olhando um empreendimento.

@@ -43,5 +43,6 @@ export function navWithCounts(role: Role, counts: Record<ScreenId, string>) {
     count: s.mostrarContador ? counts[s.id] : "",
     separadorAntes: s.separadorAntes ?? false,
     alerta: s.alertaContador ?? false,
+    destaque: s.destaque ?? false,
   }));
 }

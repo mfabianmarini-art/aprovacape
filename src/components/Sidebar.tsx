@@ -5,7 +5,14 @@ import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 import { signOutAction } from "@/lib/actions/auth-actions";
 
-export type NavEntry = { path: string; label: string; count: string; separadorAntes?: boolean; alerta?: boolean };
+export type NavEntry = {
+  path: string;
+  label: string;
+  count: string;
+  separadorAntes?: boolean;
+  alerta?: boolean;
+  destaque?: boolean;
+};
 
 export function Sidebar({ nav }: { nav: NavEntry[] }) {
   const pathname = usePathname();
@@ -92,6 +99,9 @@ export function Sidebar({ nav }: { nav: NavEntry[] }) {
             // "" (sem contador) e "0" (contador zerado) não acendem o alerta — só uma
             // solicitação de fato parada esperando decisão da CAPE.
             const pendente = n.alerta && !!n.count && n.count !== "0";
+            // Botão de ação principal (Nova solicitação): sempre vermelho, com um anel
+            // branco por dentro quando é a tela atual, já que o fundo não pode mudar.
+            const destaque = !!n.destaque;
             return (
               <div key={n.path}>
                 {n.separadorAntes && (
@@ -110,9 +120,10 @@ export function Sidebar({ nav }: { nav: NavEntry[] }) {
                     padding: "10px 12px",
                     borderRadius: 6,
                     fontSize: 13.5,
-                    fontWeight: active || pendente ? 600 : 400,
-                    background: active ? "rgba(255,255,255,.14)" : "transparent",
-                    color: active ? "#FFFFFF" : pendente ? "#FFFFFF" : "#CFC8C6",
+                    fontWeight: active || pendente || destaque ? 600 : 400,
+                    background: destaque ? "#E01B22" : active ? "rgba(255,255,255,.14)" : "transparent",
+                    color: destaque || active || pendente ? "#FFFFFF" : "#CFC8C6",
+                    boxShadow: destaque && active ? "inset 0 0 0 2px rgba(255,255,255,.6)" : undefined,
                   }}
                 >
                   <span
@@ -121,7 +132,7 @@ export function Sidebar({ nav }: { nav: NavEntry[] }) {
                       height: 6,
                       borderRadius: "50%",
                       flex: "none",
-                      background: active ? "#E01B22" : pendente ? "#E0A030" : "rgba(255,255,255,.28)",
+                      background: destaque ? "#FFFFFF" : active ? "#E01B22" : pendente ? "#E0A030" : "rgba(255,255,255,.28)",
                     }}
                   />
                   <span style={{ flex: 1 }}>{n.label}</span>
