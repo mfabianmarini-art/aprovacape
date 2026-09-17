@@ -47,6 +47,10 @@ export function VinculosTable({ pendentes }: { pendentes: Pendentes }) {
         const cor = ROLE_COLOR[p.role];
         const expandida = aberta === p.id;
         const registro = formatRegistro(p);
+        const ehRT = p.role === "RESPONSAVEL_TECNICO";
+        const lotesJa = ehRT ? p.lotesComoRT : p.lotesComoProprietario;
+        // Aprovar grava este usuário em Lote.proprietarioId/rtId por cima de quem estiver lá.
+        const ocupante = ehRT ? p.vinculoLote?.rt?.name : p.vinculoLote?.proprietario?.name;
         return (
           <div key={p.id} style={{ borderBottom: "1px solid #F1EEE7" }}>
             <button
@@ -74,6 +78,9 @@ export function VinculosTable({ pendentes }: { pendentes: Pendentes }) {
               <div style={{ display: "flex", flexDirection: "column", gap: 3, paddingRight: 16 }}>
                 <div style={{ fontSize: 13.5, fontWeight: 600 }}>{p.name}</div>
                 <div style={{ fontSize: 11.5, color: "#7A7472" }}>{p.email}</div>
+                <div style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: ".06em", textTransform: "uppercase", color: lotesJa.length ? "#3B3486" : "#7A7472" }}>
+                  {lotesJa.length ? `novo vínculo · já tem ${lotesJa.length} lote(s)` : "cadastro novo"}
+                </div>
               </div>
               <div>
                 <span
@@ -91,7 +98,7 @@ export function VinculosTable({ pendentes }: { pendentes: Pendentes }) {
                 </span>
               </div>
               <div style={{ fontSize: 12, color: "#4A5563", fontFamily: "var(--font-mono)" }}>
-                {formatDate(p.createdAt)}
+                {formatDate(p.vinculoSolicitadoEm ?? p.createdAt)}
               </div>
               <div style={{ color: "#7A7472", fontSize: 12 }}>{expandida ? "▾" : "▸"}</div>
             </button>
@@ -123,6 +130,12 @@ export function VinculosTable({ pendentes }: { pendentes: Pendentes }) {
                         p.vinculoLote
                           ? `${p.vinculoLote.quadra.nome} L${p.vinculoLote.numero} · ${p.vinculoLote.empreendimento.cidade}/${p.vinculoLote.empreendimento.uf}`
                           : "—",
+                      ],
+                      [
+                        "Lotes já vinculados",
+                        lotesJa.length
+                          ? lotesJa.map((l) => `${l.empreendimento.nome} · ${l.quadra.nome} L${l.numero}`).join(", ")
+                          : "nenhum — cadastro novo",
                       ],
                     ] as const
                   ).map(([k, v]) => (
@@ -168,8 +181,13 @@ export function VinculosTable({ pendentes }: { pendentes: Pendentes }) {
                 >
                   <div style={{ fontSize: 12, color: "#4A5563", lineHeight: 1.5 }}>
                     Aprovar vincula a pessoa ao lote e libera o envio de projetos. Recusar mantém o acesso à
-                    plataforma, mas sem vínculo com o lote.
+                    plataforma, mas sem vínculo com este lote.
                   </div>
+                  {ocupante && (
+                    <div style={{ fontSize: 12, color: "#8C2B22", background: "#FDF6F5", border: "1px solid #E8C9C4", borderRadius: 4, padding: "9px 11px", lineHeight: 1.45 }}>
+                      Este lote já tem {ehRT ? "RT" : "proprietário"}: <strong>{ocupante}</strong>. Aprovar substitui esse vínculo.
+                    </div>
+                  )}
                   <form action={aprovarVinculoAction.bind(null, p.id)}>
                     <button
                       type="submit"

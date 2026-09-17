@@ -20,8 +20,11 @@ export function Step1Form({ lotes }: { lotes: Lote[] }) {
 
   if (lotes.length === 0) {
     return (
-      <div style={{ padding: 20, fontSize: 13, color: "#7A7472" }}>
-        Nenhum lote vinculado à sua conta ainda. A CAPE precisa confirmar seu vínculo antes de abrir uma solicitação.
+      <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 10, fontSize: 13, color: "#7A7472" }}>
+        <span>Nenhum lote vinculado à sua conta ainda. A CAPE precisa confirmar seu vínculo antes de abrir uma solicitação.</span>
+        <a href="/vinculo" style={{ alignSelf: "flex-start", fontWeight: 600 }}>
+          Solicitar vínculo com um lote →
+        </a>
       </div>
     );
   }
@@ -37,6 +40,9 @@ export function Step1Form({ lotes }: { lotes: Lote[] }) {
             </option>
           ))}
         </select>
+        <a href="/vinculo" style={{ fontSize: 11.5, fontWeight: 600 }}>
+          Seu lote não está na lista? Solicitar vínculo com outro lote
+        </a>
       </label>
       <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         <span style={labelTextStyle}>Tipo de solicitação</span>

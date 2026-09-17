@@ -8,16 +8,7 @@ import { signIn, signOut } from "@/lib/auth";
 import { homeForRole } from "@/lib/nav";
 import { UF_REGEX } from "@/lib/registro-profissional";
 import { saveUploadedFile } from "@/lib/upload";
-
-const MAX_AUTORIZACAO_BYTES = 10 * 1024 * 1024;
-const TIPOS_AUTORIZACAO = new Set([
-  "application/pdf",
-  "application/msword",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  "image/png",
-  "image/jpeg",
-  "image/webp",
-]);
+import { autorizacaoInvalida } from "@/lib/vinculo-comprovacao";
 
 export type LoginState = { error?: string; redirectTo?: string } | null;
 
@@ -98,8 +89,8 @@ export async function registerAction(_prev: RegisterState, formData: FormData): 
   if (d.tipo === "rt") {
     const file = formData.get("autorizacao");
     if (!(file instanceof File) || file.size === 0) return { error: "Anexe a autorização do proprietário." };
-    if (!TIPOS_AUTORIZACAO.has(file.type)) return { error: "Envie um PDF, Word (.doc/.docx) ou imagem (PNG/JPG/WEBP)." };
-    if (file.size > MAX_AUTORIZACAO_BYTES) return { error: "Arquivo maior que 10 MB." };
+    const invalido = autorizacaoInvalida(file);
+    if (invalido) return { error: invalido };
     autorizacao = await saveUploadedFile(file, "vinculos");
   }
 
@@ -118,6 +109,7 @@ export async function registerAction(_prev: RegisterState, formData: FormData): 
       registroUf: d.tipo === "rt" ? d.registroUf : null,
       vinculoStatus: "PENDENTE",
       vinculoLoteId: d.loteId,
+      vinculoSolicitadoEm: new Date(),
       vinculoComprovacao: d.comprovacao ?? null,
       vinculoArquivoNome: autorizacao?.nomeArquivo ?? null,
       vinculoArquivoCaminho: autorizacao?.caminhoArquivo ?? null,

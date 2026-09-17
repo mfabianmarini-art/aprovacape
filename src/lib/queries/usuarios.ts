@@ -31,8 +31,21 @@ export async function getUsuariosDoEmpreendimento(empreendimentoId: string) {
 export async function getVinculosPendentes() {
   return prisma.user.findMany({
     where: { vinculoStatus: "PENDENTE" },
-    orderBy: { createdAt: "asc" },
-    include: { vinculoLote: { include: { quadra: true, empreendimento: true } } },
+    // Data do pedido, não da conta: usuário já cadastrado também pede vínculo por aqui.
+    orderBy: [{ vinculoSolicitadoEm: "asc" }, { createdAt: "asc" }],
+    include: {
+      vinculoLote: {
+        include: {
+          quadra: true,
+          empreendimento: true,
+          // Quem já ocupa o lote: aprovar substitui, e o analista precisa ver isso antes.
+          proprietario: { select: { name: true } },
+          rt: { select: { name: true } },
+        },
+      },
+      lotesComoProprietario: { include: { quadra: true, empreendimento: { select: { nome: true } } } },
+      lotesComoRT: { include: { quadra: true, empreendimento: { select: { nome: true } } } },
+    },
   });
 }
 

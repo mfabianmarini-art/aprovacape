@@ -1,16 +1,20 @@
 import { requireRole } from "@/lib/require-role";
 import { getUserDisplay } from "@/lib/user-display";
 import { getMeusRequerimentos } from "@/lib/queries/requerimentos";
+import { getMeuVinculo } from "@/lib/queries/vinculo";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { ScreenBody } from "@/components/ScreenBody";
 import { RequerimentoCard } from "./RequerimentoCard";
 
 export default async function RequerimentosPage() {
   const session = await requireRole("PROPRIETARIO", "RESPONSAVEL_TECNICO");
-  const [user, pedidos] = await Promise.all([
+  const [user, pedidos, meu] = await Promise.all([
     getUserDisplay(session.user.id, session.user.role),
     getMeusRequerimentos(session.user.id),
+    getMeuVinculo(session.user.id),
   ]);
+  const lotes = session.user.role === "RESPONSAVEL_TECNICO" ? meu.lotesComoRT : meu.lotesComoProprietario;
+  const pendente = meu.vinculoStatus === "PENDENTE" ? meu.vinculoLote : null;
 
   // Prazos e limite são por empreendimento: só dá para citar números nesta nota geral
   // quando todos os requerimentos da pessoa são do mesmo.
@@ -22,6 +26,24 @@ export default async function RequerimentosPage() {
       <ScreenHeader crumb="Meus lotes" title="Requerimentos" {...user} />
       <ScreenBody>
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap", fontSize: 12.5 }}>
+            <span style={{ color: pendente ? "#8A5210" : "#4A5563" }}>
+              {pendente ? (
+                <>
+                  Pedido de vínculo com{" "}
+                  <strong>
+                    {pendente.empreendimento.nome} · {pendente.quadra.nome} L{pendente.numero}
+                  </strong>{" "}
+                  em análise pela CAPE.
+                </>
+              ) : (
+                `${lotes.length} lote(s) vinculado(s) à sua conta.`
+              )}
+            </span>
+            <a href="/vinculo" style={{ fontWeight: 600 }}>
+              Solicitar vínculo com outro lote →
+            </a>
+          </div>
           {pedidos.length === 0 && (
             <div style={{ fontSize: 13.5, color: "#7A7472" }}>Nenhuma solicitação enviada ainda.</div>
           )}

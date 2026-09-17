@@ -130,6 +130,9 @@ model User {
   vinculoArquivoNome     String?
   vinculoArquivoCaminho  String?
   vinculoArquivoTamanho  Int?
+  // Quando o pedido atual foi feito. Usuário já cadastrado pede vínculo com outro lote
+  // reaproveitando estes campos (um pedido por vez), então createdAt não serve mais.
+  vinculoSolicitadoEm    DateTime?
   vinculoRevisadoPorId String?
   vinculoRevisadoEm    DateTime?
 
