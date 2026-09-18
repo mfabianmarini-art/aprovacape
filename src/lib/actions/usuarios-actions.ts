@@ -7,7 +7,8 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/require-role";
 import { UF_REGEX } from "@/lib/registro-profissional";
-import { mesmoCpf } from "@/lib/cpf";
+import { divergenciaDeTitular } from "@/lib/conferencia-vinculo";
+import { digitosCpf } from "@/lib/cpf";
 
 export async function aprovarVinculoAction(userId: string) {
   const session = await requireRole("ADMIN_CAPE", "CAPE_ANALISTA");
@@ -23,12 +24,10 @@ export async function aprovarVinculoAction(userId: string) {
       proprietario: { select: { id: true, name: true, cpf: true } },
     },
   });
-
-
-  // Trava do servidor, não só do botão: o lote tem proprietário cadastrado e o RT
-  // declarou outro CPF, então a autorização anexada não tem contra quem ser conferida.
-  // Resolver a divergência é decisão humana — recusar o pedido ou corrigir o cadastro.
-  if (ehRT && lote.proprietario?.cpf && user.vinculoPropCpf && !mesmoCpf(lote.proprietario.cpf, user.vinculoPropCpf)) {
+  // Trava do servidor, não só do botão: quem pede não bate com o proprietário cadastrado
+  // no lote, então não há como conferir o pedido. Resolver é decisão humana — recusar,
+  // ou atualizar o cadastro do lote se o imóvel realmente mudou de dono.
+  if (divergenciaDeTitular(lote, { ehRT, cpf: user.cpf, vinculoPropNome: user.vinculoPropNome, vinculoPropCpf: user.vinculoPropCpf }, user.name)) {
     return;
   }
   // O lote guarda um único RT e um único proprietário: aprovar sobre lote ocupado
@@ -43,6 +42,18 @@ export async function aprovarVinculoAction(userId: string) {
       })
     : [];
 
+  // Lote sem proprietário na matrícula: aprovar um proprietário é a primeira notícia
+  // confiável de quem é o dono, então o cadastro passa a existir a partir daqui.
+  const preencheTitular =
+    !ehRT && !lote.titularCpf && digitosCpf(user.cpf).length === 11
+      ? {
+          titularNome: user.name,
+          titularCpf: digitosCpf(user.cpf),
+          titularAtualizadoEm: new Date(),
+          titularAtualizadoPorId: session.user.id,
+        }
+      : {};
+
   const papel = ehRT ? "Responsável técnico" : "Proprietário";
   await prisma.$transaction([
     prisma.user.update({
@@ -51,7 +62,7 @@ export async function aprovarVinculoAction(userId: string) {
     }),
     prisma.lote.update({
       where: { id: lote.id },
-      data: ehRT ? { rtId: userId } : { proprietarioId: userId },
+      data: ehRT ? { rtId: userId } : { proprietarioId: userId, ...preencheTitular },
     }),
     ...solicitacoesDoLote.map((s) =>
       prisma.historicoEvento.create({

@@ -10,15 +10,20 @@ import {
 } from "@/lib/actions/lote-actions";
 import { EditableField } from "@/components/EditableField";
 import { PlantaPinPicker, type Posicao } from "@/components/PlantaPinPicker";
+import { TitularLote } from "./TitularLote";
 
-type LoteCfg = {
+export type LoteCfg = {
   id: string;
   numero: string;
   rua: string | null;
   areaM2: number | null;
   posX: number | null;
   posY: number | null;
+  titularNome: string | null;
+  titularCpf: string | null;
+  titularAtualizadoEm: Date | null;
   proprietarioNome: string | null;
+  proprietarioCpf: string | null;
   rtNome: string | null;
   cor: string;
 };
@@ -93,6 +98,14 @@ export function LotesManager({
                 {l.posX != null && l.posY != null ? `posição ${l.posX}%, ${l.posY}%` : "sem posição no mapa"} · reposicionar
               </button>
             </div>
+            <TitularLote
+              loteId={l.id}
+              titularNome={l.titularNome}
+              titularCpf={l.titularCpf}
+              titularAtualizadoEm={l.titularAtualizadoEm}
+              proprietarioNome={l.proprietarioNome}
+              proprietarioCpf={l.proprietarioCpf}
+            />
             {reposicionandoId === l.id && (
               <ReposicionarLote
                 loteId={l.id}

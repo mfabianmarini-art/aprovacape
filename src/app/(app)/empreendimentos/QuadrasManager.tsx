@@ -3,23 +3,13 @@
 import { useActionState, useState } from "react";
 import { addQuadraAction, updateQuadraAction, deleteQuadraAction, type QuadraState } from "@/lib/actions/empreendimento-actions";
 import { EditableField } from "@/components/EditableField";
-import { LotesManager } from "./LotesManager";
+import { LotesManager, type LoteCfg } from "./LotesManager";
 
 type QuadraCfg = {
   id: string;
   nome: string;
   total: number;
-  lotes: {
-    id: string;
-    numero: string;
-    rua: string | null;
-    areaM2: number | null;
-    posX: number | null;
-    posY: number | null;
-    proprietarioNome: string | null;
-    rtNome: string | null;
-    cor: string;
-  }[];
+  lotes: LoteCfg[];
 };
 
 const nomeFieldStyle: React.CSSProperties = {

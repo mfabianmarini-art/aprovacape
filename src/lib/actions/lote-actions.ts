@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/require-role";
+import { cpfValido, digitosCpf } from "@/lib/cpf";
 
 // O gestor CAPE cadastra só a quadra e o número do lote (e, opcionalmente, sua posição no
 // mapa). Endereço e área são preenchidos pelo proprietário/RT na primeira solicitação de
@@ -84,4 +85,83 @@ export async function deleteLoteAction(loteId: string) {
   revalidatePath("/empreendimentos");
   revalidatePath("/resumo");
   revalidatePath("/login");
+}
+
+const titularSchema = z.object({
+  nome: z.string().trim().min(3, "Informe o nome do proprietário"),
+  cpf: z.string().trim().transform(digitosCpf).refine(cpfValido, "CPF inválido"),
+});
+
+export type TitularState = { error?: string; ok?: boolean } | null;
+
+// Proprietário conforme a matrícula. Venda do imóvel se resolve aqui, não como efeito
+// colateral de aprovar um vínculo: a CAPE atualiza o cadastro com a matrícula nova em
+// mãos, e é contra este dado que os pedidos de vínculo passam a ser conferidos.
+export async function atualizarTitularLoteAction(
+  loteId: string,
+  _prev: TitularState,
+  formData: FormData,
+): Promise<TitularState> {
+  const session = await requireRole("ADMIN_CAPE", "CAPE_ANALISTA");
+  const parsed = titularSchema.safeParse(Object.fromEntries(formData.entries()));
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
+  const d = parsed.data;
+
+  const lote = await prisma.lote.findUniqueOrThrow({
+    where: { id: loteId },
+    include: { quadra: { select: { nome: true } } },
+  });
+  if (lote.titularCpf === d.cpf && lote.titularNome === d.nome) return { ok: true };
+
+  // Troca de dono é fato do lote, e o lote não tem histórico próprio: o registro vai para
+  // as solicitações vivas dele, que é onde alguém vai reparar.
+  const trocouDePessoa = !!lote.titularCpf && lote.titularCpf !== d.cpf;
+  const solicitacoes = trocouDePessoa
+    ? await prisma.solicitacao.findMany({
+        where: { loteId, status: { not: "RASCUNHO" } },
+        select: { id: true },
+      })
+    : [];
+
+  await prisma.$transaction([
+    prisma.lote.update({
+      where: { id: loteId },
+      data: {
+        titularNome: d.nome,
+        titularCpf: d.cpf,
+        titularAtualizadoEm: new Date(),
+        titularAtualizadoPorId: session.user.id,
+      },
+    }),
+    ...solicitacoes.map((s) =>
+      prisma.historicoEvento.create({
+        data: {
+          solicitacaoId: s.id,
+          tipo: "TITULAR_ALTERADO",
+          texto: `Proprietário do lote ${lote.quadra.nome} L${lote.numero} atualizado no cadastro pela CAPE: de ${lote.titularNome ?? "não informado"} para ${d.nome}.`,
+          cor: "#B4711A",
+          autorId: session.user.id,
+        },
+      }),
+    ),
+  ]);
+
+  revalidatePath("/empreendimentos");
+  revalidatePath("/vinculos");
+  revalidatePath("/resumo");
+  return { ok: true };
+}
+
+// Depois de uma venda, a conta do dono anterior continua vinculada ao lote e enxergando
+// tudo dele. Desvincular é decisão explícita da CAPE, não efeito automático da correção
+// do cadastro — uma correção de digitação não pode tirar o acesso de ninguém.
+export async function desvincularContaLoteAction(loteId: string, papel: "proprietario" | "rt") {
+  await requireRole("ADMIN_CAPE", "CAPE_ANALISTA");
+  await prisma.lote.update({
+    where: { id: loteId },
+    data: papel === "rt" ? { rtId: null } : { proprietarioId: null },
+  });
+  revalidatePath("/empreendimentos");
+  revalidatePath("/resumo");
+  revalidatePath("/requerimentos");
 }

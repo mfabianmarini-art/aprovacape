@@ -46,6 +46,8 @@ enum EventoTipo {
   OBRA_CONCLUIDA
   // Troca de responsável pelo lote aprovada pela CAPE.
   VINCULO_SUBSTITUIDO
+  // Proprietário da matrícula corrigido no cadastro do lote pela CAPE.
+  TITULAR_ALTERADO
 }
 
 enum IrregularidadeTipo {
@@ -151,6 +153,7 @@ model User {
   irregularidadesRegistradas Irregularidade[] @relation("IrregularidadeRegistradaPor")
   empreendimentosSindico Empreendimento[] @relation("EmpreendimentoSindico")
   documentosTecnicosEnviados DocumentoTecnico[] @relation("DocumentoTecnicoEnviadoPor")
+  lotesTitularAtualizados    Lote[]             @relation("LoteTitularAtualizadoPor")
 
   @@index([role])
 }
@@ -205,6 +208,14 @@ model Lote {
   posX Float?
   posY Float?
 
+  // Proprietário conforme a matrícula do lote, mantido pela CAPE. Independe de haver
+  // conta na plataforma: é este dado que a aprovação de vínculo compara. `proprietarioId`
+  // responde outra pergunta — qual conta acessa a plataforma por este lote.
+  titularNome            String?
+  titularCpf             String?
+  titularAtualizadoEm    DateTime?
+  titularAtualizadoPorId String?
+  titularAtualizadoPor   User?     @relation("LoteTitularAtualizadoPor", fields: [titularAtualizadoPorId], references: [id])
   proprietarioId String?
   proprietario   User?   @relation("LoteProprietario", fields: [proprietarioId], references: [id])
   rtId           String?

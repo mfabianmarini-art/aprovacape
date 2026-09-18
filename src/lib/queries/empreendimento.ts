@@ -13,7 +13,7 @@ export async function getEmpreendimentoConfig(empreendimentoId: string) {
             orderBy: { numero: "asc" },
             include: {
               solicitacoes: { orderBy: { createdAt: "desc" }, take: 1 },
-              proprietario: { select: { name: true } },
+              proprietario: { select: { name: true, cpf: true } },
               rt: { select: { name: true } },
             },
           },
@@ -38,7 +38,11 @@ export async function getEmpreendimentoConfig(empreendimentoId: string) {
         areaM2: l.areaM2,
         posX: l.posX,
         posY: l.posY,
+        titularNome: l.titularNome,
+        titularCpf: l.titularCpf,
+        titularAtualizadoEm: l.titularAtualizadoEm,
         proprietarioNome: l.proprietario?.name ?? null,
+        proprietarioCpf: l.proprietario?.cpf ?? null,
         rtNome: l.rt?.name ?? null,
         cor,
       };
