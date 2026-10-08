@@ -1,15 +1,10 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useState } from "react";
 import { STATUS_INFO, DOC_LABEL, IRREGULARIDADE_LABEL, TIPO_LABEL, formatDate, formatDateTime } from "@/lib/status";
 import { etapasDaSolicitacao } from "@/lib/etapas";
-import {
-  reenviarComplementacaoAction,
-  reenviarAcessoProprietarioAction,
-  type ReenvioState,
-} from "@/lib/actions/requerimento-actions";
+import { reenviarComplementacaoAction } from "@/lib/actions/requerimento-actions";
 import { EtapasStepper } from "@/components/EtapasStepper";
-import { CopiarTexto } from "@/components/CopiarTexto";
 import { SubstituirDocumentos } from "./SubstituirDocumentos";
 import { EnviarAlvara } from "./EnviarAlvara";
 import type { getMeusRequerimentos } from "@/lib/queries/requerimentos";
@@ -124,7 +119,6 @@ export function RequerimentoCard({
 
           {podeAgir && (
             <SenhaProprietario
-              solicitacaoId={s.id}
               protocolo={s.protocolo}
               senha={senhaAcompanhamento ?? null}
               url={urlAcompanhamento}
@@ -253,84 +247,45 @@ export function RequerimentoCard({
   );
 }
 
+// Só informa: o acesso sai sozinho por e-mail no protocolo, e reenviar é com a CAPE.
 function SenhaProprietario({
-  solicitacaoId,
   protocolo,
   senha,
   url,
   email,
   enviadoEm,
 }: {
-  solicitacaoId: string;
   protocolo: string;
   senha: string | null;
   url: string;
   email: string | null;
   enviadoEm: Date | null;
 }) {
-  const [state, formAction, pending] = useActionState<ReenvioState, FormData>(reenviarAcessoProprietarioAction.bind(null, solicitacaoId), null);
   return (
-    <div style={{ background: "#F6FAF7", border: "1px solid #C6DAC9", borderRadius: 4, padding: "14px 16px", display: "flex", flexDirection: "column", gap: 10 }}>
-      <div style={{ fontSize: 11, letterSpacing: ".13em", textTransform: "uppercase", color: "#24603A" }}>Acompanhamento do proprietário</div>
+    <div style={{ background: enviadoEm ? "#F6FAF7" : "#FDF8EE", border: `1px solid ${enviadoEm ? "#C6DAC9" : "#E8D7B4"}`, borderRadius: 4, padding: "14px 16px", display: "flex", flexDirection: "column", gap: 8 }}>
+      <div style={{ fontSize: 11, letterSpacing: ".13em", textTransform: "uppercase", color: enviadoEm ? "#24603A" : "#8A5210" }}>Acompanhamento do proprietário</div>
       <div style={{ fontSize: 12.5, color: "#3B4653", lineHeight: 1.5 }}>
         {enviadoEm && email ? (
           <>
-            Protocolo e senha enviados por e-mail para <strong>{email}</strong> em {formatDateTime(enviadoEm)}, com cópia para você. O
-            proprietário acompanha em{" "}
+            Protocolo e senha enviados automaticamente para <strong>{email}</strong> em {formatDateTime(enviadoEm)}, com cópia para você.
+            O proprietário acompanha em{" "}
+            <a href="/acompanhar" target="_blank" rel="noreferrer" style={{ fontWeight: 600 }}>
+              {url}
+            </a>
+            , sem conta e sem poder alterar nada.
           </>
         ) : (
           <>
-            O acesso ainda não chegou ao proprietário por e-mail — repasse o protocolo e a senha abaixo. Ele acompanha em{" "}
+            O e-mail automático com o acesso {email ? <>para <strong>{email}</strong> </> : ""}não foi enviado. A equipe CAPE pode
+            reenviá-lo pela análise da solicitação.
           </>
         )}
-        <a href="/acompanhar" target="_blank" rel="noreferrer" style={{ fontWeight: 600 }}>
-          {url}
-        </a>
-        , sem conta e sem poder alterar nada.
       </div>
-      <div style={{ display: "flex", gap: 18, flexWrap: "wrap", alignItems: "center" }}>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 11, color: "#7A7472" }}>Protocolo</span>
-          <strong style={{ fontFamily: "var(--font-mono)", fontSize: 14 }}>{protocolo}</strong>
-          <CopiarTexto texto={protocolo} />
-        </span>
-        {senha ? (
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-            <span style={{ fontSize: 11, color: "#7A7472" }}>Senha</span>
-            <strong style={{ fontFamily: "var(--font-mono)", fontSize: 14, letterSpacing: ".06em" }}>{senha}</strong>
-            <CopiarTexto texto={senha} />
-          </span>
-        ) : (
-          <span style={{ fontSize: 12, color: "#8A5210" }}>Ainda sem senha de acompanhamento.</span>
-        )}
-      </div>
-      <form
-        action={formAction}
-        onSubmit={(e) => {
-          if (senha && !confirm("Enviar uma nova senha? A senha atual deixa de funcionar.")) e.preventDefault();
-        }}
-        style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "flex-end", borderTop: "1px solid #DCE9DF", paddingTop: 10 }}
-      >
-        <label style={{ display: "flex", flexDirection: "column", gap: 4, flex: "1 1 240px" }}>
-          <span style={{ fontSize: 10.5, letterSpacing: ".1em", textTransform: "uppercase", color: "#7A7472" }}>E-mail do proprietário</span>
-          <input
-            name="proprietarioEmail"
-            type="email"
-            required
-            defaultValue={email ?? ""}
-            style={{ border: "1px solid #C6DAC9", borderRadius: 4, padding: "7px 9px", fontSize: 12.5, background: "#fff" }}
-          />
-        </label>
-        <button
-          type="submit"
-          disabled={pending}
-          style={{ border: "1px solid #24603A", background: "#fff", color: "#24603A", borderRadius: 4, padding: "8px 12px", fontSize: 12, fontWeight: 600, cursor: pending ? "wait" : "pointer" }}
-        >
-          {pending ? "Enviando…" : senha ? "Reenviar com nova senha" : "Gerar e enviar senha"}
-        </button>
-      </form>
-      {state?.ok && <div style={{ fontSize: 12, color: "#24603A" }}>{state.ok}</div>}
-      {state?.error && <div style={{ fontSize: 12, color: "#8A5210" }}>{state.error}</div>}
+      {senha && (
+        <div style={{ fontSize: 11.5, color: "#7A7472", fontFamily: "var(--font-mono)" }}>
+          protocolo {protocolo} · senha {senha}
+        </div>
+      )}
     </div>
   );
 }

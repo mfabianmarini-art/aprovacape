@@ -18,6 +18,7 @@ import {
 } from "@/lib/actions/analise-actions";
 import { ObservacaoField } from "@/components/ObservacaoField";
 import { EmitirParecerForm } from "./EmitirParecerForm";
+import { AcessoProprietario } from "./AcessoProprietario";
 
 const EDITAVEL = new Set(["ENVIADA", "ANALISE", "COMPLEMENTO"]);
 
@@ -604,6 +605,13 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
                 ))}
               </div>
             </section>
+            {sol.status !== "RASCUNHO" && (
+              <AcessoProprietario
+                solicitacaoId={sol.id}
+                email={sol.proprietarioEmail}
+                enviadoEm={sol.acompanhamentoEnviadoEm ? formatDateTime(sol.acompanhamentoEnviadoEm) : null}
+              />
+            )}
             <section style={{ background: "#fff", border: "1px solid #DDD8CE", borderRadius: 4, padding: "16px 17px", display: "flex", flexDirection: "column", gap: 10 }}>
               <div style={{ fontSize: 11, letterSpacing: ".14em", textTransform: "uppercase", color: "#7A7472" }}>Pagamento da análise</div>
               <form action={togglePagoAction.bind(null, sol.id)}>

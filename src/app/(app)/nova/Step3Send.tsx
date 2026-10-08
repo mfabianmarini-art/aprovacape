@@ -16,7 +16,7 @@ const DECLARACOES = [
   { id: "d3", texto: "Declaro ciência de que alterações no projeto aprovado pela Prefeitura em relação ao aprovado pelo residencial exigem substituição do projeto." },
 ] as const;
 
-export function Step3Send({ rascunho, nomeRT, emailProprietario }: { rascunho: { id: string }; nomeRT: string; emailProprietario: string }) {
+export function Step3Send({ rascunho, nomeRT, emailProprietario }: { rascunho: { id: string }; nomeRT: string; emailProprietario: string | null }) {
   const [state, formAction, pending] = useActionState(enviarSolicitacaoAction, null as { error?: string } | null);
   const [decl, setDecl] = useState({ d1: false, d2: false, d3: false });
   const podeEnviar = decl.d1 && decl.d2 && decl.d3;
@@ -61,15 +61,18 @@ export function Step3Send({ rascunho, nomeRT, emailProprietario }: { rascunho: {
         </div>
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        <span style={labelTextStyle}>Proprietário</span>
-        <label style={{ display: "flex", flexDirection: "column", gap: 6, maxWidth: 420 }}>
-          <span style={labelTextStyle}>E-mail do proprietário</span>
-          <input name="proprietarioEmail" required type="email" defaultValue={emailProprietario} style={inputStyle} />
-          <span style={{ fontSize: 11.5, color: "#7A7472", lineHeight: 1.45 }}>
-            Ao enviar, o proprietário recebe neste e-mail o protocolo e a senha para acompanhar a aprovação — e você, uma cópia.
-          </span>
-        </label>
+      {/* O e-mail é informado no passo 1; aqui só aparece para rascunhos criados antes disso. */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 6, maxWidth: 460 }}>
+        <span style={labelTextStyle}>E-mail do proprietário</span>
+        {emailProprietario ? (
+          <span style={{ fontSize: 13.5 }}>{emailProprietario}</span>
+        ) : (
+          <input name="proprietarioEmail" required type="email" style={inputStyle} />
+        )}
+        <span style={{ fontSize: 11.5, color: "#7A7472", lineHeight: 1.45 }}>
+          Ao enviar, o proprietário recebe automaticamente neste e-mail o protocolo e a senha para acompanhar a aprovação — e
+          você, uma cópia.
+        </span>
       </div>
 
       <div style={{ background: "#FAF9F6", border: "1px solid #EDE9E1", borderRadius: 4, padding: "16px 18px", display: "flex", flexDirection: "column", gap: 9 }}>

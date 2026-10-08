@@ -6,7 +6,6 @@ import { getMeuVinculo } from "@/lib/queries/vinculo";
 import { decifrarSenha, formatarSenha } from "@/lib/acompanhamento";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { ScreenBody } from "@/components/ScreenBody";
-import { CopiarTexto } from "@/components/CopiarTexto";
 import { RequerimentoCard, type SomenteLeitura } from "./RequerimentoCard";
 
 export default async function RequerimentosPage({ searchParams }: { searchParams: Promise<{ protocolada?: string }> }) {
@@ -43,34 +42,30 @@ export default async function RequerimentosPage({ searchParams }: { searchParams
       <ScreenBody>
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {recemProtocolada && (
-            <div style={{ background: "#fff", border: "1px solid #C6DAC9", borderTop: "3px solid #24603A", borderRadius: 4, padding: "18px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
+            <div
+              style={{
+                background: "#fff",
+                border: `1px solid ${recemProtocolada.s.acompanhamentoEnviadoEm ? "#C6DAC9" : "#E8D7B4"}`,
+                borderTop: `3px solid ${recemProtocolada.s.acompanhamentoEnviadoEm ? "#24603A" : "#B4711A"}`,
+                borderRadius: 4,
+                padding: "18px 20px",
+                display: "flex",
+                flexDirection: "column",
+                gap: 8,
+              }}
+            >
               <div style={{ fontFamily: "var(--font-display)", fontSize: 19, fontWeight: 600 }}>Solicitação {recemProtocolada.s.protocolo} protocolada</div>
               <div style={{ fontSize: 13, color: "#3B4653", lineHeight: 1.55, maxWidth: "75ch" }}>
                 {recemProtocolada.s.acompanhamentoEnviadoEm ? (
                   <>
-                    Enviamos o <strong>protocolo</strong> e a <strong>senha de acompanhamento</strong> por e-mail para o proprietário (
-                    <strong>{recemProtocolada.s.proprietarioEmail}</strong>), com cópia para você. Com eles, ele acompanha a aprovação em{" "}
-                    <strong>{urlAcompanhamento}</strong>, sem precisar de conta.
+                    O proprietário recebeu automaticamente em <strong>{recemProtocolada.s.proprietarioEmail}</strong> o protocolo e a senha
+                    para acompanhar a aprovação em <strong>{urlAcompanhamento}</strong>. Você recebeu uma cópia.
                   </>
                 ) : (
                   <>
-                    <strong>O e-mail ao proprietário não foi enviado.</strong> Repasse a ele o protocolo e a senha abaixo — com eles, ele
-                    acompanha a aprovação em <strong>{urlAcompanhamento}</strong>. No card da solicitação dá para tentar o envio de novo.
+                    O protocolo foi registrado, mas o e-mail automático ao proprietário (<strong>{recemProtocolada.s.proprietarioEmail}</strong>)
+                    não pôde ser enviado agora. A equipe CAPE pode reenviá-lo pela análise da solicitação.
                   </>
-                )}
-              </div>
-              <div style={{ display: "flex", gap: 22, flexWrap: "wrap", alignItems: "center" }}>
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 9 }}>
-                  <span style={{ fontSize: 11, letterSpacing: ".1em", textTransform: "uppercase", color: "#7A7472" }}>Protocolo</span>
-                  <strong style={{ fontFamily: "var(--font-mono)", fontSize: 17 }}>{recemProtocolada.s.protocolo}</strong>
-                  <CopiarTexto texto={recemProtocolada.s.protocolo} />
-                </span>
-                {recemProtocolada.senha && (
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: 9 }}>
-                    <span style={{ fontSize: 11, letterSpacing: ".1em", textTransform: "uppercase", color: "#7A7472" }}>Senha</span>
-                    <strong style={{ fontFamily: "var(--font-mono)", fontSize: 17, letterSpacing: ".06em" }}>{recemProtocolada.senha}</strong>
-                    <CopiarTexto texto={recemProtocolada.senha} />
-                  </span>
                 )}
               </div>
             </div>

@@ -14,7 +14,7 @@ type Lote = {
 const inputStyle: React.CSSProperties = { border: "1px solid #DDD8CE", borderRadius: 4, padding: "10px 11px", fontSize: 13.5 };
 const labelTextStyle: React.CSSProperties = { fontSize: 11, letterSpacing: ".13em", textTransform: "uppercase", color: "#7A7472" };
 
-export function Step1Form({ lotes }: { lotes: Lote[] }) {
+export function Step1Form({ lotes, emailsSugeridos }: { lotes: Lote[]; emailsSugeridos: Record<string, string> }) {
   const [state, formAction, pending] = useActionState(criarRascunhoAction, null as { error?: string } | null);
   const [loteId, setLoteId] = useState(lotes[0]?.id ?? "");
 
@@ -61,6 +61,15 @@ export function Step1Form({ lotes }: { lotes: Lote[] }) {
       <label style={{ display: "flex", flexDirection: "column", gap: 6, gridColumn: "1/-1" }}>
         <span style={labelTextStyle}>Descrição da obra</span>
         <textarea name="descricao" required rows={4} style={{ ...inputStyle, resize: "vertical" }} />
+      </label>
+      <label style={{ display: "flex", flexDirection: "column", gap: 6, gridColumn: "1/-1", maxWidth: 460 }}>
+        <span style={labelTextStyle}>E-mail do proprietário</span>
+        {/* key: trocar de lote repõe a sugestão daquele lote */}
+        <input key={loteId} name="proprietarioEmail" required type="email" defaultValue={emailsSugeridos[loteId] ?? ""} style={inputStyle} />
+        <span style={{ fontSize: 11.5, color: "#7A7472", lineHeight: 1.45 }}>
+          Quando a solicitação for protocolada, o proprietário recebe automaticamente neste e-mail o protocolo e a senha para
+          acompanhar a aprovação — e você, uma cópia.
+        </span>
       </label>
 
       {state?.error && <div style={{ gridColumn: "1/-1", fontSize: 12.5, color: "#8C2B22" }}>{state.error}</div>}

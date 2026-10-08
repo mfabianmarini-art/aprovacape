@@ -20,6 +20,7 @@ const rascunhoSchema = z.object({
   tipo: z.enum(["OBRA_NOVA", "REFORMA", "AMPLIACAO", "DEMOLICAO", "MURO", "PAISAGISMO"]),
   areaIntervencao: z.coerce.number().positive(),
   descricao: z.string().min(10, "Descreva a obra com mais detalhes"),
+  proprietarioEmail: z.string().trim().toLowerCase().email("Informe um e-mail válido do proprietário"),
 });
 
 export async function criarRascunhoAction(_prev: unknown, formData: FormData) {
@@ -37,6 +38,7 @@ export async function criarRascunhoAction(_prev: unknown, formData: FormData) {
       tipo: parsed.data.tipo,
       areaIntervencao: parsed.data.areaIntervencao,
       descricao: parsed.data.descricao,
+      proprietarioEmail: parsed.data.proprietarioEmail,
       status: "RASCUNHO",
       prazoDias: 10,
       criadoPorId: session.user.id,
@@ -96,7 +98,8 @@ const enviarSchema = z.object({
   rtExecNome: z.string().min(3, "Informe o responsável técnico pela execução"),
   rtExecRegistro: z.string().min(3, "Informe o registro CAU/CREA do responsável técnico pela execução"),
   rtExecEmail: z.string().email("E-mail inválido para o responsável técnico pela execução"),
-  proprietarioEmail: z.string().trim().toLowerCase().email("Informe um e-mail válido do proprietário"),
+  // Só para rascunhos criados antes de o e-mail ser pedido no passo 1.
+  proprietarioEmail: z.string().trim().toLowerCase().email("Informe um e-mail válido do proprietário").optional(),
   d1: z.literal("on"),
   d2: z.literal("on"),
   d3: z.literal("on"),
@@ -116,6 +119,8 @@ export async function enviarSolicitacaoAction(_prev: unknown, formData: FormData
 
   const faltando = DOC_ORDER.filter((t) => !sol.documentos.find((d) => d.tipo === t));
   if (faltando.length > 0) return { error: "Anexe todos os documentos do check-list antes de enviar." };
+  const proprietarioEmail = sol.proprietarioEmail ?? parsed.data.proprietarioEmail;
+  if (!proprietarioEmail) return { error: "Informe o e-mail do proprietário." };
 
   const ano = new Date().getFullYear();
   const existentes = await prisma.solicitacao.findMany({
@@ -155,7 +160,7 @@ export async function enviarSolicitacaoAction(_prev: unknown, formData: FormData
   ]);
 
   // Depois do protocolo gravado: e-mail que falha não pode desfazer o envio.
-  await emitirAcessoProprietario(sol.id, parsed.data.proprietarioEmail);
+  await emitirAcessoProprietario(sol.id, proprietarioEmail);
 
   revalidatePath("/requerimentos");
   revalidatePath("/fila");

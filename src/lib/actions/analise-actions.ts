@@ -7,6 +7,7 @@ import { requireRole } from "@/lib/require-role";
 import { saveUploadedFile } from "@/lib/upload";
 import { ehZipComArquivos, extensaoDe } from "@/lib/upload-documento";
 import { DOC_ORDER, IRREGULARIDADE_LABEL } from "@/lib/status";
+import { emitirAcessoProprietario } from "@/lib/acesso-proprietario";
 import type { DocumentoTipo } from "@/generated/prisma/enums";
 
 async function loadSolicitacao(solicitacaoId: string) {
@@ -419,4 +420,32 @@ export async function togglePagoAction(solicitacaoId: string) {
   const sol = await prisma.solicitacao.findUniqueOrThrow({ where: { id: solicitacaoId } });
   await prisma.solicitacao.update({ where: { id: solicitacaoId }, data: { pago: !sol.pago } });
   revalidateAll(sol.protocolo);
+}
+
+export type ReenvioAcessoState = { error?: string; ok?: string } | null;
+
+// O acesso do proprietário sai sozinho no protocolo; isto é o socorro da CAPE quando o
+// e-mail falhou, estava errado, ou o protocolo é anterior ao envio automático. Gera senha
+// nova: a anterior — e os acessos abertos com ela — deixa de valer.
+export async function reenviarAcessoProprietarioAction(
+  solicitacaoId: string,
+  _prev: ReenvioAcessoState,
+  formData: FormData,
+): Promise<ReenvioAcessoState> {
+  await requireRole("ADMIN_CAPE", "CAPE_ANALISTA");
+  const sol = await prisma.solicitacao.findUniqueOrThrow({ where: { id: solicitacaoId } });
+  if (sol.status === "RASCUNHO") return { error: "A solicitação ainda não foi protocolada." };
+
+  const email = String(formData.get("proprietarioEmail") ?? "").trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: "Informe um e-mail válido do proprietário." };
+
+  const { proprietario } = await emitirAcessoProprietario(sol.id, email);
+  revalidateAll(sol.protocolo);
+  if (proprietario.enviado) return { ok: `Acesso enviado para ${email}, com cópia ao RT.` };
+  return {
+    error:
+      proprietario.motivo === "nao-configurado"
+        ? "O envio de e-mail não está configurado (RESEND_API_KEY / EMAIL_REMETENTE)."
+        : "O Resend não aceitou o envio agora. Veja o motivo nos logs da Vercel e tente de novo.",
+  };
 }

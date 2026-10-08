@@ -22,18 +22,22 @@ export async function getMeusRascunhos(userId: string) {
   });
 }
 
-// Sugestão para o e-mail do proprietário no envio: o último protocolo do lote que já tinha
-// e-mail, ou o que o RT declarou ao pedir o vínculo deste lote. O RT pode trocar.
-export async function emailProprietarioDeclarado(userId: string, loteId: string) {
-  const [anterior, user] = await Promise.all([
-    prisma.solicitacao.findFirst({
-      where: { loteId, proprietarioEmail: { not: null } },
+// Sugestão de e-mail do proprietário por lote, no cadastro da obra: o do último protocolo
+// do lote que já tinha e-mail, ou o que o RT declarou ao pedir o vínculo. O RT pode trocar.
+export async function emailsSugeridosPorLote(userId: string, loteIds: string[]) {
+  const [anteriores, user] = await Promise.all([
+    prisma.solicitacao.findMany({
+      where: { loteId: { in: loteIds }, proprietarioEmail: { not: null } },
       orderBy: { createdAt: "desc" },
-      select: { proprietarioEmail: true },
+      select: { loteId: true, proprietarioEmail: true },
     }),
     prisma.user.findUnique({ where: { id: userId }, select: { vinculoLoteId: true, vinculoPropEmail: true } }),
   ]);
-  return anterior?.proprietarioEmail ?? (user?.vinculoLoteId === loteId ? (user.vinculoPropEmail ?? "") : "");
+  const sugestoes: Record<string, string> = {};
+  if (user?.vinculoLoteId && user.vinculoPropEmail) sugestoes[user.vinculoLoteId] = user.vinculoPropEmail;
+  // Do mais antigo ao mais recente, para o último protocolo prevalecer.
+  for (const a of [...anteriores].reverse()) sugestoes[a.loteId] = a.proprietarioEmail!;
+  return sugestoes;
 }
 
 export async function getRascunho(id: string) {
