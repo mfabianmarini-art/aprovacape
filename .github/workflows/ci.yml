@@ -1,0 +1,40 @@
+# Verificação a cada push e pull request: tipos, lint, testes e build de produção.
+# A Vercel publica todo push na main; isto pega o erro antes, com o motivo à vista.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verificar:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      # Valores fictícios: o build não conecta ao banco nem envia nada.
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+      AUTH_SECRET: ci-somente-para-build-0123456789abcdef
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Tipos de rota do Next
+        run: npx next typegen
+      - name: TypeScript
+        run: npx tsc --noEmit
+      - name: Lint
+        run: npm run lint
+      - name: Testes
+        run: npm test
+      - name: Build
+        run: npx next build

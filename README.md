@@ -15,6 +15,56 @@ Implementação real (Next.js + banco de dados + autenticação + upload de arqu
 
 Projeto vinculado em `mfabianmarini-arts-projects/aprovacape`, com GitHub conectado (`mfabianmarini-art/aprovacape`, branch `main`) para deploy automático a cada push. Recursos provisionados: Postgres (Neon, integração de marketplace) e um Blob store privado (`aprovacape-uploads`) — variáveis `DATABASE_URL`, `BLOB_READ_WRITE_TOKEN` e `AUTH_SECRET` já configuradas em Production/Preview/Development no painel da Vercel. O script `build` roda `prisma migrate deploy` antes de `next build`, então toda migration commitada em `prisma/migrations` é aplicada automaticamente no banco de produção a cada deploy.
 
+### Variáveis de ambiente (Vercel)
+
+| Variável | Para quê | Obrigatória |
+|---|---|---|
+| `DATABASE_URL`, `BLOB_READ_WRITE_TOKEN`, `AUTH_SECRET` | banco, arquivos, sessões | sim (já configuradas) |
+| `RESEND_API_KEY`, `EMAIL_REMETENTE` | e-mails (acesso do proprietário, etapas, senha) | sim, para haver e-mail |
+| `APP_URL` | endereço dos links nos e-mails (ex.: `https://aprova.cape.eng.br`); sem ela vale o domínio de produção da Vercel | recomendada |
+| `CRON_SECRET` | protege a manutenção diária (`/api/cron/manutencao`); a Vercel o envia sozinha ao disparar o cron. Sem ele a rotina não roda | sim |
+| `ALERTA_EMAIL` | e-mail(s), separados por vírgula, que recebem alerta de erro no servidor (no máximo 1 por rota por hora) | recomendada |
+
+### Monitoramento
+
+- **Disponibilidade**: `/api/health` responde 200 quando o app alcança o banco e 503 quando não — cadastre-o num monitor externo gratuito (UptimeRobot, Better Stack) com alerta por e-mail/WhatsApp.
+- **Erros**: todo erro do servidor vira uma linha JSON `erro_servidor` nos logs da Vercel, com o código (`digest`) que a tela de erro mostra à pessoa — filtre por ele para achar a causa. Com `ALERTA_EMAIL`, a equipe recebe o aviso. Os logs da Vercel ficam pouco tempo; para histórico longo, ligue um *Log Drain* (Better Stack, Axiom) no painel.
+- **CI**: `.github/workflows/ci.yml` roda tipos, lint, testes (`npm test`) e build a cada push.
+
+### Segurança (resumo)
+
+- **Cabeçalhos** (`next.config.ts`): CSP (nada carregado de fora; uploads só para a API do Blob), `X-Frame-Options: DENY`/`frame-ancestors 'none'` (sem clickjacking), `nosniff`, `Referrer-Policy`, `Permissions-Policy`, sem `X-Powered-By`.
+- **Acesso a arquivos**: blobs privados; toda rota de download confere o papel e o vínculo (`src/lib/acesso-arquivos.ts` — síndico só no próprio empreendimento) e registra a abertura (`AcessoArquivo`).
+- **Limites por origem** (`src/lib/limite-taxa.ts`, IP gravado só como HMAC): login 30/15 min (dentro do `authorize`, vale para qualquer caminho), cadastro 5/h, pedidos de redefinição 10/h, acompanhamento 30/15 min — somados ao bloqueio por conta (5 erros = 15 min).
+- **Sessão**: JWT de 7 dias renovado a cada dia de uso; a cada minuto a conta é reconferida — senha trocada ou conta removida derruba a sessão, e mudança de papel vale na hora.
+- **Senhas**: bcrypt custo 12 (cadastro e redefinição); a senha nunca volta ao navegador.
+- **Dependências**: mantenha o Next na série corrigida (`npm audit --omit=dev`); os alertas restantes são do CLI do Prisma, que não roda no app.
+
+### Região (latência e LGPD)
+
+As funções rodam hoje em **Washington, EUA** (`iad1`). Servidor e banco precisam ficar na mesma região — cada página faz várias consultas. Para levar tudo a **São Paulo**: (1) confira a região do banco no painel do Neon; se não for `aws-sa-east-1`, crie um projeto Neon em São Paulo e migre os dados (`pg_dump`/`pg_restore`, numa janela de manutenção); (2) na Vercel, *Settings → Functions → Function Region* = `gru1`; (3) o Blob store é criado numa região fixa — um store novo em `gru1` exige copiar os arquivos (o script de backup já faz a cópia; a troca é planejada à parte). Os dados pessoais passam a ficar no Brasil.
+
+### Backup
+
+Diário, às 02h de Brasília (`.github/workflows/backup.yml` → `scripts/backup/backup.mjs`), **fora** da Vercel e do Neon: o banco inteiro (`pg_dump`) e a cópia incremental dos arquivos do Blob, sempre **cifrados** com uma chave pública [age](https://age-encryption.org) antes de sair do GitHub — contêm CPF e documentos pessoais. Arquivo excluído do Blob (após a rescisão) continua no backup por 30 dias (lixeira) e depois sai também dele.
+
+Configuração (uma vez):
+1. **Deixe o repositório privado** (*GitHub → Settings → General → Danger Zone → Change visibility*): os logs das Actions de um repositório público são públicos.
+2. Gere as chaves: `node scripts/backup/backup.mjs chave`. A **pública** vai para o GitHub; a **privada** vai para o cofre de senhas da CAPE e uma cópia impressa guardada fora do escritório. Sem ela nenhum backup pode ser restaurado.
+3. Crie um bucket compatível com S3 de preferência em São Paulo (AWS S3 `sa-east-1`, ou Cloudflare R2), com **versionamento** ligado e regras de ciclo de vida: `banco/diario/` expira em 30 dias, `banco/mensal/` em 365 dias, `arquivos/` sem expiração. Crie uma chave de acesso só para esse bucket.
+4. Em *GitHub → Settings → Secrets and variables → Actions*, cadastre: `BACKUP_AGE_RECIPIENT` (chave pública), `BACKUP_DATABASE_URL` (conexão **direta** do Neon, sem `-pooler`), `BACKUP_BLOB_READ_WRITE_TOKEN`, `BACKUP_S3_BUCKET`, `BACKUP_S3_ACCESS_KEY_ID`, `BACKUP_S3_SECRET_ACCESS_KEY`, `BACKUP_S3_REGION` (ex.: `sa-east-1`; R2: `auto`) e, para R2/B2, `BACKUP_S3_ENDPOINT`.
+5. Rode uma vez à mão (*Actions → Backup → Run workflow*) e confira os objetos no bucket.
+
+No Neon, use um plano com **restauração para qualquer momento** de pelo menos 7 dias — é a primeira linha de defesa para erro humano recente; o backup externo cobre o resto.
+
+Restauração (teste a cada trimestre):
+```bash
+# banco: baixe banco/diario/AAAA-MM-DD.dump.age do bucket
+BACKUP_AGE_IDENTITY="AGE-SECRET-KEY-1…" node scripts/backup/backup.mjs decifrar AAAA-MM-DD.dump.age banco.dump
+pg_restore --no-owner --dbname "postgresql://…banco-de-teste…" banco.dump
+# arquivo: baixe arquivos/<caminho>.age e decifre do mesmo jeito
+```
+
 ## Rodando localmente
 
 ```bash
@@ -23,7 +73,10 @@ vercel env pull .env.local # baixa DATABASE_URL, BLOB_READ_WRITE_TOKEN, AUTH_SEC
 npm run db:migrate         # aplica as migrations no Postgres
 npm run db:seed            # popula com o cenário do protótipo (Quinta da Primavera)
 npm run dev
+npm test                   # testes das regras puras
 ```
+
+O seed **apaga o banco inteiro** antes de recriar o cenário e só roda contra banco local (`localhost`); para outro banco é preciso `SEED_CONFIRMO_APAGAR_TUDO=sim`.
 
 Abra http://localhost:3000 — a rota raiz redireciona para `/login` ou para a tela inicial do papel logado.
 
