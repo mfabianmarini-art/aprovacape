@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { contentTypeDe } from "@/lib/upload-documento";
 import { contentDisposition } from "@/lib/content-disposition";
+import { INCLUI_LOTE_E_SINDICO, podeVerArquivosDaSolicitacao } from "@/lib/acesso-arquivos";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ docId: string }> }) {
   const session = await auth();
@@ -12,22 +13,11 @@ export async function GET(_req: Request, { params }: { params: Promise<{ docId: 
   const { docId } = await params;
   const doc = await prisma.solicitacaoDocumento.findUnique({
     where: { id: docId },
-    include: { solicitacao: { include: { lote: true } } },
+    include: { solicitacao: { include: INCLUI_LOTE_E_SINDICO } },
   });
   if (!doc) return new NextResponse("Não encontrado.", { status: 404 });
 
-  const { lote } = doc.solicitacao;
-  const podeVer =
-    session.user.role === "ADMIN_CAPE" ||
-    session.user.role === "CAPE_ANALISTA" ||
-    session.user.role === "SINDICO" ||
-    // Autor do protocolo continua lendo o que enviou mesmo depois de perder o vínculo:
-    // o lote guarda um único RT, e a troca de profissional não apaga o que o anterior
-    // protocolou. Ler o próprio envio não é agir sobre a solicitação.
-    doc.solicitacao.criadoPorId === session.user.id ||
-    lote.proprietarioId === session.user.id ||
-    lote.rtId === session.user.id;
-  if (!podeVer) return new NextResponse("Sem permissão.", { status: 403 });
+  if (!podeVerArquivosDaSolicitacao(session.user, doc.solicitacao)) return new NextResponse("Sem permissão.", { status: 403 });
 
   const result = await get(doc.caminhoArquivo, { access: "private" }).catch(() => null);
   if (!result) return new NextResponse("Arquivo indisponível.", { status: 404 });

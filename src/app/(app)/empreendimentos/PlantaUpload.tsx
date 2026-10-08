@@ -22,7 +22,7 @@ export function PlantaUpload({ empreendimentoId, plantaImageUrl }: { empreendime
         <input
           type="file"
           name="planta"
-          accept="image/*"
+          accept="image/png,image/jpeg,image/webp"
           id="planta-file"
           style={{ display: "none" }}
           onChange={(e) => e.currentTarget.form?.requestSubmit()}

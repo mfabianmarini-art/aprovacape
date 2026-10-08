@@ -157,7 +157,8 @@ export async function uploadPlantaAction(empreendimentoId: string, _prev: unknow
   await requireRole("ADMIN_CAPE", "CAPE_ANALISTA");
   const file = formData.get("planta");
   if (!(file instanceof File) || file.size === 0) return { error: "Selecione uma imagem." };
-  if (!file.type.startsWith("image/")) return { error: "Envie um arquivo de imagem." };
+  // Só bitmap: SVG é imagem que carrega script, e a planta é servida pela origem do app.
+  if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) return { error: "Envie a planta em PNG, JPG ou WEBP." };
   if (file.size > 10 * 1024 * 1024) return { error: "Imagem maior que 10 MB." };
 
   const ext = path.extname(file.name) || ".png";
