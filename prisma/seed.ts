@@ -22,10 +22,16 @@ async function main() {
     console.error("Se é mesmo isso que você quer, rode com SEED_CONFIRMO_APAGAR_TUDO=sim.");
     process.exit(1);
   }
+  await prisma.acessoArquivo.deleteMany();
+  await prisma.arquivo.deleteMany();
+  await prisma.limiteTaxa.deleteMany();
   await prisma.historicoEvento.deleteMany();
   await prisma.checklistResultado.deleteMany();
   await prisma.solicitacaoDocumento.deleteMany();
   await prisma.devolutivaTecnica.deleteMany();
+  // Criados pelo uso (o seed não os gera), mas impedem apagar solicitações e empreendimentos.
+  await prisma.irregularidade.deleteMany();
+  await prisma.documentoTecnico.deleteMany();
   await prisma.solicitacao.deleteMany();
   await prisma.checklistItem.deleteMany();
   await prisma.checklistCategoria.deleteMany();

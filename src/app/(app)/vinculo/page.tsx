@@ -54,7 +54,7 @@ export default async function VinculoPage() {
                 CAPE para pedir outro vínculo.
               </div>
             ) : (
-              <SolicitarVinculoForm empreendimentos={empreendimentos} ehRT={ehRT} />
+              <SolicitarVinculoForm empreendimentos={empreendimentos} ehRT={ehRT} usuarioId={session.user.id} />
             )}
           </section>
 

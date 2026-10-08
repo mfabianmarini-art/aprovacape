@@ -9,6 +9,9 @@ import { ScreenBody } from "@/components/ScreenBody";
 import { EmpreendimentoSwitcher } from "@/components/EmpreendimentoSwitcher";
 import { EmpreendimentoForm } from "./EmpreendimentoForm";
 import { PlantaUpload } from "./PlantaUpload";
+import { ContratoArquivos } from "./ContratoArquivos";
+import { armazenamentoDoEmpreendimento } from "@/lib/queries/armazenamento";
+import { fimDaGuarda } from "@/lib/contrato";
 import { NovoEmpreendimentoForm } from "./NovoEmpreendimentoForm";
 import { QuadrasManager } from "./QuadrasManager";
 import { DocumentosList } from "../documentos/DocumentosList";
@@ -25,15 +28,16 @@ export default async function EmpreendimentosPage({ searchParams }: { searchPara
   ]);
   const isAdmin = session.user.role === "ADMIN_CAPE";
 
-  const [data, documentos, usuarios, pendentes, sindicos] = atual
+  const [data, documentos, usuarios, pendentes, sindicos, armazenamento] = atual
     ? await Promise.all([
         getEmpreendimentoConfig(atual.id),
         getDocumentosTecnicos(atual.id),
         getUsuariosDoEmpreendimento(atual.id),
         countVinculosPendentesDoEmpreendimento(atual.id),
         getSindicos(),
+        armazenamentoDoEmpreendimento(atual.id),
       ])
-    : [null, [], [], 0, []];
+    : [null, [], [], 0, [], null];
 
   if (!data) {
     return (
@@ -105,6 +109,18 @@ export default async function EmpreendimentosPage({ searchParams }: { searchPara
               <EmpreendimentoForm id={emp.id} prazoDias={emp.prazoDias} reenviosSemTaxa={emp.reenviosSemTaxa} />
               <aside style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                 <PlantaUpload empreendimentoId={emp.id} plantaImageUrl={emp.plantaImageUrl} />
+                {armazenamento && (
+                  <ContratoArquivos
+                    empreendimentoId={emp.id}
+                    nome={emp.nome}
+                    podeGerir={isAdmin}
+                    rescindidoEm={emp.contratoRescindidoEm?.toISOString() ?? null}
+                    guardaAte={emp.contratoRescindidoEm ? fimDaGuarda(emp.contratoRescindidoEm).toISOString() : null}
+                    excluidosEm={emp.arquivosExcluidosEm?.toISOString() ?? null}
+                    prazoVencido={!!emp.contratoRescindidoEm && fimDaGuarda(emp.contratoRescindidoEm) < new Date()}
+                    armazenamento={armazenamento}
+                  />
+                )}
               </aside>
             </div>
           }

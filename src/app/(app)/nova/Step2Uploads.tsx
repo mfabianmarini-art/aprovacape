@@ -97,6 +97,10 @@ export function Step2Uploads({ rascunho }: { rascunho: Rascunho }) {
 
   return (
     <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={{ fontSize: 12, color: "#4A5563", background: "#FAF9F6", border: "1px solid #EDE9E1", borderRadius: 4, padding: "9px 12px", lineHeight: 1.5 }}>
+        Dica: exporte os PDFs direto do programa de projeto (opção &quot;PDF otimizado&quot; ou &quot;tamanho mínimo&quot;) e digitalize
+        documentos em papel entre 150 e 300 dpi. Arquivos menores sobem mais rápido e abrem mais rápido na análise.
+      </div>
       <div style={{ fontSize: 11, letterSpacing: ".13em", textTransform: "uppercase", color: "#7A7472" }}>Documentos obrigatórios</div>
       {DOC_ORDER.map((tipo) => (
         <UploadRow key={tipo} solicitacaoId={rascunho.id} tipo={tipo} existente={rascunho.documentos.find((d) => d.tipo === tipo)} />

@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@/generated/prisma/client";
+import { marcarSubstituido, registrarArquivo } from "@/lib/arquivos";
 import { requireRole } from "@/lib/require-role";
 import { validarDocumentoEnviado } from "@/lib/upload-documento";
 import { descartarArquivo, lerArquivoEnviado } from "@/lib/upload-direto";
@@ -84,18 +85,49 @@ export async function uploadDocumentoAction(solicitacaoId: string, tipo: Documen
     return { error: invalido };
   }
   const saved = { caminhoArquivo: pathname, nomeArquivo, tamanhoBytes: arq.tamanho };
+  const anterior = await prisma.solicitacaoDocumento.findUnique({ where: { solicitacaoId_tipo: { solicitacaoId, tipo } } });
 
-  await prisma.solicitacaoDocumento.upsert({
-    where: { solicitacaoId_tipo: { solicitacaoId, tipo } },
-    create: { solicitacaoId, tipo, ...saved, validado: false },
-    // uploadedAt não é @updatedAt: sem isto a data continuaria a do primeiro envio, e o
-    // analista não veria qual arquivo é novo nesta rodada.
-    update: { ...saved, validado: false, uploadedAt: new Date() },
-  });
+  // O arquivo anterior não é apagado: vira versão substituída no inventário e continua
+  // disponível (cláusula contratual de guarda de toda a documentação).
+  await prisma.$transaction([
+    prisma.solicitacaoDocumento.upsert({
+      where: { solicitacaoId_tipo: { solicitacaoId, tipo } },
+      create: { solicitacaoId, tipo, ...saved, validado: false },
+      // uploadedAt não é @updatedAt: sem isto a data continuaria a do primeiro envio, e o
+      // analista não veria qual arquivo é novo nesta rodada.
+      update: { ...saved, validado: false, uploadedAt: new Date() },
+    }),
+    ...(anterior && anterior.caminhoArquivo !== pathname ? [marcarSubstituido(anterior.caminhoArquivo)] : []),
+    registrarArquivo({
+      caminho: pathname,
+      nome: nomeArquivo,
+      tamanho: arq.tamanho,
+      hash: String(formData.get("hash") ?? ""),
+      categoria: "DOCUMENTO",
+      documentoTipo: tipo,
+      solicitacaoId,
+      empreendimentoId: sol.lote.empreendimentoId,
+      enviadoPorId: session.user.id,
+    }),
+  ]);
 
   revalidatePath("/nova");
   revalidatePath("/requerimentos");
   return { error: undefined };
+}
+
+// Antes de subir: o arquivo escolhido é idêntico (mesmo SHA-256) ao documento atual deste
+// tipo? Então não há o que enviar — poupa o upload e uma versão repetida no inventário.
+export async function documentoIdenticoAction(solicitacaoId: string, tipo: DocumentoTipo, hash: string) {
+  const session = await requireRole(RT);
+  if (!/^[0-9a-f]{64}$/.test(hash)) return false;
+  const doc = await prisma.solicitacaoDocumento.findUnique({
+    where: { solicitacaoId_tipo: { solicitacaoId, tipo } },
+    include: { solicitacao: { include: { lote: { select: { rtId: true } } } } },
+  });
+  if (!doc || doc.solicitacao.lote.rtId !== session.user.id) return false;
+  const atual = await prisma.arquivo.findUnique({ where: { caminho: doc.caminhoArquivo }, select: { hash: true } });
+  return atual?.hash === hash;
 }
 
 const enviarSchema = z.object({

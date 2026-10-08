@@ -7,6 +7,7 @@ import { descartarArquivo, lerArquivoEnviado } from "@/lib/upload-direto";
 import { extensaoDe } from "@/lib/upload-documento";
 import { DOC_LABEL, DOC_ORDER } from "@/lib/status";
 import { notificarEtapa } from "@/lib/notificacoes";
+import { registrarArquivo } from "@/lib/arquivos";
 
 // As ações da solicitação são do responsável técnico do lote; o proprietário só acompanha.
 async function loadOwnedSolicitacao(session: Awaited<ReturnType<typeof requireRole>>, solicitacaoId: string) {
@@ -115,6 +116,16 @@ export async function enviarAlvaraAction(solicitacaoId: string, _prev: unknown, 
         alvaraEnviadoEm: new Date(),
         alvaraRecusa: null,
       },
+    }),
+    registrarArquivo({
+      caminho: saved.caminhoArquivo,
+      nome: saved.nomeArquivo,
+      tamanho: saved.tamanhoBytes,
+      hash: String(formData.get("hash") ?? ""),
+      categoria: "ALVARA",
+      solicitacaoId: sol.id,
+      empreendimentoId: sol.lote.empreendimentoId,
+      enviadoPorId: session.user.id,
     }),
     prisma.historicoEvento.create({
       data: {

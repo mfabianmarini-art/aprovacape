@@ -2,10 +2,14 @@
 
 import { useActionState } from "react";
 import { uploadPlantaAction } from "@/lib/actions/empreendimento-actions";
+import { useFormularioComArquivo } from "@/components/useFormularioComArquivo";
 
 export function PlantaUpload({ empreendimentoId, plantaImageUrl }: { empreendimentoId: string; plantaImageUrl: string | null }) {
   const action = uploadPlantaAction.bind(null, empreendimentoId);
-  const [state, formAction, pending] = useActionState(action, null as { error?: string; ok?: boolean } | null);
+  const [state, formAction, salvando] = useActionState(action, null as { error?: string; ok?: boolean } | null);
+  const envio = useFormularioComArquivo(formAction, { destino: "planta", empreendimentoId }, "planta");
+  const pending = salvando || envio.enviando;
+  const erro = envio.erroEnvio ?? state?.error;
 
   return (
     <section style={{ background: "#fff", border: "1px solid #DDD8CE", borderRadius: 4, padding: "16px 17px", display: "flex", flexDirection: "column", gap: 11 }}>
@@ -18,7 +22,7 @@ export function PlantaUpload({ empreendimentoId, plantaImageUrl }: { empreendime
           <div style={{ width: "100%", height: "100%", display: "grid", placeItems: "center", color: "#8B939C", fontSize: 12 }}>Planta do empreendimento</div>
         )}
       </div>
-      <form action={formAction} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      <form onSubmit={envio.onSubmit} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         <input
           type="file"
           name="planta"
@@ -31,10 +35,10 @@ export function PlantaUpload({ empreendimentoId, plantaImageUrl }: { empreendime
           htmlFor="planta-file"
           style={{ textAlign: "center", border: "1px solid #DDD8CE", background: "#fff", color: "#E01B22", borderRadius: 4, padding: "8px 12px", fontSize: 12, fontWeight: 600, cursor: pending ? "wait" : "pointer" }}
         >
-          {pending ? "Enviando…" : "Enviar nova planta"}
+          {envio.progresso !== null ? `Enviando… ${envio.progresso}%` : salvando ? "Conferindo…" : "Enviar nova planta"}
         </label>
       </form>
-      {state?.error && <div style={{ fontSize: 11.5, color: "#8C2B22" }}>{state.error}</div>}
+      {erro && !pending && <div style={{ fontSize: 11.5, color: "#8C2B22" }}>{erro}</div>}
       <div style={{ fontSize: 11.5, color: "#4A5563", lineHeight: 1.45 }}>
         Após enviar a planta, os lotes são marcados sobre ela e passam a alimentar a tela resumo.
       </div>

@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { SELECT_VERSOES_ANTERIORES } from "@/components/VersoesAnteriores";
 
 export async function getMeusRequerimentos(userId: string) {
   return prisma.solicitacao.findMany({
@@ -33,6 +34,7 @@ export async function getMeusRequerimentos(userId: string) {
         orderBy: { createdAt: "desc" },
         select: { id: true, comentario: true, arquivoNome: true, createdAt: true },
       },
+      arquivos: SELECT_VERSOES_ANTERIORES,
     },
   });
 }

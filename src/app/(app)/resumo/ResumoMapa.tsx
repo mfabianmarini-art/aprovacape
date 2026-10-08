@@ -1,5 +1,6 @@
 "use client";
 
+import { VersoesAnteriores } from "@/components/VersoesAnteriores";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { formatDate, formatDateTime, STATUS_INFO, TIPO_LABEL, DOC_LABEL, IRREGULARIDADE_LABEL } from "@/lib/status";
@@ -554,6 +555,7 @@ export function ResumoMapa({ data, podeAnalisar }: { data: Data; podeAnalisar: b
                                   </div>
                                 ))
                               )}
+                              <VersoesAnteriores versoes={s.arquivos} />
                             </div>
 
                             <div style={{ fontSize: 10, letterSpacing: ".13em", textTransform: "uppercase", color: "#7A7472", paddingTop: 4 }}>

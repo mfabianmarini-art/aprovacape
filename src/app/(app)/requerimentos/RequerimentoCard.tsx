@@ -6,6 +6,7 @@ import { etapasDaSolicitacao } from "@/lib/etapas";
 import { reenviarComplementacaoAction, type ReenvioState } from "@/lib/actions/requerimento-actions";
 import { EtapasStepper } from "@/components/EtapasStepper";
 import { SubstituirDocumentos } from "./SubstituirDocumentos";
+import { VersoesAnteriores } from "@/components/VersoesAnteriores";
 import { EnviarAlvara } from "./EnviarAlvara";
 import type { getMeusRequerimentos } from "@/lib/queries/requerimentos";
 
@@ -213,6 +214,8 @@ export function RequerimentoCard({
               </a>
             </div>
           )}
+
+          <VersoesAnteriores versoes={s.arquivos} />
 
           <div style={{ display: "flex", flexDirection: "column", gap: 4, borderTop: "1px solid #EDE9E1", paddingTop: 14 }}>
             <div style={{ fontSize: 10, letterSpacing: ".13em", textTransform: "uppercase", color: "#7A7472" }}>Histórico da solicitação e da análise</div>

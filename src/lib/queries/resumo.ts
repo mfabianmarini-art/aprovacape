@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { SELECT_VERSOES_ANTERIORES } from "@/components/VersoesAnteriores";
 import { STATUS_INFO, LIVRE_INFO } from "@/lib/status";
 import type { SolicitacaoStatus } from "@/generated/prisma/enums";
 
@@ -31,6 +32,8 @@ export async function getResumoData(empreendimentoId: string) {
               // relação aninhada aqui se multiplica pelo loteamento inteiro.
               criadoPor: { select: { name: true, role: true } },
               documentos: { select: { id: true, tipo: true, nomeArquivo: true, validado: true } },
+              // Só as versões substituídas — poucas, e por contrato disponíveis ao condomínio.
+              arquivos: SELECT_VERSOES_ANTERIORES,
               irregularidades: {
                 orderBy: { createdAt: "desc" },
                 select: { id: true, tipo: true, createdAt: true, regularizadaEm: true },

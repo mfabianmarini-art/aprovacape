@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { SELECT_VERSOES_ANTERIORES } from "@/components/VersoesAnteriores";
 
 export async function getAnalise(protocolo: string) {
   const solicitacao = await prisma.solicitacao.findUnique({
@@ -13,6 +14,7 @@ export async function getAnalise(protocolo: string) {
         include: { evidencias: true, registradaPor: { select: { name: true } } },
       },
       devolutivas: { orderBy: { createdAt: "desc" }, include: { autor: { select: { name: true } } } },
+      arquivos: SELECT_VERSOES_ANTERIORES,
     },
   });
   if (!solicitacao) return null;

@@ -2,8 +2,7 @@
 
 import { useActionState, useRef, useState, useTransition } from "react";
 import { enviarAlvaraAction } from "@/lib/actions/requerimento-actions";
-import { problemaAntesDeEnviar } from "@/lib/upload-destino";
-import { enviarDireto, mensagemDeFalhaNoEnvio } from "@/lib/upload-cliente";
+import { enviarDireto, mensagemDeFalhaNoEnvio, prepararEnvio } from "@/lib/upload-cliente";
 
 export function EnviarAlvara({ solicitacaoId, recusa }: { solicitacaoId: string; recusa: string | null }) {
   const [state, formAction, registrando] = useActionState(
@@ -25,15 +24,16 @@ export function EnviarAlvara({ solicitacaoId, recusa }: { solicitacaoId: string;
     const file = inputRef.current?.files?.[0];
     if (!file || pending) return;
     const destino = { destino: "alvara", solicitacaoId } as const;
-    const problema = problemaAntesDeEnviar(file, destino);
-    setErroEnvio(problema);
-    if (problema) return;
+    const prep = await prepararEnvio(file, destino);
+    setErroEnvio(prep.problema);
+    if (prep.problema) return;
     setProgresso(0);
     try {
-      const arq = await enviarDireto(file, destino, setProgresso);
+      const arq = await enviarDireto(prep, destino, setProgresso);
       const fd = new FormData();
       fd.set("pathname", arq.pathname);
       fd.set("nomeArquivo", arq.nomeArquivo);
+      fd.set("hash", arq.hash);
       startTransition(() => formAction(fd));
     } catch (err) {
       setErroEnvio(mensagemDeFalhaNoEnvio(err));

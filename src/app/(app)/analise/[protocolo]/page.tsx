@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { VersoesAnteriores } from "@/components/VersoesAnteriores";
 import { requireRole } from "@/lib/require-role";
 import { getUserDisplay } from "@/lib/user-display";
 import { getAnalise } from "@/lib/queries/analise";
@@ -438,6 +439,11 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
                   </form>
                 )}
               </div>
+              {sol.arquivos.length > 0 && (
+                <div style={{ padding: "0 18px 16px" }}>
+                  <VersoesAnteriores versoes={sol.arquivos} />
+                </div>
+              )}
             </section>
 
             {/* Step 2 — Check-list técnico */}

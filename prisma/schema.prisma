@@ -165,6 +165,8 @@ model User {
   lotesTitularAtualizados    Lote[]             @relation("LoteTitularAtualizadoPor")
   devolutivasTecnicas        DevolutivaTecnica[] @relation("DevolutivaTecnicaAutor")
   redefinicoesSenha          RedefinicaoSenha[]
+  arquivosEnviados           Arquivo[]          @relation("ArquivoEnviadoPor")
+  acessosArquivos            AcessoArquivo[]
 
   @@index([role])
 }
@@ -181,6 +183,11 @@ model Empreendimento {
   taxaVisitaCent    Int      @default(0)
   prazoComplementoDias Int   @default(180)
   plantaImageUrl    String?
+  // Contrato da CAPE com o condomínio. Rescindido, toda a documentação continua
+  // disponível por 30 dias (cláusula contratual); só depois disso os arquivos podem ser
+  // excluídos, por ação explícita do admin (arquivosExcluidosEm).
+  contratoRescindidoEm DateTime?
+  arquivosExcluidosEm  DateTime?
   sindicoId         String?
   sindico           User?    @relation("EmpreendimentoSindico", fields: [sindicoId], references: [id])
   createdAt         DateTime @default(now())
@@ -189,6 +196,7 @@ model Empreendimento {
   lotes      Lote[]
   categorias ChecklistCategoria[]
   documentosTecnicos DocumentoTecnico[]
+  arquivos           Arquivo[]
 
   @@index([sindicoId])
 }
@@ -330,6 +338,7 @@ model Solicitacao {
   // Consultas mais frequentes: solicitações de um lote, e filas/contagens por status.
   @@index([loteId])
   @@index([status])
+  arquivos        Arquivo[]
 }
 
 // O que a CAPE manda ao RT junto com um parecer do check-list: comentários gerais e/ou o
@@ -473,4 +482,67 @@ model LimiteTaxa {
   chave    String   @id
   inicio   DateTime
   contagem Int
+}
+
+enum ArquivoCategoria {
+  DOCUMENTO          // documento da solicitação (check-list)
+  DEVOLUTIVA         // apontamentos da CAPE ao RT
+  ALVARA             // alvará de execução
+  EVIDENCIA          // evidência de irregularidade
+  VINCULO            // autorização do proprietário para o vínculo do RT
+  DOCUMENTO_TECNICO  // documentos técnicos do empreendimento
+  PLANTA             // planta do loteamento
+  RECUPERADO         // arquivo anterior ao inventário, adotado sem metadados
+}
+
+// Inventário de tudo o que está no Blob. Por contrato, a documentação fica disponível
+// enquanto durar o contrato com o condomínio e por 30 dias após a rescisão: nenhuma linha
+// daqui é apagada e substituir um documento só marca a versão anterior (substituidoEm) —
+// ela continua acessível. Também é o que separa arquivo registrado de upload abandonado
+// na limpeza (manutencao.ts) e o que o backup copia.
+model Arquivo {
+  id               String           @id @default(cuid())
+  caminho          String           @unique
+  nome             String
+  tamanho          Int
+  // SHA-256 calculado no navegador: detecta reenvio de arquivo idêntico sem subir de novo.
+  hash             String?
+  categoria        ArquivoCategoria
+  documentoTipo    DocumentoTipo?
+  // SetNull: um rascunho cancelado some, o arquivo que ele tinha continua no inventário.
+  solicitacaoId    String?
+  solicitacao      Solicitacao?     @relation(fields: [solicitacaoId], references: [id], onDelete: SetNull)
+  empreendimentoId String?
+  empreendimento   Empreendimento?  @relation(fields: [empreendimentoId], references: [id], onDelete: SetNull)
+  // Dono do arquivo quando não é de uma solicitação (autorização de vínculo).
+  usuarioId        String?
+  enviadoPorId     String?
+  enviadoPor       User?            @relation("ArquivoEnviadoPor", fields: [enviadoPorId], references: [id], onDelete: SetNull)
+  createdAt        DateTime         @default(now())
+  // Deixou de ser a versão em uso (documento substituído, alvará recusado, documento
+  // técnico retirado da lista). Continua guardado e acessível.
+  substituidoEm    DateTime?
+  // Só depois de 30 dias da rescisão, por ação do admin: o blob é apagado, a linha fica
+  // como registro do que existiu.
+  excluidoEm       DateTime?
+
+  acessos AcessoArquivo[]
+
+  @@index([solicitacaoId, createdAt])
+  @@index([empreendimentoId])
+  @@index([hash])
+}
+
+// Quem abriu qual arquivo e quando — trilha de auditoria de acesso a documentos com dados
+// pessoais (LGPD). Gravado depois da resposta, sem atrasar o download.
+model AcessoArquivo {
+  id        String   @id @default(cuid())
+  arquivoId String
+  arquivo   Arquivo  @relation(fields: [arquivoId], references: [id], onDelete: Cascade)
+  usuarioId String
+  usuario   User     @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@index([arquivoId, createdAt])
+  @@index([usuarioId, createdAt])
 }

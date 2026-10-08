@@ -3,17 +3,21 @@
 import { useActionState } from "react";
 import { uploadDocumentoTecnicoAction, type DocumentoTecnicoState } from "@/lib/actions/documento-tecnico-actions";
 import { CATEGORIA_DOC_TECNICO_LABEL } from "@/lib/status";
+import { useFormularioComArquivo } from "@/components/useFormularioComArquivo";
 
 const inputStyle: React.CSSProperties = { border: "1px solid #DDD8CE", borderRadius: 4, padding: "10px 11px", fontSize: 13.5, background: "#fff" };
 const labelTextStyle: React.CSSProperties = { fontSize: 11, letterSpacing: ".13em", textTransform: "uppercase", color: "#7A7472" };
 
 export function DocumentoUploadForm({ empreendimentoId }: { empreendimentoId: string }) {
   const action = uploadDocumentoTecnicoAction.bind(null, empreendimentoId);
-  const [state, formAction, pending] = useActionState<DocumentoTecnicoState, FormData>(action, null);
+  const [state, formAction, salvando] = useActionState<DocumentoTecnicoState, FormData>(action, null);
+  const envio = useFormularioComArquivo(formAction, { destino: "tecnico", empreendimentoId });
+  const pending = salvando || envio.enviando;
+  const erro = envio.erroEnvio ?? state?.error;
 
   return (
     <form
-      action={formAction}
+      onSubmit={envio.onSubmit}
       key={state?.ok ? "enviado" : "pendente"}
       style={{ background: "#fff", border: "1px solid #DDD8CE", borderRadius: 4, padding: 18, display: "flex", flexDirection: "column", gap: 13 }}
     >
@@ -48,14 +52,14 @@ export function DocumentoUploadForm({ empreendimentoId }: { empreendimentoId: st
         <span style={labelTextStyle}>Arquivo (PDF, Word ou imagem, até 20 MB)</span>
         <input name="arquivo" type="file" required accept=".pdf,.doc,.docx,image/png,image/jpeg,image/webp" style={{ fontSize: 12.5 }} />
       </label>
-      {state?.error && <div style={{ fontSize: 12, color: "#8C2B22" }}>{state.error}</div>}
+      {erro && !pending && <div style={{ fontSize: 12, color: "#8C2B22" }}>{erro}</div>}
       {state?.ok && <div style={{ fontSize: 12, color: "#24603A" }}>Documento enviado.</div>}
       <button
         type="submit"
         disabled={pending}
         style={{ border: "1px solid #E01B22", background: "#E01B22", color: "#fff", borderRadius: 4, padding: "11px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
       >
-        {pending ? "Enviando…" : "Enviar documento"}
+        {envio.progresso !== null ? `Enviando… ${envio.progresso}%` : salvando ? "Conferindo…" : "Enviar documento"}
       </button>
     </form>
   );

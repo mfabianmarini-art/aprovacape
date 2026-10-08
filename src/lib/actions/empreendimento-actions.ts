@@ -2,8 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { put } from "@vercel/blob";
-import path from "node:path";
+import { del } from "@vercel/blob";
+import { receberArquivo } from "@/lib/upload-direto";
+import { fimDaGuarda } from "@/lib/contrato";
+import { marcarSubstituido, registrarArquivo } from "@/lib/arquivos";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/require-role";
@@ -154,20 +156,77 @@ export async function deleteQuadraAction(quadraId: string) {
 }
 
 export async function uploadPlantaAction(empreendimentoId: string, _prev: unknown, formData: FormData) {
-  await requireRole("ADMIN_CAPE", "CAPE_ANALISTA");
-  const file = formData.get("planta");
-  if (!(file instanceof File) || file.size === 0) return { error: "Selecione uma imagem." };
-  // Só bitmap: SVG é imagem que carrega script, e a planta é servida pela origem do app.
-  if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) return { error: "Envie a planta em PNG, JPG ou WEBP." };
-  if (file.size > 10 * 1024 * 1024) return { error: "Imagem maior que 10 MB." };
+  const session = await requireRole("ADMIN_CAPE", "CAPE_ANALISTA");
+  // A imagem já subiu direto ao Blob (reduzida a até 4096 px no navegador). Só bitmap —
+  // PNG, JPG, WEBP, conferidos pelo conteúdo: SVG carrega script, e a planta é servida
+  // pela origem do app.
+  const pathname = String(formData.get("pathname") ?? "");
+  const nomeArquivo = String(formData.get("nomeArquivo") ?? "").slice(0, 255);
+  if (!pathname) return { error: "Selecione uma imagem." };
+  const recebido = await receberArquivo(pathname, nomeArquivo, { destino: "planta", empreendimentoId });
+  if ("erro" in recebido) return { error: recebido.erro };
 
-  const ext = path.extname(file.name) || ".png";
-  const filename = `${empreendimentoId}-${Date.now()}${ext}`;
-  await put(`plantas/${filename}`, file, { access: "private", contentType: file.type });
+  const emp = await prisma.empreendimento.findUniqueOrThrow({ where: { id: empreendimentoId }, select: { plantaImageUrl: true } });
+  const anterior = emp.plantaImageUrl?.startsWith("/api/plantas/") ? `plantas/${emp.plantaImageUrl.slice("/api/plantas/".length)}` : null;
 
-  await prisma.empreendimento.update({ where: { id: empreendimentoId }, data: { plantaImageUrl: `/api/plantas/${filename}` } });
+  // A planta anterior fica guardada no inventário como versão substituída.
+  await prisma.$transaction([
+    prisma.empreendimento.update({ where: { id: empreendimentoId }, data: { plantaImageUrl: `/api/${pathname}` } }),
+    marcarSubstituido(anterior),
+    registrarArquivo({
+      caminho: pathname,
+      nome: nomeArquivo,
+      tamanho: recebido.tamanho,
+      hash: String(formData.get("hash") ?? ""),
+      categoria: "PLANTA",
+      empreendimentoId,
+      enviadoPorId: session.user.id,
+    }),
+  ]);
 
   revalidatePath("/empreendimentos");
   revalidatePath("/resumo");
   return { error: undefined, ok: true };
+}
+
+export type ContratoState = { error?: string; ok?: string } | null;
+
+// Cláusula contratual: toda a documentação fica disponível ao condomínio até 30 dias após
+// a rescisão. Registrar a rescisão não apaga nada; só marca a data a partir da qual o
+// prazo corre.
+export async function registrarRescisaoAction(empreendimentoId: string, _prev: ContratoState, formData: FormData): Promise<ContratoState> {
+  await requireRole("ADMIN_CAPE");
+  const texto = String(formData.get("data") ?? "").trim();
+  if (!texto) {
+    await prisma.empreendimento.update({ where: { id: empreendimentoId }, data: { contratoRescindidoEm: null } });
+    revalidatePath("/empreendimentos");
+    return { ok: "Rescisão removida: contrato vigente." };
+  }
+  const data = new Date(`${texto}T12:00:00-03:00`);
+  if (Number.isNaN(data.getTime())) return { error: "Data inválida." };
+  await prisma.empreendimento.update({ where: { id: empreendimentoId }, data: { contratoRescindidoEm: data } });
+  revalidatePath("/empreendimentos");
+  return { ok: "Rescisão registrada." };
+}
+
+// Só depois do prazo contratual, só pelo admin e com o nome do empreendimento digitado:
+// apaga do Blob todos os arquivos do empreendimento. As linhas do inventário ficam (com
+// excluidoEm) como registro do que existiu; os downloads passam a responder 410.
+export async function excluirArquivosAposRescisaoAction(empreendimentoId: string, _prev: ContratoState, formData: FormData): Promise<ContratoState> {
+  const session = await requireRole("ADMIN_CAPE");
+  const emp = await prisma.empreendimento.findUniqueOrThrow({ where: { id: empreendimentoId } });
+  const liberado = emp.contratoRescindidoEm && Date.now() > fimDaGuarda(emp.contratoRescindidoEm).getTime();
+  if (!liberado) return { error: "A documentação ainda está no prazo contratual de guarda." };
+  if (String(formData.get("confirmacao") ?? "").trim() !== emp.nome) return { error: "Digite o nome do empreendimento exatamente como aparece para confirmar." };
+
+  const arquivos = await prisma.arquivo.findMany({ where: { empreendimentoId, excluidoEm: null }, select: { id: true, caminho: true } });
+  for (let i = 0; i < arquivos.length; i += 100) {
+    const lote = arquivos.slice(i, i + 100);
+    await del(lote.map((a) => a.caminho));
+    await prisma.arquivo.updateMany({ where: { id: { in: lote.map((a) => a.id) } }, data: { excluidoEm: new Date() } });
+  }
+  await prisma.empreendimento.update({ where: { id: empreendimentoId }, data: { arquivosExcluidosEm: new Date() } });
+  console.log(JSON.stringify({ evento: "arquivos_excluidos_pos_rescisao", empreendimentoId, quantidade: arquivos.length, por: session.user.id }));
+  revalidatePath("/empreendimentos");
+  return { ok: `${arquivos.length} arquivo(s) excluídos.` };
 }

@@ -2,8 +2,7 @@
 
 import { useActionState, useState, useTransition } from "react";
 import { emitirParecerAction, type ParecerState } from "@/lib/actions/analise-actions";
-import { problemaAntesDeEnviar } from "@/lib/upload-destino";
-import { enviarDireto, mensagemDeFalhaNoEnvio } from "@/lib/upload-cliente";
+import { enviarDireto, mensagemDeFalhaNoEnvio, prepararEnvio } from "@/lib/upload-cliente";
 
 const labelTextStyle: React.CSSProperties = { fontSize: 10.5, letterSpacing: ".1em", textTransform: "uppercase", color: "#7A7472" };
 
@@ -40,13 +39,14 @@ export function EmitirParecerForm({
     setErroEnvio(null);
     if (arquivo instanceof File && arquivo.size > 0) {
       const destino = { destino: "devolutiva", solicitacaoId } as const;
-      const problema = problemaAntesDeEnviar(arquivo, destino);
-      if (problema) return setErroEnvio(problema);
+      const prep = await prepararEnvio(arquivo, destino);
+      if (prep.problema) return setErroEnvio(prep.problema);
       setProgresso(0);
       try {
-        const arq = await enviarDireto(arquivo, destino, setProgresso);
+        const arq = await enviarDireto(prep, destino, setProgresso);
         fd.set("pathname", arq.pathname);
         fd.set("nomeArquivo", arq.nomeArquivo);
+        fd.set("hash", arq.hash);
       } catch (err) {
         setProgresso(null);
         return setErroEnvio(mensagemDeFalhaNoEnvio(err));

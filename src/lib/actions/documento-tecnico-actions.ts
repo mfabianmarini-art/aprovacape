@@ -4,17 +4,9 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/require-role";
-import { saveUploadedFile } from "@/lib/upload";
-
-const MAX_BYTES = 20 * 1024 * 1024;
-const TIPOS_ACEITOS = new Set([
-  "application/pdf",
-  "application/msword",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  "image/png",
-  "image/jpeg",
-  "image/webp",
-]);
+import { descartarArquivo, receberArquivo } from "@/lib/upload-direto";
+import { marcarSubstituido, registrarArquivo } from "@/lib/arquivos";
+import { podeGerirDocumentosTecnicos } from "@/lib/acesso-arquivos";
 
 const uploadSchema = z.object({
   titulo: z.string().trim().min(2, "Informe um título para o documento"),
@@ -24,43 +16,53 @@ const uploadSchema = z.object({
 
 export type DocumentoTecnicoState = { error?: string; ok?: boolean } | null;
 
-// Equipe CAPE gerencia qualquer empreendimento; o síndico, só o que ele administra.
-async function podeGerirDocumentos(role: string, userId: string, empreendimentoId: string) {
-  if (role !== "SINDICO") return true;
-  const emp = await prisma.empreendimento.findUnique({ where: { id: empreendimentoId } });
-  return emp?.sindicoId === userId;
-}
-
 export async function uploadDocumentoTecnicoAction(
   empreendimentoId: string,
   _prev: DocumentoTecnicoState,
   formData: FormData,
 ): Promise<DocumentoTecnicoState> {
   const session = await requireRole("ADMIN_CAPE", "CAPE_ANALISTA", "SINDICO");
-  if (!(await podeGerirDocumentos(session.user.role, session.user.id, empreendimentoId))) {
-    return { error: "Este empreendimento não está sob sua gestão." };
+  // O arquivo já subiu direto ao Blob (até 20 MB, acima do limite de 4,5 MB de uma
+  // requisição à Vercel); qualquer recusa o apaga.
+  const pathname = String(formData.get("pathname") ?? "");
+  const nomeArquivo = String(formData.get("nomeArquivo") ?? "").slice(0, 255);
+  const recusar = async (error: string) => {
+    if (pathname) await descartarArquivo(pathname);
+    return { error };
+  };
+  if (!(await podeGerirDocumentosTecnicos(session.user, empreendimentoId))) {
+    return recusar("Este empreendimento não está sob sua gestão.");
   }
 
   const parsed = uploadSchema.safeParse(Object.fromEntries(formData.entries()));
-  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
+  if (!parsed.success) return recusar(parsed.error.issues[0]?.message ?? "Dados inválidos.");
+  if (!pathname) return { error: "Selecione um arquivo." };
 
-  const file = formData.get("arquivo");
-  if (!(file instanceof File) || file.size === 0) return { error: "Selecione um arquivo." };
-  if (!TIPOS_ACEITOS.has(file.type)) return { error: "Envie um PDF, Word (.doc/.docx) ou imagem (PNG/JPG/WEBP)." };
-  if (file.size > MAX_BYTES) return { error: "Arquivo maior que 20 MB." };
+  const recebido = await receberArquivo(pathname, nomeArquivo, { destino: "tecnico", empreendimentoId });
+  if ("erro" in recebido) return { error: recebido.erro };
+  const saved = { caminhoArquivo: pathname, nomeArquivo, tamanhoBytes: recebido.tamanho };
 
-  const saved = await saveUploadedFile(file, `tecnicos/${empreendimentoId}`);
-
-  await prisma.documentoTecnico.create({
-    data: {
+  await prisma.$transaction([
+    prisma.documentoTecnico.create({
+      data: {
+        empreendimentoId,
+        categoria: parsed.data.categoria,
+        titulo: parsed.data.titulo,
+        descricao: parsed.data.descricao || null,
+        enviadoPorId: session.user.id,
+        ...saved,
+      },
+    }),
+    registrarArquivo({
+      caminho: pathname,
+      nome: nomeArquivo,
+      tamanho: recebido.tamanho,
+      hash: String(formData.get("hash") ?? ""),
+      categoria: "DOCUMENTO_TECNICO",
       empreendimentoId,
-      categoria: parsed.data.categoria,
-      titulo: parsed.data.titulo,
-      descricao: parsed.data.descricao || null,
       enviadoPorId: session.user.id,
-      ...saved,
-    },
-  });
+    }),
+  ]);
 
   revalidatePath("/documentos");
   revalidatePath("/empreendimentos");
@@ -70,9 +72,11 @@ export async function uploadDocumentoTecnicoAction(
 export async function deleteDocumentoTecnicoAction(documentoId: string) {
   const session = await requireRole("ADMIN_CAPE", "CAPE_ANALISTA", "SINDICO");
   const doc = await prisma.documentoTecnico.findUniqueOrThrow({ where: { id: documentoId } });
-  if (!(await podeGerirDocumentos(session.user.role, session.user.id, doc.empreendimentoId))) return;
+  if (!(await podeGerirDocumentosTecnicos(session.user, doc.empreendimentoId))) return;
 
-  await prisma.documentoTecnico.delete({ where: { id: documentoId } });
+  // Sai da lista, mas o arquivo segue guardado no inventário (guarda contratual de toda a
+  // documentação até 30 dias após a rescisão).
+  await prisma.$transaction([prisma.documentoTecnico.delete({ where: { id: documentoId } }), marcarSubstituido(doc.caminhoArquivo)]);
   revalidatePath("/documentos");
   revalidatePath("/empreendimentos");
 }

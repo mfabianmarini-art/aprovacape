@@ -4,12 +4,12 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/require-role";
-import { saveUploadedFile } from "@/lib/upload";
 import { ehZip, extensaoDe } from "@/lib/upload-documento";
-import { descartarArquivo, lerArquivoEnviado } from "@/lib/upload-direto";
+import { descartarArquivo, lerArquivoEnviado, receberArquivo } from "@/lib/upload-direto";
 import { DOC_ORDER, IRREGULARIDADE_LABEL } from "@/lib/status";
 import { emitirAcessoProprietario } from "@/lib/acesso-proprietario";
 import { notificarEtapa } from "@/lib/notificacoes";
+import { marcarSubstituido, registrarArquivo } from "@/lib/arquivos";
 import type { DocumentoTipo } from "@/generated/prisma/enums";
 
 async function loadSolicitacao(solicitacaoId: string) {
@@ -203,6 +203,20 @@ export async function emitirParecerAction(solicitacaoId: string, _prev: ParecerS
               autorId: session.user.id,
             },
           }),
+          ...(salvo
+            ? [
+                registrarArquivo({
+                  caminho: salvo.caminhoArquivo,
+                  nome: salvo.nomeArquivo,
+                  tamanho: salvo.tamanhoBytes,
+                  hash: String(formData.get("hash") ?? ""),
+                  categoria: "DEVOLUTIVA",
+                  solicitacaoId,
+                  empreendimentoId: sol.lote.empreendimentoId,
+                  enviadoPorId: session.user.id,
+                }),
+              ]
+            : []),
         ]
       : [];
   // O comentário entra também no histórico, que é o que o proprietário acompanha.
@@ -300,6 +314,8 @@ export async function recusarAlvaraAction(solicitacaoId: string, formData: FormD
         alvaraRecusa: motivo,
       },
     }),
+    // O alvará recusado sai da solicitação, mas o arquivo segue guardado no inventário.
+    marcarSubstituido(sol.alvaraCaminho),
     prisma.historicoEvento.create({
       data: {
         solicitacaoId,
@@ -315,9 +331,7 @@ export async function recusarAlvaraAction(solicitacaoId: string, formData: FormD
   revalidateAll(sol.protocolo);
 }
 
-const MAX_EVIDENCIA_BYTES = 5 * 1024 * 1024;
 const MAX_EVIDENCIAS = 8;
-const TIPOS_EVIDENCIA = new Set(["image/png", "image/jpeg", "image/webp", "application/pdf"]);
 
 const irregularidadeSchema = z.object({
   tipo: z.enum([
@@ -342,19 +356,34 @@ export async function registrarIrregularidadeAction(
   formData: FormData,
 ): Promise<IrregularidadeState> {
   const session = await requireRole("ADMIN_CAPE", "CAPE_ANALISTA");
-  const sol = await prisma.solicitacao.findUniqueOrThrow({ where: { id: solicitacaoId } });
+  const sol = await prisma.solicitacao.findUniqueOrThrow({ where: { id: solicitacaoId }, include: { lote: { select: { empreendimentoId: true } } } });
+
+  // As evidências já subiram direto ao Blob (fotos reduzidas no navegador); aqui cada uma
+  // é conferida. Qualquer recusa descarta todas — o registro nasce com as evidências
+  // juntas ou não nasce.
+  const caminhos = formData.getAll("pathname").map(String);
+  const nomes = formData.getAll("nomeArquivo").map((n) => String(n).slice(0, 255));
+  const hashes = formData.getAll("hash").map(String);
+  const descartarTodas = () => Promise.all(caminhos.map(descartarArquivo));
 
   const parsed = irregularidadeSchema.safeParse(Object.fromEntries(formData.entries()));
-  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
-
-  const arquivos = formData.getAll("evidencias").filter((f): f is File => f instanceof File && f.size > 0);
-  if (arquivos.length > MAX_EVIDENCIAS) return { error: `Anexe no máximo ${MAX_EVIDENCIAS} evidências.` };
-  for (const f of arquivos) {
-    if (!TIPOS_EVIDENCIA.has(f.type)) return { error: "Evidências devem ser imagens (PNG/JPG/WEBP) ou PDF." };
-    if (f.size > MAX_EVIDENCIA_BYTES) return { error: `"${f.name}" passa de 5 MB.` };
+  if (!parsed.success) {
+    await descartarTodas();
+    return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
+  }
+  if (caminhos.length > MAX_EVIDENCIAS || caminhos.length !== nomes.length) {
+    await descartarTodas();
+    return { error: `Anexe no máximo ${MAX_EVIDENCIAS} evidências.` };
   }
 
-  const salvos = await Promise.all(arquivos.map((f) => saveUploadedFile(f, `irregularidades/${solicitacaoId}`)));
+  const destino = { destino: "evidencia", solicitacaoId } as const;
+  const recebidas = await Promise.all(caminhos.map((c, i) => receberArquivo(c, nomes[i], destino)));
+  const recusa = recebidas.find((r): r is { erro: string } => "erro" in r);
+  if (recusa) {
+    await descartarTodas();
+    return { error: recusa.erro };
+  }
+  const salvos = caminhos.map((c, i) => ({ caminhoArquivo: c, nomeArquivo: nomes[i], tamanhoBytes: (recebidas[i] as { tamanho: number }).tamanho }));
 
   await prisma.$transaction([
     prisma.irregularidade.create({
@@ -366,6 +395,18 @@ export async function registrarIrregularidadeAction(
         evidencias: { create: salvos },
       },
     }),
+    ...salvos.map((e, i) =>
+      registrarArquivo({
+        caminho: e.caminhoArquivo,
+        nome: e.nomeArquivo,
+        tamanho: e.tamanhoBytes,
+        hash: hashes[i],
+        categoria: "EVIDENCIA",
+        solicitacaoId,
+        empreendimentoId: sol.lote.empreendimentoId,
+        enviadoPorId: session.user.id,
+      }),
+    ),
     prisma.historicoEvento.create({
       data: {
         solicitacaoId,

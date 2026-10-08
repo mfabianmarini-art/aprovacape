@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useState, useTransition } from "react";
+import { enviarVarios, mensagemDeFalhaNoEnvio, ProblemaNoArquivo } from "@/lib/upload-cliente";
 import { registrarIrregularidadeAction, type IrregularidadeState } from "@/lib/actions/analise-actions";
 import { IRREGULARIDADE_LABEL } from "@/lib/status";
 
@@ -33,10 +34,42 @@ export function IrregularidadeForm({
     null,
   );
   const [arquivos, setArquivos] = useState<string[]>([]);
+  const [progresso, setProgresso] = useState<number | null>(null);
+  const [erroEnvio, setErroEnvio] = useState<string | null>(null);
+  const [, startTransition] = useTransition();
+  const ocupado = pending || progresso !== null;
+
+  // As evidências sobem direto ao Blob (fotos reduzidas no navegador) antes da action, que
+  // recebe só os caminhos — o corpo de uma requisição à Vercel não passa de 4,5 MB.
+  async function registrar(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (ocupado) return;
+    const fd = new FormData(e.currentTarget);
+    const files = fd.getAll("evidencias").filter((f): f is File => f instanceof File && f.size > 0);
+    fd.delete("evidencias");
+    setErroEnvio(null);
+    if (files.length > 8) return setErroEnvio("Anexe no máximo 8 evidências.");
+    if (files.length > 0) {
+      setProgresso(0);
+      try {
+        const enviados = await enviarVarios(files, { destino: "evidencia", solicitacaoId }, setProgresso);
+        for (const a of enviados) {
+          fd.append("pathname", a.pathname);
+          fd.append("nomeArquivo", a.nomeArquivo);
+          fd.append("hash", a.hash);
+        }
+      } catch (err) {
+        setProgresso(null);
+        return setErroEnvio(err instanceof ProblemaNoArquivo ? err.message : mensagemDeFalhaNoEnvio(err));
+      }
+      setProgresso(null);
+    }
+    startTransition(() => formAction(fd));
+  }
 
   return (
     <form
-      action={formAction}
+      onSubmit={registrar}
       // Remontar após o sucesso limpa os campos sem mexer em estado durante a render.
       key={state?.ok ? "registrada" : "nova"}
       style={{ display: "flex", flexDirection: "column", gap: 11, border: "1px solid #E8C9C4", background: "#FDF6F5", borderRadius: 4, padding: 15 }}
@@ -75,7 +108,7 @@ export function IrregularidadeForm({
       </label>
 
       <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-        <span style={labelStyle}>Evidências (fotos ou PDF, até 8 arquivos de 5 MB)</span>
+        <span style={labelStyle}>Evidências (fotos ou PDF, até 8 arquivos; fotos são reduzidas antes do envio)</span>
         <input
           type="file"
           name="evidencias"
@@ -91,15 +124,15 @@ export function IrregularidadeForm({
         )}
       </label>
 
-      {state?.error && <div style={{ fontSize: 12, color: "#8C2B22" }}>{state.error}</div>}
+      {(erroEnvio ?? state?.error) && !ocupado && <div style={{ fontSize: 12, color: "#8C2B22" }}>{erroEnvio ?? state?.error}</div>}
 
       <div style={{ display: "flex", gap: 8 }}>
         <button
           type="submit"
-          disabled={pending}
-          style={{ border: "1px solid #8C2B22", background: "#8C2B22", color: "#fff", borderRadius: 4, padding: "9px 15px", fontSize: 12.5, fontWeight: 600, cursor: pending ? "wait" : "pointer" }}
+          disabled={ocupado}
+          style={{ border: "1px solid #8C2B22", background: "#8C2B22", color: "#fff", borderRadius: 4, padding: "9px 15px", fontSize: 12.5, fontWeight: 600, cursor: ocupado ? "wait" : "pointer" }}
         >
-          {pending ? "Registrando…" : "Registrar e notificar"}
+          {progresso !== null ? `Enviando evidências… ${progresso}%` : pending ? "Registrando…" : "Registrar e notificar"}
         </button>
         <button
           type="button"
