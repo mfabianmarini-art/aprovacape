@@ -25,7 +25,7 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
       const user = await prisma.user.findFirst({ where: ondeIdentificador(identifier) });
       if (user?.bloqueadoAte && user.bloqueadoAte > new Date()) {
         const minutos = Math.max(1, Math.ceil((user.bloqueadoAte.getTime() - Date.now()) / 60000));
-        return { error: `Muitas tentativas seguidas. Acesso bloqueado por mais ${minutos} minuto(s) por segurança.` };
+        return { error: `Muitas tentativas seguidas. Acesso bloqueado por mais ${minutos} minuto(s) por segurança — ou use “Esqueci minha senha”.` };
       }
       return { error: "E-mail/CPF ou senha inválidos." };
     }

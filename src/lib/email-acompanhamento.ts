@@ -17,7 +17,7 @@ export function emailAcesso(d: DadosAcesso) {
   const proprietario = d.destinatario === "proprietario";
   return montarEmail({
     assunto: `CAPE Aprova — solicitação ${d.protocolo} protocolada`,
-    protocolo: d.protocolo,
+    cabecalho: `Solicitação ${d.protocolo}`,
     titulo: "Solicitação protocolada",
     cor: "#24603A",
     paragrafos: [

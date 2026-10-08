@@ -207,7 +207,7 @@ async function enviarNotificacao(solicitacaoId: string, evento: EventoEtapa, bas
   const m = await mensagemDo(evento, solicitacaoId, sol.responsavelTecnicoNome);
   const comum = {
     assunto: `CAPE Aprova — ${sol.protocolo}: ${m.assunto}`,
-    protocolo: sol.protocolo,
+    cabecalho: `Solicitação ${sol.protocolo}`,
     titulo: m.titulo,
     cor: m.cor,
     dados: [["Lote", `${sol.lote.empreendimento.nome} · ${sol.lote.quadra.nome} L${sol.lote.numero}`]] as [string, string][],

@@ -12,6 +12,7 @@ const credentialsSchema = z.object({
 
 const MAX_TENTATIVAS_LOGIN = 5;
 const BLOQUEIO_LOGIN_MS = 15 * 60 * 1000;
+const CONFERE_SESSAO_MS = 60 * 1000;
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   session: { strategy: "jwt" },
@@ -61,10 +62,21 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
-    jwt: ({ token, user }) => {
+    jwt: async ({ token, user }) => {
       if (user) {
         token.uid = user.id;
         token.role = user.role;
+        token.loginEm = Date.now();
+        token.conferidoEm = Date.now();
+        return token;
+      }
+      // Sessão é JWT, sem registro no banco: para a redefinição de senha derrubar quem
+      // estava logado, de tempos em tempos confere se a senha mudou depois do login (ou se
+      // a conta deixou de existir). O intervalo poupa uma consulta por requisição.
+      if (token.uid && Date.now() - (token.conferidoEm ?? 0) > CONFERE_SESSAO_MS) {
+        const conta = await prisma.user.findUnique({ where: { id: token.uid }, select: { senhaAlteradaEm: true } });
+        if (!conta || (conta.senhaAlteradaEm && conta.senhaAlteradaEm.getTime() > (token.loginEm ?? 0))) return null;
+        token.conferidoEm = Date.now();
       }
       return token;
     },

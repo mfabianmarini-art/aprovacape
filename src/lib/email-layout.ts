@@ -5,7 +5,7 @@ import { escaparHtml as e } from "./email";
 // é o que os clientes de e-mail entendem; a versão em texto vai junto.
 export type ConteudoEmail = {
   assunto: string;
-  protocolo: string;
+  cabecalho: string; // "Solicitação SOL-2026-041", "Sua conta"
   titulo: string; // "Projeto aprovado"
   cor: string; // faixa do título — mesma paleta das etapas
   paragrafos: string[];
@@ -21,7 +21,7 @@ const RODAPE_PADRAO = "Este é um e-mail automático da CAPE Aprova. Não é pre
 
 export function montarEmail(c: ConteudoEmail) {
   const texto = [
-    `Solicitação ${c.protocolo} — ${c.titulo}`,
+    `${c.cabecalho} — ${c.titulo}`,
     "",
     ...c.paragrafos.flatMap((p) => [p, ""]),
     ...(c.dados ?? []).map(([r, v]) => `${r}: ${v}`),
@@ -51,7 +51,7 @@ ${c.detalhes.map((d) => `<li style="margin:0 0 6px;white-space:pre-line">${e(d)}
   const html = `<!doctype html><html><body style="margin:0;background:#f4f2ed;font-family:Arial,Helvetica,sans-serif;color:#231F20">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f2ed;padding:24px 12px"><tr><td align="center">
 <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#ffffff;border:1px solid #DDD8CE;border-top:4px solid #E01B22">
-<tr><td style="padding:24px 26px 6px;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#7A7472">CAPE Aprova · Solicitação ${e(c.protocolo)}</td></tr>
+<tr><td style="padding:24px 26px 6px;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#7A7472">CAPE Aprova · ${e(c.cabecalho)}</td></tr>
 <tr><td style="padding:4px 26px 0"><span style="display:inline-block;border-left:4px solid ${e(c.cor)};padding-left:10px;font-size:20px;font-weight:bold">${e(c.titulo)}</span></td></tr>
 ${c.paragrafos.map((p) => `<tr><td style="padding:12px 26px 0;font-size:14px;line-height:1.55;color:#3B4653">${e(p)}</td></tr>`).join("\n")}
 ${dados}

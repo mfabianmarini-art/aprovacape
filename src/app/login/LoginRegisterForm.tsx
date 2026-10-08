@@ -25,7 +25,7 @@ const labelTextStyle: React.CSSProperties = {
   color: "#7A7472",
 };
 
-export function LoginRegisterForm() {
+export function LoginRegisterForm({ senhaRedefinida = false }: { senhaRedefinida?: boolean }) {
   const [aba, setAba] = useState<"cadastro" | "login">("login");
   const [aceite, setAceite] = useState(false);
 
@@ -140,6 +140,11 @@ export function LoginRegisterForm() {
 
         {aba === "login" && (
           <form action={loginFormAction} style={{ padding: 24, display: "flex", flexDirection: "column", gap: 14 }}>
+            {senhaRedefinida && (
+              <div role="status" style={{ background: "#F6FAF7", border: "1px solid #C6DAC9", borderRadius: 4, padding: "10px 12px", fontSize: 12.5, color: "#24603A", lineHeight: 1.5 }}>
+                Senha redefinida. Entre com a nova senha.
+              </div>
+            )}
             <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               <span style={labelTextStyle}>E-mail ou CPF</span>
               <input name="identifier" required style={inputStyle} />
@@ -168,7 +173,9 @@ export function LoginRegisterForm() {
               {loginPending ? "Entrando…" : "Entrar"}
             </button>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, fontSize: 12.5 }}>
-              <span style={{ color: "#7A7472" }}>Esqueci minha senha</span>
+              <Link href="/esqueci-senha" style={{ color: "#4A5563", fontWeight: 600 }}>
+                Esqueci minha senha
+              </Link>
               <button
                 type="button"
                 onClick={() => setAba("cadastro")}

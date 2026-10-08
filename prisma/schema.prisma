@@ -123,6 +123,9 @@ model User {
   // Freio de força bruta: 5 falhas consecutivas bloqueiam o login por 15 minutos.
   tentativasLogin Int       @default(0)
   bloqueadoAte    DateTime?
+  // Última troca de senha. Sessões (JWT) abertas antes disto deixam de valer — é assim que
+  // a redefinição derruba quem estava logado com a senha antiga.
+  senhaAlteradaEm DateTime?
 
   // Habilitação profissional (RT e equipe técnica da CAPE): conselho, número e UF emissora.
   conselho       Conselho?
@@ -161,6 +164,7 @@ model User {
   documentosTecnicosEnviados DocumentoTecnico[] @relation("DocumentoTecnicoEnviadoPor")
   lotesTitularAtualizados    Lote[]             @relation("LoteTitularAtualizadoPor")
   devolutivasTecnicas        DevolutivaTecnica[] @relation("DevolutivaTecnicaAutor")
+  redefinicoesSenha          RedefinicaoSenha[]
 
   @@index([role])
 }
@@ -434,4 +438,18 @@ model DocumentoTecnico {
   enviadoPorId     String
   enviadoPor       User                      @relation("DocumentoTecnicoEnviadoPor", fields: [enviadoPorId], references: [id])
   createdAt        DateTime                  @default(now())
+}
+
+// Pedido de "esqueci minha senha". Do token só fica o hash (SHA-256): quem lê o banco não
+// consegue usar um link pendente. Vale 30 minutos e uma vez; pedido novo apaga os anteriores.
+model RedefinicaoSenha {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiraEm  DateTime
+  usadoEm   DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, createdAt])
 }

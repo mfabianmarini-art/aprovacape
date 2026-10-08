@@ -18,5 +18,8 @@ declare module "@auth/core/jwt" {
   interface JWT {
     role?: Role;
     uid?: string;
+    // Instante do login e da última conferência da senha (ms) — ver callback jwt em auth.ts.
+    loginEm?: number;
+    conferidoEm?: number;
   }
 }
