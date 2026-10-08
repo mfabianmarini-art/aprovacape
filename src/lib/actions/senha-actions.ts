@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { digitosCpf } from "@/lib/cpf";
 import { enviarEmail } from "@/lib/email";
 import { urlConfiavelDoApp } from "@/lib/url-app";
+import { ipAtual, mensagemLimite, registrarTentativa } from "@/lib/limite-taxa";
 import {
   MAX_PEDIDOS_POR_HORA,
   VALIDADE_TOKEN_MS,
@@ -25,6 +26,8 @@ export type PedidoRedefinicaoState = { error?: string; enviado?: boolean } | nul
 export async function pedirRedefinicaoSenhaAction(_prev: PedidoRedefinicaoState, formData: FormData): Promise<PedidoRedefinicaoState> {
   const identificador = String(formData.get("identificador") ?? "").trim().slice(0, 254);
   if (!identificador) return { error: "Informe o e-mail ou o CPF da sua conta." };
+  // Por origem, além do limite por conta: freia quem dispara pedidos para muitas contas.
+  if (await registrarTentativa("redefinicao", await ipAtual())) return { error: mensagemLimite("redefinicao") };
 
   after(async () => {
     try {

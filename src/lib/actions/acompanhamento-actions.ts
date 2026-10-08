@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { cookieAcompanhamento, senhaConfere, tokenAcompanhamento } from "@/lib/acompanhamento";
+import { ipAtual, mensagemLimite, registrarTentativa } from "@/lib/limite-taxa";
 
 // Mesmo freio do login: 5 erros seguidos travam este protocolo por 15 minutos.
 const MAX_TENTATIVAS = 5;
@@ -17,6 +18,8 @@ export async function entrarAcompanhamentoAction(_prev: AcompanharState, formDat
   const protocolo = String(formData.get("protocolo") ?? "").trim().toUpperCase();
   const senha = String(formData.get("senha") ?? "");
   if (!protocolo || !senha.trim()) return { error: "Informe o protocolo e a senha." };
+  // O bloqueio por protocolo não freia quem varre protocolos diferentes; este freia.
+  if (await registrarTentativa("acompanhar", await ipAtual())) return { error: mensagemLimite("acompanhar") };
 
   const sol = await prisma.solicitacao.findUnique({
     where: { protocolo },

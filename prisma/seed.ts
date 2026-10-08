@@ -7,7 +7,21 @@ import type { Conselho, DocumentoTipo, SolicitacaoStatus, SolicitacaoTipo } from
 
 const DEMO_PASSWORD = "cape2026!";
 
+// O seed começa apagando TODAS as tabelas e cria contas com senha conhecida (está neste
+// repositório). Rodar contra a produção por engano apagaria os dados reais, então só roda
+// em banco local, a menos que alguém confirme de propósito.
+function bancoPermitido() {
+  const url = process.env.DATABASE_URL ?? "";
+  const local = /@(localhost|127\.0\.0\.1|host\.docker\.internal)[:/]/.test(url);
+  return local || process.env.SEED_CONFIRMO_APAGAR_TUDO === "sim";
+}
+
 async function main() {
+  if (!bancoPermitido()) {
+    console.error("Seed recusado: DATABASE_URL não é um banco local. Ele apaga todos os dados.");
+    console.error("Se é mesmo isso que você quer, rode com SEED_CONFIRMO_APAGAR_TUDO=sim.");
+    process.exit(1);
+  }
   await prisma.historicoEvento.deleteMany();
   await prisma.checklistResultado.deleteMany();
   await prisma.solicitacaoDocumento.deleteMany();

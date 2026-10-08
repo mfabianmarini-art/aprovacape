@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@/generated/prisma/client";
 import { requireRole } from "@/lib/require-role";
 import { validarDocumentoEnviado } from "@/lib/upload-documento";
 import { descartarArquivo, lerArquivoEnviado } from "@/lib/upload-direto";
@@ -129,42 +130,55 @@ export async function enviarSolicitacaoAction(_prev: unknown, formData: FormData
   const proprietarioEmail = sol.proprietarioEmail ?? parsed.data.proprietarioEmail;
   if (!proprietarioEmail) return { error: "Informe o e-mail do proprietário." };
 
+  // "Maior número + 1": dois envios no mesmo instante calculam o mesmo número, e o índice
+  // único de protocolo recusa o segundo. Em vez de erro, recalcula — o número do outro já
+  // está gravado — e tenta de novo.
   const ano = new Date().getFullYear();
-  const existentes = await prisma.solicitacao.findMany({
-    where: { protocolo: { startsWith: `SOL-${ano}-` } },
-    select: { protocolo: true },
-  });
-  const maiorNumero = existentes.reduce((max, s) => {
-    const n = Number(s.protocolo.split("-").at(-1));
-    return Number.isFinite(n) && n > max ? n : max;
-  }, 0);
-  const protocolo = `SOL-${ano}-${String(maiorNumero + 1).padStart(3, "0")}`;
-
-  await prisma.$transaction([
-    prisma.solicitacao.update({
-      where: { id: sol.id },
-      data: {
-        protocolo,
-        status: "ENVIADA",
-        prazoDias: sol.lote.empreendimento.prazoDias,
-        responsavelTecnicoNome: parsed.data.rtNome,
-        responsavelTecnicoRegistro: parsed.data.rtRegistro,
-        responsavelTecnicoEmail: parsed.data.rtEmail,
-        rtExecucaoNome: parsed.data.rtExecNome,
-        rtExecucaoRegistro: parsed.data.rtExecRegistro,
-        rtExecucaoEmail: parsed.data.rtExecEmail,
-      },
-    }),
-    prisma.historicoEvento.create({
-      data: {
-        solicitacaoId: sol.id,
-        tipo: "SOLICITACAO_ENVIADA",
-        texto: `Solicitação protocolada por ${session.user.name}.`,
-        cor: "#A89F9F",
-        autorId: session.user.id,
-      },
-    }),
-  ]);
+  let protocolo = "";
+  for (let tentativa = 0; ; tentativa++) {
+    const existentes = await prisma.solicitacao.findMany({
+      where: { protocolo: { startsWith: `SOL-${ano}-` } },
+      select: { protocolo: true },
+    });
+    const maiorNumero = existentes.reduce((max, s) => {
+      const n = Number(s.protocolo.split("-").at(-1));
+      return Number.isFinite(n) && n > max ? n : max;
+    }, 0);
+    protocolo = `SOL-${ano}-${String(maiorNumero + 1).padStart(3, "0")}`;
+    try {
+      await prisma.$transaction([
+        // Só sai de RASCUNHO uma vez: um duplo clique não protocola o mesmo pedido duas vezes.
+        prisma.solicitacao.update({
+          where: { id: sol.id, status: "RASCUNHO" },
+          data: {
+            protocolo,
+            status: "ENVIADA",
+            prazoDias: sol.lote.empreendimento.prazoDias,
+            responsavelTecnicoNome: parsed.data.rtNome,
+            responsavelTecnicoRegistro: parsed.data.rtRegistro,
+            responsavelTecnicoEmail: parsed.data.rtEmail,
+            rtExecucaoNome: parsed.data.rtExecNome,
+            rtExecucaoRegistro: parsed.data.rtExecRegistro,
+            rtExecucaoEmail: parsed.data.rtExecEmail,
+          },
+        }),
+        prisma.historicoEvento.create({
+          data: {
+            solicitacaoId: sol.id,
+            tipo: "SOLICITACAO_ENVIADA",
+            texto: `Solicitação protocolada por ${session.user.name}.`,
+            cor: "#A89F9F",
+            autorId: session.user.id,
+          },
+        }),
+      ]);
+      break;
+    } catch (e) {
+      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2025") return { error: "Esta solicitação já foi enviada." };
+      const colisao = e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002";
+      if (!colisao || tentativa >= 4) throw e;
+    }
+  }
 
   // Depois do protocolo gravado: e-mail que falha não pode desfazer o envio.
   await emitirAcessoProprietario(sol.id, proprietarioEmail);

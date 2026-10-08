@@ -9,6 +9,7 @@ import { homeForRole } from "@/lib/nav";
 import { UF_REGEX } from "@/lib/registro-profissional";
 import { cpfValido, digitosCpf } from "@/lib/cpf";
 import { ondeIdentificador } from "@/lib/identificador-login";
+import { ipAtual, limiteExcedido, mensagemLimite, registrarTentativa } from "@/lib/limite-taxa";
 
 export type LoginState = { error?: string; redirectTo?: string } | null;
 
@@ -20,6 +21,7 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
     await signIn("credentials", { identifier, password, redirect: false });
   } catch (error) {
     if (error instanceof AuthError) {
+      if (await limiteExcedido("login", await ipAtual())) return { error: mensagemLimite("login") };
       // O authorize() recusa sem dizer por quê; sem isto, uma conta bloqueada receberia
       // "senha inválida" e a pessoa seguiria tentando contra o bloqueio.
       const user = await prisma.user.findFirst({ where: ondeIdentificador(identifier) });
@@ -58,9 +60,10 @@ const registerSchema = z
     path: ["registroUf"],
   });
 
-export type RegisterState = { error?: string; ok?: boolean; identifier?: string; password?: string } | null;
+export type RegisterState = { error?: string; ok?: boolean; identifier?: string } | null;
 
 export async function registerAction(_prev: RegisterState, formData: FormData): Promise<RegisterState> {
+  if (await registrarTentativa("cadastro", await ipAtual())) return { error: mensagemLimite("cadastro") };
   const raw = Object.fromEntries(formData.entries());
   const parsed = registerSchema.safeParse(raw);
   if (!parsed.success) {
@@ -74,7 +77,7 @@ export async function registerAction(_prev: RegisterState, formData: FormData): 
   }
 
 
-  const passwordHash = await bcrypt.hash(d.senha, 10);
+  const passwordHash = await bcrypt.hash(d.senha, 12);
   await prisma.user.create({
     data: {
       name: d.nome,
@@ -90,13 +93,10 @@ export async function registerAction(_prev: RegisterState, formData: FormData): 
     },
   });
 
-  return { ok: true, identifier: d.email, password: d.senha };
-}
-
-export async function loginAndRedirectAction(identifier: string, password: string) {
-  await signIn("credentials", { identifier, password, redirect: false });
-  const user = await prisma.user.findFirst({ where: ondeIdentificador(identifier) });
-  return user ? homeForRole(user.role) : "/login";
+  // Entra já aqui, no servidor. Antes a senha voltava ao navegador para um segundo
+  // pedido de login — senha em trânsito à toa e uma action pública que aceitava senha.
+  await signIn("credentials", { identifier: d.email, password: d.senha, redirect: false }).catch(() => null);
+  return { ok: true, identifier: d.email };
 }
 
 export async function signOutAction() {

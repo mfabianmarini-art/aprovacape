@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { ondeIdentificador } from "@/lib/identificador-login";
+import { ipDaRequisicao, registrarTentativa } from "@/lib/limite-taxa";
 
 const credentialsSchema = z.object({
   identifier: z.string().min(1),
@@ -15,7 +16,9 @@ const BLOQUEIO_LOGIN_MS = 15 * 60 * 1000;
 const CONFERE_SESSAO_MS = 60 * 1000;
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  session: { strategy: "jwt" },
+  // 7 dias, renovados a cada dia de uso (o padrão era 30). Sessão longa num sistema com
+  // dados pessoais de terceiros é risco sem ganho: quem usa todo dia nem percebe.
+  session: { strategy: "jwt", maxAge: 7 * 24 * 60 * 60, updateAge: 24 * 60 * 60 },
   pages: { signIn: "/login" },
   // Trusts the incoming Host header — safe here because this app is meant to run
   // behind a single reverse proxy/host you control. If deploying publicly behind
@@ -27,7 +30,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         identifier: { label: "E-mail ou CPF" },
         password: { label: "Senha", type: "password" },
       },
-      authorize: async (raw) => {
+      authorize: async (raw, request) => {
+        // Aqui, e não na action de login: o endpoint de credenciais do Auth.js também é
+        // chamável direto, e o limite precisa valer para qualquer caminho.
+        if (await registrarTentativa("login", ipDaRequisicao(request.headers))) return null;
+
         const parsed = credentialsSchema.safeParse(raw);
         if (!parsed.success) return null;
         const { identifier, password } = parsed.data;
@@ -70,12 +77,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.conferidoEm = Date.now();
         return token;
       }
-      // Sessão é JWT, sem registro no banco: para a redefinição de senha derrubar quem
-      // estava logado, de tempos em tempos confere se a senha mudou depois do login (ou se
-      // a conta deixou de existir). O intervalo poupa uma consulta por requisição.
+      // Sessão é JWT, sem registro no banco: de tempos em tempos confere a conta — senha
+      // trocada depois do login ou conta removida derrubam a sessão, e o papel é relido,
+      // para rebaixar um usuário valer em até um minuto, não só no próximo login. O
+      // intervalo poupa uma consulta por requisição.
       if (token.uid && Date.now() - (token.conferidoEm ?? 0) > CONFERE_SESSAO_MS) {
-        const conta = await prisma.user.findUnique({ where: { id: token.uid }, select: { senhaAlteradaEm: true } });
+        const conta = await prisma.user.findUnique({ where: { id: token.uid }, select: { senhaAlteradaEm: true, role: true } });
         if (!conta || (conta.senhaAlteradaEm && conta.senhaAlteradaEm.getTime() > (token.loginEm ?? 0))) return null;
+        token.role = conta.role;
         token.conferidoEm = Date.now();
       }
       return token;

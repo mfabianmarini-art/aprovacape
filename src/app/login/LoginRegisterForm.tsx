@@ -6,7 +6,6 @@ import Link from "next/link";
 import {
   loginAction,
   registerAction,
-  loginAndRedirectAction,
   type LoginState,
   type RegisterState,
 } from "@/lib/actions/auth-actions";
@@ -43,11 +42,9 @@ export function LoginRegisterForm({ senhaRedefinida = false }: { senhaRedefinida
 
   function handleEntrar() {
     if (!registerState?.ok) return;
-    startEntering(async () => {
-      await loginAndRedirectAction(registerState.identifier!, registerState.password!);
-      // Conta recém-criada não tem lote: o próximo passo é pedir o vínculo, não a home.
-      router.push("/vinculo");
-    });
+    // A conta já entrou no cadastro (registerAction). Recém-criada não tem lote: o
+    // próximo passo é pedir o vínculo, não a home.
+    startEntering(() => router.push("/vinculo"));
   }
 
   const pronto = aceite;

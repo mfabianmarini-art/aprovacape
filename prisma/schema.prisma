@@ -189,6 +189,8 @@ model Empreendimento {
   lotes      Lote[]
   categorias ChecklistCategoria[]
   documentosTecnicos DocumentoTecnico[]
+
+  @@index([sindicoId])
 }
 
 model Quadra {
@@ -236,6 +238,8 @@ model Lote {
   solicitacoes      Solicitacao[]
 
   @@unique([empreendimentoId, quadraId, numero])
+  @@index([rtId])
+  @@index([proprietarioId])
 }
 
 model ChecklistCategoria {
@@ -322,6 +326,10 @@ model Solicitacao {
   historico       HistoricoEvento[]
   irregularidades Irregularidade[]
   devolutivas     DevolutivaTecnica[]
+
+  // Consultas mais frequentes: solicitações de um lote, e filas/contagens por status.
+  @@index([loteId])
+  @@index([status])
 }
 
 // O que a CAPE manda ao RT junto com um parecer do check-list: comentários gerais e/ou o
@@ -386,6 +394,8 @@ model HistoricoEvento {
   createdAt     DateTime    @default(now())
 
   @@index([tipo, createdAt])
+  // A linha do tempo de cada solicitação é lida a cada abertura da análise e do card.
+  @@index([solicitacaoId, createdAt])
 }
 
 // Irregularidade constatada na obra pela CAPE. Fica visível ao síndico, ao proprietário
@@ -404,6 +414,7 @@ model Irregularidade {
   evidencias IrregularidadeEvidencia[]
 
   @@index([createdAt])
+  @@index([solicitacaoId])
 }
 
 model IrregularidadeEvidencia {
@@ -413,6 +424,8 @@ model IrregularidadeEvidencia {
   nomeArquivo      String
   caminhoArquivo   String
   tamanhoBytes     Int
+
+  @@index([irregularidadeId])
 }
 
 enum DocumentoTecnicoCategoria {
@@ -452,4 +465,12 @@ model RedefinicaoSenha {
   createdAt DateTime  @default(now())
 
   @@index([userId, createdAt])
+}
+
+// Contador de tentativas por origem (limite-taxa.ts). A chave é "ação:HMAC(ip)" — o IP em
+// si não é gravado. Linhas vencidas são apagadas pela rotina diária de manutenção.
+model LimiteTaxa {
+  chave    String   @id
+  inicio   DateTime
+  contagem Int
 }
