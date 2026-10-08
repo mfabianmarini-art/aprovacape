@@ -12,7 +12,7 @@ type Rascunho = {
 const DICAS: Record<DocumentoTipo, string> = {
   PROJETO_ARQUITETONICO: "Plantas, cortes, elevações e implantação no lote, em PDF",
   PROJETO_ARQUITETONICO_DWG:
-    "O mesmo projeto em DWG salvo em AutoCAD 2010/LT2010. Mais de um arquivo DWG: envie todos juntos numa pasta compactada (.zip)",
+    "O mesmo projeto em DWG, em qualquer versão do AutoCAD. Mais de um arquivo DWG: envie todos juntos numa pasta compactada (.zip)",
   ART_RRT_PROJETO: "Anotação de responsabilidade técnica quitada, do autor do projeto",
   ART_RRT_EXECUCAO: "Anotação de responsabilidade técnica quitada, de quem executa a obra",
   MEMORIAL_DESCRITIVO: "Materiais, acabamentos e sistema construtivo",
