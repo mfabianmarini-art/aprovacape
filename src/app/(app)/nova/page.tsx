@@ -1,6 +1,6 @@
 import { requireRole } from "@/lib/require-role";
 import { getUserDisplay } from "@/lib/user-display";
-import { getMeusLotes, getMeusRascunhos, getRascunho } from "@/lib/queries/nova";
+import { emailProprietarioDeclarado, getMeusLotes, getMeusRascunhos, getRascunho } from "@/lib/queries/nova";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { ScreenBody } from "@/components/ScreenBody";
 import { Step1Form } from "./Step1Form";
@@ -76,7 +76,13 @@ export default async function NovaPage({
 
             {passo === 1 && <Step1Form lotes={lotes} />}
             {passo === 2 && rascunhoValido && <Step2Uploads rascunho={rascunhoValido} />}
-            {passo === 3 && rascunhoValido && <Step3Send rascunho={rascunhoValido} nomeRT={session.user.name} />}
+            {passo === 3 && rascunhoValido && (
+              <Step3Send
+                rascunho={rascunhoValido}
+                nomeRT={session.user.name}
+                emailProprietario={await emailProprietarioDeclarado(session.user.id, rascunhoValido.loteId)}
+              />
+            )}
           </section>
 
           <aside style={{ display: "flex", flexDirection: "column", gap: 16 }}>

@@ -46,9 +46,18 @@ export default async function RequerimentosPage({ searchParams }: { searchParams
             <div style={{ background: "#fff", border: "1px solid #C6DAC9", borderTop: "3px solid #24603A", borderRadius: 4, padding: "18px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
               <div style={{ fontFamily: "var(--font-display)", fontSize: 19, fontWeight: 600 }}>Solicitação {recemProtocolada.s.protocolo} protocolada</div>
               <div style={{ fontSize: 13, color: "#3B4653", lineHeight: 1.55, maxWidth: "75ch" }}>
-                Repasse ao proprietário o <strong>protocolo</strong> e a <strong>senha de acompanhamento</strong>. Com eles, ele acompanha
-                o andamento da aprovação em <strong>{urlAcompanhamento}</strong>, sem precisar de conta. A senha fica guardada
-                no card desta solicitação, logo abaixo, se precisar consultar de novo.
+                {recemProtocolada.s.acompanhamentoEnviadoEm ? (
+                  <>
+                    Enviamos o <strong>protocolo</strong> e a <strong>senha de acompanhamento</strong> por e-mail para o proprietário (
+                    <strong>{recemProtocolada.s.proprietarioEmail}</strong>), com cópia para você. Com eles, ele acompanha a aprovação em{" "}
+                    <strong>{urlAcompanhamento}</strong>, sem precisar de conta.
+                  </>
+                ) : (
+                  <>
+                    <strong>O e-mail ao proprietário não foi enviado.</strong> Repasse a ele o protocolo e a senha abaixo — com eles, ele
+                    acompanha a aprovação em <strong>{urlAcompanhamento}</strong>. No card da solicitação dá para tentar o envio de novo.
+                  </>
+                )}
               </div>
               <div style={{ display: "flex", gap: 22, flexWrap: "wrap", alignItems: "center" }}>
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 9 }}>

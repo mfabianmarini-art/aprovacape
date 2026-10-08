@@ -302,6 +302,12 @@ model Solicitacao {
   acompanhamentoSenhaCifrada String?
   acompanhamentoTentativas   Int       @default(0)
   acompanhamentoBloqueadoAte DateTime?
+  // Para onde vão protocolo e senha. Informado pelo RT no envio; nulo nas solicitações
+  // anteriores a isso, até o RT reenviar o acesso.
+  proprietarioEmail          String?
+  // Último envio bem-sucedido do acesso ao proprietário. Nulo: nunca saiu por e-mail
+  // (Resend não configurado, ou falha) e o RT precisa repassar a senha.
+  acompanhamentoEnviadoEm    DateTime?
 
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt

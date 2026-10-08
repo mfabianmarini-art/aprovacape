@@ -6,7 +6,7 @@ import { requireRole } from "@/lib/require-role";
 import { saveUploadedFile } from "@/lib/upload";
 import { extensaoDe } from "@/lib/upload-documento";
 import { DOC_ORDER } from "@/lib/status";
-import { cifrarSenha, gerarSenhaAcompanhamento } from "@/lib/acompanhamento";
+import { emitirAcessoProprietario } from "@/lib/acesso-proprietario";
 
 // As ações da solicitação são do responsável técnico do lote; o proprietário só acompanha.
 async function loadOwnedSolicitacao(session: Awaited<ReturnType<typeof requireRole>>, solicitacaoId: string) {
@@ -15,25 +15,27 @@ async function loadOwnedSolicitacao(session: Awaited<ReturnType<typeof requireRo
   return sol;
 }
 
-// Senha perdida ou repassada a quem não devia: o RT gera outra, e a anterior — com os
-// acessos já abertos com ela em /acompanhar — deixa de valer.
-export async function gerarSenhaAcompanhamentoAction(solicitacaoId: string) {
+export type ReenvioState = { error?: string; ok?: string } | null;
+
+// E-mail perdido, endereço errado ou senha vazada: gera senha nova e manda de novo. A
+// anterior — e os acessos já abertos com ela em /acompanhar — deixa de valer.
+export async function reenviarAcessoProprietarioAction(solicitacaoId: string, _prev: ReenvioState, formData: FormData): Promise<ReenvioState> {
   const session = await requireRole("RESPONSAVEL_TECNICO");
   const sol = await loadOwnedSolicitacao(session, solicitacaoId);
-  if (sol.status === "RASCUNHO") return;
+  if (sol.status === "RASCUNHO") return { error: "A solicitação ainda não foi enviada." };
 
-  await prisma.solicitacao.update({
-    where: { id: sol.id },
-    data: {
-      acompanhamentoSenhaCifrada: cifrarSenha(gerarSenhaAcompanhamento()),
-      acompanhamentoTentativas: 0,
-      acompanhamentoBloqueadoAte: null,
-      // Trocar a senha não é movimentação da solicitação: o resumo mede o tempo parado
-      // em complementação por updatedAt, que fica como estava.
-      updatedAt: sol.updatedAt,
-    },
-  });
+  const email = String(formData.get("proprietarioEmail") ?? "").trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: "Informe um e-mail válido do proprietário." };
+
+  const { proprietario } = await emitirAcessoProprietario(sol.id, email);
   revalidatePath("/requerimentos");
+  if (proprietario.enviado) return { ok: `Nova senha enviada para ${email}, com cópia para você.` };
+  return {
+    error:
+      proprietario.motivo === "nao-configurado"
+        ? "Nova senha gerada, mas o envio de e-mail ainda não está configurado. Repasse a senha abaixo ao proprietário."
+        : "Nova senha gerada, mas o e-mail não pôde ser enviado agora. Repasse a senha abaixo ou tente de novo.",
+  };
 }
 
 export async function reenviarComplementacaoAction(solicitacaoId: string) {

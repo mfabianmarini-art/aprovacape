@@ -8,7 +8,7 @@ import { requireRole } from "@/lib/require-role";
 import { saveUploadedFile } from "@/lib/upload";
 import { validarDocumento } from "@/lib/upload-documento";
 import { DOC_ORDER } from "@/lib/status";
-import { cifrarSenha, gerarSenhaAcompanhamento } from "@/lib/acompanhamento";
+import { emitirAcessoProprietario } from "@/lib/acesso-proprietario";
 import type { DocumentoTipo } from "@/generated/prisma/enums";
 
 // Só o responsável técnico abre e movimenta solicitações. O proprietário acompanha, sem
@@ -96,6 +96,7 @@ const enviarSchema = z.object({
   rtExecNome: z.string().min(3, "Informe o responsável técnico pela execução"),
   rtExecRegistro: z.string().min(3, "Informe o registro CAU/CREA do responsável técnico pela execução"),
   rtExecEmail: z.string().email("E-mail inválido para o responsável técnico pela execução"),
+  proprietarioEmail: z.string().trim().toLowerCase().email("Informe um e-mail válido do proprietário"),
   d1: z.literal("on"),
   d2: z.literal("on"),
   d3: z.literal("on"),
@@ -140,7 +141,6 @@ export async function enviarSolicitacaoAction(_prev: unknown, formData: FormData
         rtExecucaoNome: parsed.data.rtExecNome,
         rtExecucaoRegistro: parsed.data.rtExecRegistro,
         rtExecucaoEmail: parsed.data.rtExecEmail,
-        acompanhamentoSenhaCifrada: cifrarSenha(gerarSenhaAcompanhamento()),
       },
     }),
     prisma.historicoEvento.create({
@@ -154,11 +154,14 @@ export async function enviarSolicitacaoAction(_prev: unknown, formData: FormData
     }),
   ]);
 
+  // Depois do protocolo gravado: e-mail que falha não pode desfazer o envio.
+  await emitirAcessoProprietario(sol.id, parsed.data.proprietarioEmail);
+
   revalidatePath("/requerimentos");
   revalidatePath("/fila");
   revalidatePath("/resumo");
-  // A senha de acompanhamento do proprietário aparece em destaque no topo da lista, já
-  // aberta no card deste protocolo — nada de senha na URL, só o protocolo.
+  // O destaque no topo da lista diz se o acesso saiu por e-mail; se não saiu, mostra a
+  // senha para o RT repassar. Nada de senha na URL, só o protocolo.
   redirect(`/requerimentos?protocolada=${encodeURIComponent(protocolo)}`);
 }
 

@@ -22,6 +22,20 @@ export async function getMeusRascunhos(userId: string) {
   });
 }
 
+// Sugestão para o e-mail do proprietário no envio: o último protocolo do lote que já tinha
+// e-mail, ou o que o RT declarou ao pedir o vínculo deste lote. O RT pode trocar.
+export async function emailProprietarioDeclarado(userId: string, loteId: string) {
+  const [anterior, user] = await Promise.all([
+    prisma.solicitacao.findFirst({
+      where: { loteId, proprietarioEmail: { not: null } },
+      orderBy: { createdAt: "desc" },
+      select: { proprietarioEmail: true },
+    }),
+    prisma.user.findUnique({ where: { id: userId }, select: { vinculoLoteId: true, vinculoPropEmail: true } }),
+  ]);
+  return anterior?.proprietarioEmail ?? (user?.vinculoLoteId === loteId ? (user.vinculoPropEmail ?? "") : "");
+}
+
 export async function getRascunho(id: string) {
   return prisma.solicitacao.findUnique({
     where: { id },
