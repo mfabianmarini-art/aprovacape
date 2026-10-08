@@ -16,9 +16,10 @@ type LoteResumo = { id: string; numero: string; quadra: { nome: string }; empree
 const nomeLote = (l: LoteResumo) => `${l.empreendimento.nome} · ${l.quadra.nome} L${l.numero}`;
 
 // Fora do menu de propósito: chega-se aqui por Meus requerimentos e por Nova solicitação,
-// como os check-lists a partir do empreendimento.
+// como os check-lists a partir do empreendimento. Só o RT: o proprietário não precisa de
+// vínculo para acompanhar — usa protocolo e senha em /acompanhar.
 export default async function VinculoPage() {
-  const session = await requireRole("PROPRIETARIO", "RESPONSAVEL_TECNICO");
+  const session = await requireRole("RESPONSAVEL_TECNICO");
   const [user, empreendimentos, meu] = await Promise.all([
     getUserDisplay(session.user.id, session.user.role),
     getEmpreendimentosParaVinculo(),

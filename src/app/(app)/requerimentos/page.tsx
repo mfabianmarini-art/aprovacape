@@ -1,34 +1,81 @@
+import { headers } from "next/headers";
 import { requireRole } from "@/lib/require-role";
 import { getUserDisplay } from "@/lib/user-display";
 import { getMeusRequerimentos } from "@/lib/queries/requerimentos";
 import { getMeuVinculo } from "@/lib/queries/vinculo";
+import { decifrarSenha, formatarSenha } from "@/lib/acompanhamento";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { ScreenBody } from "@/components/ScreenBody";
-import { RequerimentoCard } from "./RequerimentoCard";
+import { CopiarTexto } from "@/components/CopiarTexto";
+import { RequerimentoCard, type SomenteLeitura } from "./RequerimentoCard";
 
-export default async function RequerimentosPage() {
+export default async function RequerimentosPage({ searchParams }: { searchParams: Promise<{ protocolada?: string }> }) {
   const session = await requireRole("PROPRIETARIO", "RESPONSAVEL_TECNICO");
-  const [user, pedidos, meu] = await Promise.all([
+  const { protocolada } = await searchParams;
+  const ehRT = session.user.role === "RESPONSAVEL_TECNICO";
+  const [user, pedidos, meu, h] = await Promise.all([
     getUserDisplay(session.user.id, session.user.role),
     getMeusRequerimentos(session.user.id),
     getMeuVinculo(session.user.id),
+    headers(),
   ]);
-  const lotes = session.user.role === "RESPONSAVEL_TECNICO" ? meu.lotesComoRT : meu.lotesComoProprietario;
+  const lotes = ehRT ? meu.lotesComoRT : meu.lotesComoProprietario;
   const pendente = meu.vinculoStatus === "PENDENTE" ? meu.vinculoLote : null;
+  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "";
+  const urlAcompanhamento = `${host}/acompanhar`;
 
   // Prazos e limite são por empreendimento: só dá para citar números nesta nota geral
   // quando todos os requerimentos da pessoa são do mesmo.
   const empreendimentos = new Set(pedidos.map((s) => s.lote.empreendimentoId));
   const regras = empreendimentos.size === 1 ? pedidos[0].lote.empreendimento : null;
 
+  const cards = pedidos.map(({ acompanhamentoSenhaCifrada, ...s }) => {
+    // Proprietário só acompanha; RT que protocolou mas perdeu o lote vê sem agir.
+    const somenteLeitura: SomenteLeitura | undefined = !ehRT ? "proprietario" : s.lote.rtId !== session.user.id ? "outro-rt" : undefined;
+    const senha = !somenteLeitura && acompanhamentoSenhaCifrada ? decifrarSenha(acompanhamentoSenhaCifrada) : null;
+    return { s, somenteLeitura, senha: senha ? formatarSenha(senha) : null };
+  });
+  const recemProtocolada = protocolada ? cards.find((c) => c.s.protocolo === protocolada && !c.somenteLeitura) : undefined;
+
   return (
     <>
       <ScreenHeader crumb="Meus lotes" title="Requerimentos" {...user} />
       <ScreenBody>
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          {/* Conta nova: o cadastro cria só o acesso, o vínculo com o lote é pedido
+          {recemProtocolada && (
+            <div style={{ background: "#fff", border: "1px solid #C6DAC9", borderTop: "3px solid #24603A", borderRadius: 4, padding: "18px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
+              <div style={{ fontFamily: "var(--font-display)", fontSize: 19, fontWeight: 600 }}>Solicitação {recemProtocolada.s.protocolo} protocolada</div>
+              <div style={{ fontSize: 13, color: "#3B4653", lineHeight: 1.55, maxWidth: "75ch" }}>
+                Repasse ao proprietário o <strong>protocolo</strong> e a <strong>senha de acompanhamento</strong>. Com eles, ele acompanha
+                o andamento da aprovação em <strong>{urlAcompanhamento}</strong>, sem precisar de conta. A senha fica guardada
+                no card desta solicitação, logo abaixo, se precisar consultar de novo.
+              </div>
+              <div style={{ display: "flex", gap: 22, flexWrap: "wrap", alignItems: "center" }}>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 9 }}>
+                  <span style={{ fontSize: 11, letterSpacing: ".1em", textTransform: "uppercase", color: "#7A7472" }}>Protocolo</span>
+                  <strong style={{ fontFamily: "var(--font-mono)", fontSize: 17 }}>{recemProtocolada.s.protocolo}</strong>
+                  <CopiarTexto texto={recemProtocolada.s.protocolo} />
+                </span>
+                {recemProtocolada.senha && (
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 9 }}>
+                    <span style={{ fontSize: 11, letterSpacing: ".1em", textTransform: "uppercase", color: "#7A7472" }}>Senha</span>
+                    <strong style={{ fontFamily: "var(--font-mono)", fontSize: 17, letterSpacing: ".06em" }}>{recemProtocolada.senha}</strong>
+                    <CopiarTexto texto={recemProtocolada.senha} />
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+
+          {!ehRT && (
+            <div style={{ fontSize: 12.5, color: "#4A5563", background: "#fff", border: "1px solid #DDD8CE", borderRadius: 4, padding: "13px 16px", lineHeight: 1.5 }}>
+              Acompanhamento somente leitura. As solicitações de obra são abertas e movimentadas pelo responsável técnico.
+            </div>
+          )}
+
+          {/* Conta nova de RT: o cadastro cria só o acesso, o vínculo com o lote é pedido
               aqui. Sem este aviso a tela abriria vazia, sem dizer o que fazer. */}
-          {lotes.length === 0 && !pendente && (
+          {ehRT && lotes.length === 0 && !pendente && (
             <div
               style={{
                 background: "#fff",
@@ -46,7 +93,7 @@ export default async function RequerimentosPage() {
                 Nenhum lote vinculado ainda
               </div>
               <div style={{ fontSize: 12.5, color: "#4A5563", lineHeight: 1.5, maxWidth: "70ch" }}>
-                Peça o vínculo com o seu lote para consultar as normas do empreendimento e abrir solicitações
+                Peça o vínculo com o lote do seu cliente para consultar as normas do empreendimento e abrir solicitações
                 de obra. A CAPE analisa o pedido e, aprovado, o lote passa a aparecer aqui.
               </div>
               <a
@@ -57,34 +104,37 @@ export default async function RequerimentosPage() {
               </a>
             </div>
           )}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap", fontSize: 12.5 }}>
-            <span style={{ color: pendente ? "#8A5210" : "#4A5563" }}>
-              {pendente ? (
-                <>
-                  Pedido de vínculo com{" "}
-                  <strong>
-                    {pendente.empreendimento.nome} · {pendente.quadra.nome} L{pendente.numero}
-                  </strong>{" "}
-                  em análise pela CAPE.
-                </>
-              ) : (
-                `${lotes.length} lote(s) vinculado(s) à sua conta.`
-              )}
-            </span>
-            <a href="/vinculo" style={{ fontWeight: 600 }}>
-              Solicitar vínculo com outro lote →
-            </a>
-          </div>
+          {ehRT && (
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap", fontSize: 12.5 }}>
+              <span style={{ color: pendente ? "#8A5210" : "#4A5563" }}>
+                {pendente ? (
+                  <>
+                    Pedido de vínculo com{" "}
+                    <strong>
+                      {pendente.empreendimento.nome} · {pendente.quadra.nome} L{pendente.numero}
+                    </strong>{" "}
+                    em análise pela CAPE.
+                  </>
+                ) : (
+                  `${lotes.length} lote(s) vinculado(s) à sua conta.`
+                )}
+              </span>
+              <a href="/vinculo" style={{ fontWeight: 600 }}>
+                Solicitar vínculo com outro lote →
+              </a>
+            </div>
+          )}
           {pedidos.length === 0 && (
             <div style={{ fontSize: 13.5, color: "#7A7472" }}>Nenhuma solicitação enviada ainda.</div>
           )}
-          {pedidos.map((s) => (
+          {cards.map(({ s, somenteLeitura, senha }) => (
             <RequerimentoCard
               key={s.id}
               s={s}
-              // Aparece na lista por ter protocolado, mas o lote hoje é de outro
-              // responsável: pode acompanhar, não agir.
-              somenteLeitura={s.lote.proprietarioId !== session.user.id && s.lote.rtId !== session.user.id}
+              somenteLeitura={somenteLeitura}
+              senhaAcompanhamento={senha}
+              urlAcompanhamento={urlAcompanhamento}
+              abertoInicial={s.protocolo === recemProtocolada?.s.protocolo}
             />
           ))}
           <div style={{ background: "#FDF8EE", border: "1px solid #E8D7B4", borderRadius: 4, padding: "15px 18px", fontSize: 12.5, color: "#6B4A11", lineHeight: 1.5, maxWidth: "92ch" }}>
@@ -94,9 +144,9 @@ export default async function RequerimentosPage() {
             {regras && (
               <>
                 {" "}
-                Cada reenvio é reanalisado em até {regras.prazoDias} dias corridos. São permitidos {regras.reenviosSemTaxa}{" "}
-                reenvios por solicitação; a partir daí é necessária nova taxa de análise. O prazo para enviar a
-                documentação corrigida é de {regras.prazoComplementoDias} dias, após o qual a solicitação é encerrada.
+                São permitidos {regras.reenviosSemTaxa} reenvios por solicitação; a partir daí é necessária nova taxa de
+                análise. O prazo para enviar a documentação corrigida é de {regras.prazoComplementoDias} dias, após o qual a
+                solicitação é encerrada.
               </>
             )}
           </div>

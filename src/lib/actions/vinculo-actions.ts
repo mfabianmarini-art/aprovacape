@@ -24,7 +24,7 @@ export type VinculoState = { error?: string; ok?: boolean } | null;
 // User — por isso um pedido por vez — e a aprovação segue o mesmo caminho do auto-cadastro
 // (aprovarVinculoAction). Nada é perdido: os lotes já aprovados vivem em Lote.proprietarioId/rtId.
 export async function solicitarVinculoAction(_prev: VinculoState, formData: FormData): Promise<VinculoState> {
-  const session = await requireRole("PROPRIETARIO", "RESPONSAVEL_TECNICO");
+  const session = await requireRole("RESPONSAVEL_TECNICO");
   const parsed = schema.safeParse(Object.fromEntries(formData.entries()));
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
   const d = parsed.data;

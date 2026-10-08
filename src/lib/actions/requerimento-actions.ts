@@ -6,16 +6,38 @@ import { requireRole } from "@/lib/require-role";
 import { saveUploadedFile } from "@/lib/upload";
 import { extensaoDe } from "@/lib/upload-documento";
 import { DOC_ORDER } from "@/lib/status";
+import { cifrarSenha, gerarSenhaAcompanhamento } from "@/lib/acompanhamento";
 
+// As ações da solicitação são do responsável técnico do lote; o proprietário só acompanha.
 async function loadOwnedSolicitacao(session: Awaited<ReturnType<typeof requireRole>>, solicitacaoId: string) {
   const sol = await prisma.solicitacao.findUniqueOrThrow({ where: { id: solicitacaoId }, include: { lote: true } });
-  const isOwner = sol.lote.proprietarioId === session.user.id || sol.lote.rtId === session.user.id;
-  if (!isOwner) throw new Error("Solicitação não pertence a este usuário.");
+  if (sol.lote.rtId !== session.user.id) throw new Error("Solicitação não pertence a este usuário.");
   return sol;
 }
 
+// Senha perdida ou repassada a quem não devia: o RT gera outra, e a anterior — com os
+// acessos já abertos com ela em /acompanhar — deixa de valer.
+export async function gerarSenhaAcompanhamentoAction(solicitacaoId: string) {
+  const session = await requireRole("RESPONSAVEL_TECNICO");
+  const sol = await loadOwnedSolicitacao(session, solicitacaoId);
+  if (sol.status === "RASCUNHO") return;
+
+  await prisma.solicitacao.update({
+    where: { id: sol.id },
+    data: {
+      acompanhamentoSenhaCifrada: cifrarSenha(gerarSenhaAcompanhamento()),
+      acompanhamentoTentativas: 0,
+      acompanhamentoBloqueadoAte: null,
+      // Trocar a senha não é movimentação da solicitação: o resumo mede o tempo parado
+      // em complementação por updatedAt, que fica como estava.
+      updatedAt: sol.updatedAt,
+    },
+  });
+  revalidatePath("/requerimentos");
+}
+
 export async function reenviarComplementacaoAction(solicitacaoId: string) {
-  const session = await requireRole("PROPRIETARIO", "RESPONSAVEL_TECNICO");
+  const session = await requireRole("RESPONSAVEL_TECNICO");
   const sol = await loadOwnedSolicitacao(session, solicitacaoId);
   if (sol.status !== "COMPLEMENTO") return;
 
@@ -73,7 +95,7 @@ const MAX_ALVARA_BYTES = 5 * 1024 * 1024;
 // obra é a CAPE, depois de conferir. Antes disto o clique do proprietário já colocava a
 // obra em execução sozinho.
 export async function enviarAlvaraAction(solicitacaoId: string, _prev: unknown, formData: FormData) {
-  const session = await requireRole("PROPRIETARIO", "RESPONSAVEL_TECNICO");
+  const session = await requireRole("RESPONSAVEL_TECNICO");
   const sol = await loadOwnedSolicitacao(session, solicitacaoId);
   if (sol.status !== "RESSALVAS" && sol.status !== "APROVADA") {
     return { error: "Esta solicitação não está aguardando o alvará." };

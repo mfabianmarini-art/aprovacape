@@ -11,6 +11,7 @@ async function main() {
   await prisma.historicoEvento.deleteMany();
   await prisma.checklistResultado.deleteMany();
   await prisma.solicitacaoDocumento.deleteMany();
+  await prisma.devolutivaTecnica.deleteMany();
   await prisma.solicitacao.deleteMany();
   await prisma.checklistItem.deleteMany();
   await prisma.checklistCategoria.deleteMany();
@@ -578,10 +579,10 @@ async function main() {
 
 const DOC_ORDER: DocumentoTipo[] = [
   "PROJETO_ARQUITETONICO",
+  "PROJETO_ARQUITETONICO_DWG",
   "ART_RRT_PROJETO",
   "ART_RRT_EXECUCAO",
   "MEMORIAL_DESCRITIVO",
-  "PROJETO_PAISAGISTICO",
   "CAPA_IPTU",
   "MATRICULA",
   "LEVANTAMENTO_PLANIALTIMETRICO",

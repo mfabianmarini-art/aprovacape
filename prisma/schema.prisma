@@ -86,7 +86,10 @@ enum SolicitacaoStatus {
 }
 
 enum DocumentoTipo {
+  // Projeto arquitetônico em PDF, para leitura.
   PROJETO_ARQUITETONICO
+  // O mesmo projeto em DWG (ou .zip com vários DWG), para a CAPE conferir no CAD.
+  PROJETO_ARQUITETONICO_DWG
   ART_RRT_PROJETO
   ART_RRT_EXECUCAO
   MEMORIAL_DESCRITIVO
@@ -94,7 +97,7 @@ enum DocumentoTipo {
   CAPA_IPTU
   MATRICULA
   LEVANTAMENTO_PLANIALTIMETRICO
-  // Único documento não obrigatório do check-list.
+  // Não obrigatório, como o projeto paisagístico (ver DOC_OPCIONAIS).
   OUTROS
 }
 
@@ -102,6 +105,9 @@ enum ChecklistItemStatus {
   PENDENTE
   APROVADO
   REPROVADO
+  // Item que não cabe nesta obra (ex.: piscina numa reforma de fachada). Conta como
+  // decidido para o parecer e não gera pendência.
+  NAO_SE_APLICA
 }
 
 model User {
@@ -154,6 +160,7 @@ model User {
   empreendimentosSindico Empreendimento[] @relation("EmpreendimentoSindico")
   documentosTecnicosEnviados DocumentoTecnico[] @relation("DocumentoTecnicoEnviadoPor")
   lotesTitularAtualizados    Lote[]             @relation("LoteTitularAtualizadoPor")
+  devolutivasTecnicas        DevolutivaTecnica[] @relation("DevolutivaTecnicaAutor")
 
   @@index([role])
 }
@@ -289,6 +296,13 @@ model Solicitacao {
   concluidaEm      DateTime?
   statusAntesAlvara SolicitacaoStatus?
 
+  // Acompanhamento pelo proprietário em /acompanhar, sem conta: protocolo + esta senha,
+  // gerada no envio e repassada pelo RT. Cifrada (não hash) para o RT poder consultá-la
+  // de novo em Meus requerimentos; trocar AUTH_SECRET a torna ilegível e o RT gera outra.
+  acompanhamentoSenhaCifrada String?
+  acompanhamentoTentativas   Int       @default(0)
+  acompanhamentoBloqueadoAte DateTime?
+
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
   prazoAnaliseEm   DateTime?
@@ -297,6 +311,24 @@ model Solicitacao {
   resultados      ChecklistResultado[]
   historico       HistoricoEvento[]
   irregularidades Irregularidade[]
+  devolutivas     DevolutivaTecnica[]
+}
+
+// O que a CAPE manda ao RT junto com um parecer do check-list: comentários gerais e/ou o
+// arquivo com os apontamentos (DWG marcado). Opcional; um registro por parecer emitido.
+model DevolutivaTecnica {
+  id             String      @id @default(cuid())
+  solicitacaoId  String
+  solicitacao    Solicitacao @relation(fields: [solicitacaoId], references: [id])
+  comentario     String?
+  arquivoNome    String?
+  arquivoCaminho String?
+  arquivoTamanho Int?
+  autorId        String
+  autor          User        @relation("DevolutivaTecnicaAutor", fields: [autorId], references: [id])
+  createdAt      DateTime    @default(now())
+
+  @@index([solicitacaoId, createdAt])
 }
 
 model SolicitacaoDocumento {

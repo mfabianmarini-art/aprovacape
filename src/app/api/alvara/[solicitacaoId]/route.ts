@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { get } from "@vercel/blob";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { contentDisposition } from "@/lib/content-disposition";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ solicitacaoId: string }> }) {
   const session = await auth();
@@ -26,7 +27,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ solicit
   return new NextResponse(result.stream, {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `inline; filename="${sol.alvaraNome ?? "alvara.pdf"}"`,
+      "Content-Disposition": contentDisposition("inline", sol.alvaraNome ?? "alvara.pdf"),
     },
   });
 }

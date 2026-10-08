@@ -20,6 +20,7 @@ export function extensaoDe(nome: string) {
 // tipo declarado por quem envia permitiria entregar HTML na origem do app.
 const TIPO_POR_EXTENSAO: Record<string, string> = {
   ".pdf": "application/pdf",
+  ".zip": "application/zip",
   ".png": "image/png",
   ".jpg": "image/jpeg",
   ".jpeg": "image/jpeg",
@@ -45,5 +46,16 @@ export async function validarDocumento(file: File, tipo: DocumentoTipo): Promise
     }
   }
 
+  // Um .zip começa por PK\x03\x04. Não abrimos o pacote para conferir a versão de cada DWG
+  // dentro dele: a mensagem do campo pede AutoCAD 2010, e o analista confere ao abrir.
+  if (ext === ".zip" && !(await ehZipComArquivos(file))) {
+    return "Arquivo .zip inválido ou vazio. Compacte os arquivos DWG numa pasta .zip e envie novamente.";
+  }
+
   return null;
+}
+
+export async function ehZipComArquivos(file: File) {
+  const b = new Uint8Array(await file.slice(0, 4).arrayBuffer());
+  return b[0] === 0x50 && b[1] === 0x4b && b[2] === 0x03 && b[3] === 0x04;
 }

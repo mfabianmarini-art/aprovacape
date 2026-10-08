@@ -36,28 +36,24 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
   return { redirectTo: user ? homeForRole(user.role) : "/login" };
 }
 
+// Cadastro só de responsável técnico: é quem abre e movimenta as solicitações. O
+// proprietário não tem conta — acompanha em /acompanhar com protocolo e senha.
 const registerSchema = z
   .object({
-    tipo: z.enum(["prop", "rt"]),
     nome: z.string().min(3, "Informe o nome completo"),
     cpf: z.string().transform(digitosCpf).refine(cpfValido, "CPF inválido"),
     nascimento: z.string().min(1, "Informe a data de nascimento"),
     telefone: z.string().min(8, "Informe o telefone"),
     email: z.string().email("E-mail inválido"),
-    conselho: z.enum(["CREA", "CAU"]).optional(),
-    registroNumero: z.string().trim().optional(),
-    registroUf: z.string().trim().toUpperCase().optional(),
+    conselho: z.enum(["CREA", "CAU"], { message: "Selecione o conselho (CREA ou CAU)" }),
+    registroNumero: z.string().trim().min(3, "Informe o número do registro"),
+    registroUf: z.string().trim().toUpperCase(),
     senha: z.string().min(8, "Mínimo 8 caracteres"),
     confirmarSenha: z.string(),
     aceite: z.literal("on", { message: "É necessário aceitar os termos" }),
   })
   .refine((d) => d.senha === d.confirmarSenha, { message: "As senhas não coincidem", path: ["confirmarSenha"] })
-  .refine((d) => d.tipo !== "rt" || d.conselho, { message: "Selecione o conselho (CREA ou CAU)", path: ["conselho"] })
-  .refine((d) => d.tipo !== "rt" || (d.registroNumero && d.registroNumero.length >= 3), {
-    message: "Informe o número do registro",
-    path: ["registroNumero"],
-  })
-  .refine((d) => d.tipo !== "rt" || UF_REGEX.test(d.registroUf ?? ""), {
+  .refine((d) => UF_REGEX.test(d.registroUf), {
     message: "Informe a UF emissora do registro (ex.: SP)",
     path: ["registroUf"],
   });
@@ -87,10 +83,10 @@ export async function registerAction(_prev: RegisterState, formData: FormData): 
       birthDate: new Date(d.nascimento),
       phone: d.telefone,
       passwordHash,
-      role: d.tipo === "rt" ? "RESPONSAVEL_TECNICO" : "PROPRIETARIO",
-      conselho: d.tipo === "rt" ? d.conselho : null,
-      registroNumero: d.tipo === "rt" ? d.registroNumero : null,
-      registroUf: d.tipo === "rt" ? d.registroUf : null,
+      role: "RESPONSAVEL_TECNICO",
+      conselho: d.conselho,
+      registroNumero: d.registroNumero,
+      registroUf: d.registroUf,
     },
   });
 

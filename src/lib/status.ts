@@ -16,7 +16,8 @@ export const STATUS_INFO: Record<SolicitacaoStatus, { label: string; bg: string;
 export const LIVRE_INFO = { label: "Sem solicitação", bg: "#EDE9E1", fg: "#7A7472" };
 
 export const DOC_LABEL: Record<DocumentoTipo, { nome: string }> = {
-  PROJETO_ARQUITETONICO: { nome: "Projeto arquitetônico" },
+  PROJETO_ARQUITETONICO: { nome: "Projeto arquitetônico (PDF)" },
+  PROJETO_ARQUITETONICO_DWG: { nome: "Projeto arquitetônico (DWG)" },
   ART_RRT_PROJETO: { nome: "ART/RRT do responsável técnico pelo projeto" },
   ART_RRT_EXECUCAO: { nome: "ART/RRT do responsável técnico pela execução" },
   MEMORIAL_DESCRITIVO: { nome: "Memorial descritivo" },
@@ -27,24 +28,29 @@ export const DOC_LABEL: Record<DocumentoTipo, { nome: string }> = {
   OUTROS: { nome: "Outros documentos" },
 };
 
-// Todos obrigatórios, exceto OUTROS — que fica fora desta lista para não entrar na
-// conferência documental nem travar o envio da solicitação.
+// Obrigatórios: entram na conferência documental e travam o envio enquanto faltarem.
 export const DOC_ORDER: DocumentoTipo[] = [
   "PROJETO_ARQUITETONICO",
+  "PROJETO_ARQUITETONICO_DWG",
   "ART_RRT_PROJETO",
   "ART_RRT_EXECUCAO",
   "MEMORIAL_DESCRITIVO",
-  "PROJETO_PAISAGISTICO",
   "CAPA_IPTU",
   "MATRICULA",
   "LEVANTAMENTO_PLANIALTIMETRICO",
 ];
 
-// Formato e tamanho aceitos por documento. Projetos podem vir em DWG para a CAPE
-// conferir no CAD; os demais são leitura, então só PDF. OUTROS aceita imagem também,
-// por ser o campo livre para o que não se encaixa nos demais.
+// Opcionais: anexados quando houver, ficam fora da conferência documental e não travam
+// nada — a CAPE só os consulta.
+export const DOC_OPCIONAIS: DocumentoTipo[] = ["PROJETO_PAISAGISTICO", "OUTROS"];
+
+// Formato e tamanho aceitos por documento. O projeto arquitetônico vem em dois campos: PDF
+// para leitura e DWG para a CAPE conferir no CAD — vários DWG vão juntos num .zip, daí o
+// limite maior. Os demais são leitura, então só PDF. OUTROS aceita imagem também, por ser
+// o campo livre para o que não se encaixa nos demais.
 export const DOC_REGRAS: Record<DocumentoTipo, { extensoes: readonly string[]; maxMB: number }> = {
-  PROJETO_ARQUITETONICO: { extensoes: [".pdf", ".dwg"], maxMB: 5 },
+  PROJETO_ARQUITETONICO: { extensoes: [".pdf"], maxMB: 5 },
+  PROJETO_ARQUITETONICO_DWG: { extensoes: [".dwg", ".zip"], maxMB: 15 },
   ART_RRT_PROJETO: { extensoes: [".pdf"], maxMB: 5 },
   ART_RRT_EXECUCAO: { extensoes: [".pdf"], maxMB: 5 },
   MEMORIAL_DESCRITIVO: { extensoes: [".pdf"], maxMB: 5 },
@@ -86,10 +92,6 @@ export const CATEGORIA_DOC_TECNICO_LABEL: Record<DocumentoTecnicoCategoria, stri
   REGULAMENTO: "Regulamento",
   OUTRO: "Outro",
 };
-
-export function formatBRL(cents: number): string {
-  return (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-}
 
 // Estas telas são renderizadas no servidor, que na Vercel roda em UTC — sem fixar o
 // fuso, um evento das 22h de Brasília aparecia como 01h do dia seguinte. O fuso do

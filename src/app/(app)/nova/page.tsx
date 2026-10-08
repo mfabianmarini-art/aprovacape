@@ -3,7 +3,6 @@ import { getUserDisplay } from "@/lib/user-display";
 import { getMeusLotes, getMeusRascunhos, getRascunho } from "@/lib/queries/nova";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { ScreenBody } from "@/components/ScreenBody";
-import { formatBRL } from "@/lib/status";
 import { Step1Form } from "./Step1Form";
 import { Step2Uploads } from "./Step2Uploads";
 import { Step3Send } from "./Step3Send";
@@ -14,7 +13,7 @@ export default async function NovaPage({
 }: {
   searchParams: Promise<{ rascunho?: string; passo?: string }>;
 }) {
-  const session = await requireRole("PROPRIETARIO", "RESPONSAVEL_TECNICO");
+  const session = await requireRole("RESPONSAVEL_TECNICO");
   const { rascunho: rascunhoId, passo: passoParam } = await searchParams;
 
   const [user, lotes, rascunhos] = await Promise.all([
@@ -24,10 +23,7 @@ export default async function NovaPage({
   ]);
 
   const rascunho = rascunhoId ? await getRascunho(rascunhoId) : null;
-  const rascunhoValido =
-    rascunho && rascunho.status === "RASCUNHO" && (rascunho.lote.proprietarioId === session.user.id || rascunho.lote.rtId === session.user.id)
-      ? rascunho
-      : null;
+  const rascunhoValido = rascunho && rascunho.status === "RASCUNHO" && rascunho.lote.rtId === session.user.id ? rascunho : null;
 
   const passo = rascunhoValido ? (passoParam === "3" ? 3 : 2) : 1;
   const emp = rascunhoValido?.lote.empreendimento ?? lotes[0]?.empreendimento;
@@ -80,27 +76,18 @@ export default async function NovaPage({
 
             {passo === 1 && <Step1Form lotes={lotes} />}
             {passo === 2 && rascunhoValido && <Step2Uploads rascunho={rascunhoValido} />}
-            {passo === 3 && rascunhoValido && <Step3Send rascunho={rascunhoValido} sessionUser={{ name: session.user.name, role: session.user.role }} />}
+            {passo === 3 && rascunhoValido && <Step3Send rascunho={rascunhoValido} nomeRT={session.user.name} />}
           </section>
 
           <aside style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            {emp && (
-              <>
-                <section style={{ background: "#fff", border: "1px solid #DDD8CE", borderRadius: 4, padding: "16px 17px", display: "flex", flexDirection: "column", gap: 10 }}>
-                  <div style={{ fontSize: 11, letterSpacing: ".14em", textTransform: "uppercase", color: "#7A7472" }}>Taxa de análise</div>
-                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 600 }}>{formatBRL(emp.taxaAnaliseCent)}</div>
-                  <div style={{ fontSize: 11.5, color: "#4A5563", lineHeight: 1.45 }}>
-                    Valor configurado para este empreendimento. Reunião presencial, se solicitada, {formatBRL(emp.taxaVisitaCent)} por visita.
-                  </div>
-                </section>
-                <section style={{ background: "#fff", border: "1px solid #DDD8CE", borderRadius: 4, padding: "16px 17px", display: "flex", flexDirection: "column", gap: 8 }}>
-                  <div style={{ fontSize: 11, letterSpacing: ".14em", textTransform: "uppercase", color: "#7A7472" }}>Prazos</div>
-                  <div style={{ fontSize: 12.5, color: "#3B4653", lineHeight: 1.5 }}>
-                    Análise em até {emp.prazoDias} dias corridos após a entrega completa do check-list. Reanálise também em {emp.prazoDias} dias. Correções do proprietário: até {emp.prazoComplementoDias} dias.
-                  </div>
-                </section>
-              </>
-            )}
+            <section style={{ background: "#fff", border: "1px solid #DDD8CE", borderTop: "3px solid #E01B22", borderRadius: 4, padding: "16px 17px", display: "flex", flexDirection: "column", gap: 10 }}>
+              <div style={{ fontSize: 11, letterSpacing: ".14em", textTransform: "uppercase", color: "#7A7472" }}>Prazos</div>
+              <div style={{ fontSize: 12, color: "#4A5563", lineHeight: 1.5 }}>Contabilizados somente após a validação documental.</div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 10, borderTop: "1px solid #EDE9E1", paddingTop: 10 }}>
+                <span style={{ fontSize: 12.5, fontWeight: 600, color: "#231F20" }}>Análise de projeto</span>
+                <span style={{ fontSize: 13, fontWeight: 600, fontFamily: "var(--font-mono)", whiteSpace: "nowrap" }}>até 15 dias úteis</span>
+              </div>
+            </section>
             <section style={{ background: "#231F20", color: "#fff", borderRadius: 4, padding: "16px 17px", fontSize: 12.5, lineHeight: 1.5 }}>
               A aprovação da CAPE não substitui a aprovação da Prefeitura. O início da obra depende do projeto aprovado e do alvará de execução.
             </section>

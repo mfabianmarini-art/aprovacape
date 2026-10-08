@@ -8,8 +8,12 @@ import { requireRole } from "@/lib/require-role";
 import { saveUploadedFile } from "@/lib/upload";
 import { validarDocumento } from "@/lib/upload-documento";
 import { DOC_ORDER } from "@/lib/status";
+import { cifrarSenha, gerarSenhaAcompanhamento } from "@/lib/acompanhamento";
 import type { DocumentoTipo } from "@/generated/prisma/enums";
 
+// Só o responsável técnico abre e movimenta solicitações. O proprietário acompanha, sem
+// agir: em /acompanhar com protocolo e senha, ou — se tiver conta antiga — em modo leitura.
+const RT = "RESPONSAVEL_TECNICO" as const;
 
 const rascunhoSchema = z.object({
   loteId: z.string().min(1),
@@ -19,13 +23,12 @@ const rascunhoSchema = z.object({
 });
 
 export async function criarRascunhoAction(_prev: unknown, formData: FormData) {
-  const session = await requireRole("PROPRIETARIO", "RESPONSAVEL_TECNICO");
+  const session = await requireRole(RT);
   const parsed = rascunhoSchema.safeParse(Object.fromEntries(formData.entries()));
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
 
   const lote = await prisma.lote.findUniqueOrThrow({ where: { id: parsed.data.loteId } });
-  const isOwner = lote.proprietarioId === session.user.id || lote.rtId === session.user.id;
-  if (!isOwner) return { error: "Este lote não está vinculado à sua conta." };
+  if (lote.rtId !== session.user.id) return { error: "Este lote não está vinculado à sua conta." };
 
   const sol = await prisma.solicitacao.create({
     data: {
@@ -47,11 +50,9 @@ export async function criarRascunhoAction(_prev: unknown, formData: FormData) {
 }
 
 export async function uploadDocumentoAction(solicitacaoId: string, tipo: DocumentoTipo, _prev: unknown, formData: FormData) {
-  const session = await requireRole("PROPRIETARIO", "RESPONSAVEL_TECNICO");
+  const session = await requireRole(RT);
   const sol = await prisma.solicitacao.findUniqueOrThrow({ where: { id: solicitacaoId }, include: { lote: true } });
-  if (sol.lote.proprietarioId !== session.user.id && sol.lote.rtId !== session.user.id) {
-    return { error: "Solicitação não pertence a este usuário." };
-  }
+  if (sol.lote.rtId !== session.user.id) return { error: "Solicitação não pertence a este usuário." };
   // COMPLEMENTO também aceita: é exatamente o momento de trocar o que foi apontado,
   // antes de reenviar para análise.
   if (sol.status !== "RASCUNHO" && sol.status !== "COMPLEMENTO") {
@@ -101,7 +102,7 @@ const enviarSchema = z.object({
 });
 
 export async function enviarSolicitacaoAction(_prev: unknown, formData: FormData) {
-  const session = await requireRole("PROPRIETARIO", "RESPONSAVEL_TECNICO");
+  const session = await requireRole(RT);
   const parsed = enviarSchema.safeParse(Object.fromEntries(formData.entries()));
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Preencha todos os campos e aceite as declarações." };
 
@@ -109,9 +110,7 @@ export async function enviarSolicitacaoAction(_prev: unknown, formData: FormData
     where: { id: parsed.data.solicitacaoId },
     include: { lote: { include: { empreendimento: true } }, documentos: true },
   });
-  if (sol.lote.proprietarioId !== session.user.id && sol.lote.rtId !== session.user.id) {
-    return { error: "Solicitação não pertence a este usuário." };
-  }
+  if (sol.lote.rtId !== session.user.id) return { error: "Solicitação não pertence a este usuário." };
   if (sol.status !== "RASCUNHO") return { error: "Esta solicitação já foi enviada." };
 
   const faltando = DOC_ORDER.filter((t) => !sol.documentos.find((d) => d.tipo === t));
@@ -141,6 +140,7 @@ export async function enviarSolicitacaoAction(_prev: unknown, formData: FormData
         rtExecucaoNome: parsed.data.rtExecNome,
         rtExecucaoRegistro: parsed.data.rtExecRegistro,
         rtExecucaoEmail: parsed.data.rtExecEmail,
+        acompanhamentoSenhaCifrada: cifrarSenha(gerarSenhaAcompanhamento()),
       },
     }),
     prisma.historicoEvento.create({
@@ -157,13 +157,15 @@ export async function enviarSolicitacaoAction(_prev: unknown, formData: FormData
   revalidatePath("/requerimentos");
   revalidatePath("/fila");
   revalidatePath("/resumo");
-  redirect("/requerimentos");
+  // A senha de acompanhamento do proprietário aparece em destaque no topo da lista, já
+  // aberta no card deste protocolo — nada de senha na URL, só o protocolo.
+  redirect(`/requerimentos?protocolada=${encodeURIComponent(protocolo)}`);
 }
 
 export async function cancelarRascunhoAction(solicitacaoId: string) {
-  const session = await requireRole("PROPRIETARIO", "RESPONSAVEL_TECNICO");
+  const session = await requireRole(RT);
   const sol = await prisma.solicitacao.findUniqueOrThrow({ where: { id: solicitacaoId }, include: { lote: true } });
-  if (sol.lote.proprietarioId !== session.user.id && sol.lote.rtId !== session.user.id) return;
+  if (sol.lote.rtId !== session.user.id) return;
   if (sol.status !== "RASCUNHO") return;
 
   await prisma.solicitacaoDocumento.deleteMany({ where: { solicitacaoId } });

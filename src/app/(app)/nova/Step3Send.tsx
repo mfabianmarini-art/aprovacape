@@ -2,24 +2,21 @@
 
 import { useActionState, useState } from "react";
 import { enviarSolicitacaoAction } from "@/lib/actions/nova-actions";
-import type { Role } from "@/generated/prisma/enums";
 
 const inputStyle: React.CSSProperties = { border: "1px solid #DDD8CE", borderRadius: 4, padding: "10px 11px", fontSize: 13.5 };
 const labelTextStyle: React.CSSProperties = { fontSize: 11, letterSpacing: ".13em", textTransform: "uppercase", color: "#7A7472" };
 
 const DECLARACOES = [
   { id: "d1", texto: "Declaro que a aprovação pela CAPE não substitui as aprovações legais junto aos órgãos públicos competentes, cabendo a mim e ao responsável técnico a regularidade legal da obra." },
-  { id: "d2", texto: "Declaro ciência de que o início da obra depende da apresentação do projeto aprovado pela Prefeitura e do respectivo alvará de execução." },
+  {
+    id: "d2",
+    texto:
+      "Declaro ciência de que o início da obra depende da apresentação do projeto aprovado pela Prefeitura, do respectivo alvará de execução e da ART/RRT de execução da obra.",
+  },
   { id: "d3", texto: "Declaro ciência de que alterações no projeto aprovado pela Prefeitura em relação ao aprovado pelo residencial exigem substituição do projeto." },
 ] as const;
 
-export function Step3Send({
-  rascunho,
-  sessionUser,
-}: {
-  rascunho: { id: string };
-  sessionUser: { name: string; role: Role };
-}) {
+export function Step3Send({ rascunho, nomeRT }: { rascunho: { id: string }; nomeRT: string }) {
   const [state, formAction, pending] = useActionState(enviarSolicitacaoAction, null as { error?: string } | null);
   const [decl, setDecl] = useState({ d1: false, d2: false, d3: false });
   const podeEnviar = decl.d1 && decl.d2 && decl.d3;
@@ -33,7 +30,7 @@ export function Step3Send({
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 16 }}>
           <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <span style={labelTextStyle}>Nome</span>
-            <input name="rtNome" required defaultValue={sessionUser.role === "RESPONSAVEL_TECNICO" ? sessionUser.name : ""} style={inputStyle} />
+            <input name="rtNome" required defaultValue={nomeRT} style={inputStyle} />
           </label>
           <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <span style={labelTextStyle}>Registro CAU / CREA</span>

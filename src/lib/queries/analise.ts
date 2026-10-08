@@ -12,6 +12,7 @@ export async function getAnalise(protocolo: string) {
         orderBy: { createdAt: "desc" },
         include: { evidencias: true, registradaPor: { select: { name: true } } },
       },
+      devolutivas: { orderBy: { createdAt: "desc" }, include: { autor: { select: { name: true } } } },
     },
   });
   if (!solicitacao) return null;

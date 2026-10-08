@@ -4,12 +4,11 @@ import { getUserDisplay } from "@/lib/user-display";
 import { getAnalise } from "@/lib/queries/analise";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { ScreenBody } from "@/components/ScreenBody";
-import { DOC_LABEL, DOC_ORDER, TIPO_LABEL, IRREGULARIDADE_LABEL, formatBRL, formatDate, formatDateTime } from "@/lib/status";
+import { DOC_LABEL, DOC_OPCIONAIS, DOC_ORDER, TIPO_LABEL, IRREGULARIDADE_LABEL, formatDate, formatDateTime } from "@/lib/status";
 import {
   toggleDocumentoAction,
   devolverDocumentacaoAction,
   decidirItemAction,
-  emitirParecerAction,
   togglePagoAction,
   salvarObservacaoDocumentoAction,
   salvarObservacaoItemAction,
@@ -18,8 +17,15 @@ import {
   regularizarIrregularidadeAction,
 } from "@/lib/actions/analise-actions";
 import { ObservacaoField } from "@/components/ObservacaoField";
+import { EmitirParecerForm } from "./EmitirParecerForm";
 
 const EDITAVEL = new Set(["ENVIADA", "ANALISE", "COMPLEMENTO"]);
+
+const DECISOES = [
+  { valor: "APROVADO", rotulo: "Aprovado", acao: "Aprovar item", cor: "#24603A" },
+  { valor: "REPROVADO", rotulo: "Reprovado", acao: "Reprovar item", cor: "#8C2B22" },
+  { valor: "NAO_SE_APLICA", rotulo: "Não se aplica", acao: "Marcar como não se aplica", cor: "#5A6270" },
+] as const;
 
 export default async function AnalisePage({ params }: { params: Promise<{ protocolo: string }> }) {
   const { protocolo } = await params;
@@ -51,7 +57,8 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
   // check-list por completo com itens ainda indecididos, liberando "Aprovar projeto".
   const aprovados = sol.resultados.filter((r) => r.status === "APROVADO").length;
   const reprovados = sol.resultados.filter((r) => r.status === "REPROVADO").length;
-  const avaliados = aprovados + reprovados;
+  const naoSeAplica = sol.resultados.filter((r) => r.status === "NAO_SE_APLICA").length;
+  const avaliados = aprovados + reprovados + naoSeAplica;
 
   let veredito: string;
   let vereditoCor: string;
@@ -78,14 +85,14 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
     emitirBg = "#EDE9E1";
     emitirFg = "#8B939C";
   } else if (reprovados > 0) {
-    veredito = `${reprovados} itens reprovados. O proprietário e o RT recebem apenas esses itens para correção; na reanálise o check-list reabre somente eles.`;
+    veredito = `${reprovados} itens reprovados. O RT recebe apenas esses itens para correção; na reanálise o check-list reabre somente eles.`;
     vereditoCor = "#8C2B22";
     emitirLabel = `Devolver com ${reprovados} pendências`;
     emitirBg = "#8C2B22";
     emitirFg = "#FFFFFF";
     podeEmitir = true;
   } else {
-    veredito = "Todos os itens aprovados. O parecer não substitui a aprovação da Prefeitura nem o alvará de execução.";
+    veredito = `Todos os itens aprovados${naoSeAplica ? ` (${naoSeAplica} não se aplica${naoSeAplica > 1 ? "m" : ""})` : ""}. O parecer não substitui a aprovação da Prefeitura nem o alvará de execução.`;
     vereditoCor = "#24603A";
     emitirLabel = "Aprovar projeto";
     emitirBg = "#24603A";
@@ -375,23 +382,24 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
                     </div>
                   );
                 })}
-                {sol.documentos.find((d) => d.tipo === "OUTROS") && (
-                  <div style={{ display: "grid", gridTemplateColumns: "26px 1fr 132px", alignItems: "center", gap: 12, padding: "13px 18px", borderBottom: "1px solid #F1EEE7" }}>
-                    <span />
-                    <span style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                      <span style={{ fontSize: 13.5, fontWeight: 600 }}>{DOC_LABEL.OUTROS.nome}</span>
-                      <span style={{ fontSize: 11.5, color: "#7A7472", fontFamily: "var(--font-mono)" }}>não obrigatório · não entra na conferência acima</span>
-                    </span>
-                    <a
-                      href={`/api/files/${sol.documentos.find((d) => d.tipo === "OUTROS")!.id}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{ fontSize: 12, fontWeight: 600, justifySelf: "end" }}
-                    >
-                      abrir
-                    </a>
-                  </div>
-                )}
+                {DOC_OPCIONAIS.map((tipo) => {
+                  const doc = sol.documentos.find((d) => d.tipo === tipo);
+                  if (!doc) return null;
+                  return (
+                    <div key={tipo} style={{ display: "grid", gridTemplateColumns: "26px 1fr 132px", alignItems: "center", gap: 12, padding: "13px 18px", borderBottom: "1px solid #F1EEE7" }}>
+                      <span />
+                      <span style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                        <span style={{ fontSize: 13.5, fontWeight: 600 }}>{DOC_LABEL[tipo].nome}</span>
+                        <span style={{ fontSize: 11.5, color: "#7A7472", fontFamily: "var(--font-mono)" }}>
+                          {doc.nomeArquivo} · opcional, fora da conferência acima
+                        </span>
+                      </span>
+                      <a href={`/api/files/${doc.id}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, fontWeight: 600, justifySelf: "end" }}>
+                        abrir
+                      </a>
+                    </div>
+                  );
+                })}
               </div>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14, padding: "14px 18px", flexWrap: "wrap" }}>
                 <div style={{ fontSize: 12.5, color: "#4A5563", maxWidth: "60ch", lineHeight: 1.45 }}>
@@ -487,67 +495,57 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
                           key={item.id}
                           style={{
                             display: "grid",
-                            gridTemplateColumns: "1fr 186px",
+                            gridTemplateColumns: "minmax(0,1fr) auto",
                             alignItems: "center",
                             gap: 14,
                             rowGap: 10,
                             padding: "12px 18px",
                             borderTop: "1px solid #F5F2EC",
-                            background: travado ? "#FBFAF7" : est === "REPROVADO" ? "#FDF6F5" : "#FFFFFF",
+                            background: travado ? "#FBFAF7" : est === "REPROVADO" ? "#FDF6F5" : est === "NAO_SE_APLICA" ? "#F7F6F2" : "#FFFFFF",
                           }}
                         >
                           <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                            <div style={{ fontSize: 13.5, fontWeight: 500, color: travado ? "#7A828C" : "#231F20" }}>{item.texto}</div>
+                            <div style={{ fontSize: 13.5, fontWeight: 500, color: travado || est === "NAO_SE_APLICA" ? "#7A828C" : "#231F20" }}>{item.texto}</div>
                             <div style={{ fontSize: 11.5, color: "#7A7472" }}>{item.referencia}</div>
                           </div>
-                          <div style={{ display: "flex", gap: 7, justifyContent: "flex-end" }}>
-                            <form action={ativo ? decidirItemAction.bind(null, sol.id, item.id, "APROVADO") : undefined}>
-                              <button
-                                type="submit"
-                                disabled={!ativo}
-                                aria-label={`Aprovar item: ${item.texto}`}
-                                style={{
-                                  border: `1px solid ${est === "APROVADO" ? "#24603A" : "#DDD8CE"}`,
-                                  background: est === "APROVADO" ? "#24603A" : "#FFFFFF",
-                                  color: est === "APROVADO" ? "#FFFFFF" : "#4A5563",
-                                  borderRadius: 4,
-                                  padding: "7px 11px",
-                                  fontSize: 12,
-                                  fontWeight: 600,
-                                  cursor: ativo ? "pointer" : "not-allowed",
-                                }}
-                              >
-                                Aprovado
-                              </button>
-                            </form>
-                            <form action={ativo ? decidirItemAction.bind(null, sol.id, item.id, "REPROVADO") : undefined}>
-                              <button
-                                type="submit"
-                                disabled={!ativo}
-                                aria-label={`Reprovar item: ${item.texto}`}
-                                style={{
-                                  border: `1px solid ${est === "REPROVADO" ? "#8C2B22" : "#DDD8CE"}`,
-                                  background: est === "REPROVADO" ? "#8C2B22" : "#FFFFFF",
-                                  color: est === "REPROVADO" ? "#FFFFFF" : "#4A5563",
-                                  borderRadius: 4,
-                                  padding: "7px 11px",
-                                  fontSize: 12,
-                                  fontWeight: 600,
-                                  cursor: ativo ? "pointer" : "not-allowed",
-                                }}
-                              >
-                                Reprovado
-                              </button>
-                            </form>
+                          <div style={{ display: "flex", gap: 7, justifyContent: "flex-end", flexWrap: "wrap" }}>
+                            {DECISOES.map((d) => (
+                              <form key={d.valor} action={ativo ? decidirItemAction.bind(null, sol.id, item.id, d.valor) : undefined}>
+                                <button
+                                  type="submit"
+                                  disabled={!ativo}
+                                  aria-label={`${d.acao}: ${item.texto}`}
+                                  aria-pressed={est === d.valor}
+                                  style={{
+                                    border: `1px solid ${est === d.valor ? d.cor : "#DDD8CE"}`,
+                                    background: est === d.valor ? d.cor : "#FFFFFF",
+                                    color: est === d.valor ? "#FFFFFF" : "#4A5563",
+                                    borderRadius: 4,
+                                    padding: "7px 11px",
+                                    fontSize: 12,
+                                    fontWeight: 600,
+                                    whiteSpace: "nowrap",
+                                    cursor: ativo ? "pointer" : "not-allowed",
+                                  }}
+                                >
+                                  {d.rotulo}
+                                </button>
+                              </form>
+                            ))}
                           </div>
                           {est === "REPROVADO" && (
-                            <div style={{ gridColumn: "1 / -1" }}>
+                            <div style={{ gridColumn: "1 / -1", display: "flex", flexDirection: "column", gap: 5 }}>
                               {ativo ? (
-                                <ObservacaoField
-                                  defaultValue={resultado?.observacao ?? ""}
-                                  placeholder="O que não atendeu a norma e o que precisa ser corrigido para este item."
-                                  onSave={salvarObservacaoItemAction.bind(null, sol.id, item.id)}
-                                />
+                                <>
+                                  <span style={{ fontSize: 10.5, letterSpacing: ".1em", textTransform: "uppercase", color: "#8C2B22", fontWeight: 600 }}>
+                                    Descreva a irregularidade (opcional)
+                                  </span>
+                                  <ObservacaoField
+                                    defaultValue={resultado?.observacao ?? ""}
+                                    placeholder="O que não atendeu a norma e o que precisa ser corrigido para este item."
+                                    onSave={salvarObservacaoItemAction.bind(null, sol.id, item.id)}
+                                  />
+                                </>
                               ) : (
                                 resultado?.observacao && (
                                   <div style={{ fontSize: 12.5, color: "#6B4A11", lineHeight: 1.45 }}>{resultado.observacao}</div>
@@ -562,28 +560,34 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
                 );
               })}
 
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, padding: "16px 18px", flexWrap: "wrap" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 12, padding: "16px 18px" }}>
                 <div style={{ fontSize: 12.5, lineHeight: 1.45, maxWidth: "62ch", color: vereditoCor }}>{veredito}</div>
-                <div style={{ display: "flex", gap: 9 }}>
-                  <form action={podeEditar && podeEmitir ? emitirParecerAction.bind(null, sol.id) : undefined}>
-                    <button
-                      type="submit"
-                      disabled={!podeEditar || !podeEmitir}
-                      style={{
-                        border: "1px solid #E01B22",
-                        background: emitirBg,
-                        color: emitirFg,
-                        borderRadius: 4,
-                        padding: "10px 16px",
-                        fontSize: 12.5,
-                        fontWeight: 600,
-                        cursor: podeEditar && podeEmitir ? "pointer" : "not-allowed",
-                      }}
-                    >
-                      {emitirLabel}
-                    </button>
-                  </form>
-                </div>
+                <EmitirParecerForm
+                  solicitacaoId={sol.id}
+                  podeEmitir={podeEditar && podeEmitir}
+                  mostrarDevolutiva={podeEditar && allDocs && totalItens > 0}
+                  rotulo={emitirLabel}
+                  bg={emitirBg}
+                  fg={emitirFg}
+                />
+                {sol.devolutivas.length > 0 && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10, borderTop: "1px solid #EDE9E1", paddingTop: 12 }}>
+                    <div style={{ fontSize: 10.5, letterSpacing: ".13em", textTransform: "uppercase", color: "#7A7472" }}>Já enviado ao RT com os pareceres</div>
+                    {sol.devolutivas.map((d) => (
+                      <div key={d.id} style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                        <div style={{ fontSize: 11, color: "#7A7472", fontFamily: "var(--font-mono)" }}>
+                          {formatDateTime(d.createdAt)} · {d.autor.name}
+                        </div>
+                        {d.comentario && <div style={{ fontSize: 12.5, color: "#3B4653", lineHeight: 1.45, whiteSpace: "pre-line" }}>{d.comentario}</div>}
+                        {d.arquivoNome && (
+                          <a href={`/api/devolutivas/${d.id}`} target="_blank" rel="noreferrer" style={{ fontSize: 12, fontWeight: 600 }}>
+                            {d.arquivoNome}
+                          </a>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </section>
           </div>
@@ -601,11 +605,7 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
               </div>
             </section>
             <section style={{ background: "#fff", border: "1px solid #DDD8CE", borderRadius: 4, padding: "16px 17px", display: "flex", flexDirection: "column", gap: 10 }}>
-              <div style={{ fontSize: 11, letterSpacing: ".14em", textTransform: "uppercase", color: "#7A7472" }}>Taxa de análise</div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 600 }}>{formatBRL(sol.lote.empreendimento.taxaAnaliseCent)}</div>
-              <div style={{ fontSize: 11.5, color: "#4A5563", lineHeight: 1.45 }}>
-                Lote único. Lotes contíguos do mesmo proprietário multiplicam a taxa pelo número de lotes originais da planta.
-              </div>
+              <div style={{ fontSize: 11, letterSpacing: ".14em", textTransform: "uppercase", color: "#7A7472" }}>Pagamento da análise</div>
               <form action={togglePagoAction.bind(null, sol.id)}>
                 <button
                   type="submit"

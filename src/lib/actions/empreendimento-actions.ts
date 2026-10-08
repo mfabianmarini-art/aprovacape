@@ -8,25 +8,18 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/require-role";
 
-function parseBRL(v: string): number {
-  const normalized = v.replace(/\./g, "").replace(",", ".");
-  const n = Number(normalized);
-  return Math.round((Number.isFinite(n) ? n : 0) * 100);
-}
-
+// Valores de taxa (taxaAnaliseCent/taxaVisitaCent) saíram de todas as telas: as colunas
+// ficam no banco com o que já estava gravado, mas nenhum formulário as edita mais.
 const schema = z.object({
   empreendimentoId: z.string().min(1),
-  taxaAnalise: z.string().min(1),
   prazoDias: z.coerce.number().int().positive(),
   reenviosSemTaxa: z.coerce.number().int().nonnegative(),
-  taxaVisita: z.string().min(1),
 });
 
 const createSchema = z.object({
   nome: z.string().min(2, "Informe o nome do empreendimento"),
   cidade: z.string().min(2, "Informe a cidade"),
   uf: z.string().length(2, "Use a sigla da UF (ex.: SP)"),
-  taxaAnalise: z.string().min(1),
   prazoDias: z.coerce.number().int().positive(),
 });
 
@@ -80,7 +73,7 @@ export async function createEmpreendimentoAction(
       cidade: d.cidade,
       uf: d.uf.toUpperCase(),
       numQuadras: quadrasResult.quadras.length,
-      taxaAnaliseCent: parseBRL(d.taxaAnalise),
+      taxaAnaliseCent: 0,
       prazoDias: d.prazoDias,
       quadras: { create: quadrasResult.quadras },
     },
@@ -99,10 +92,8 @@ export async function updateEmpreendimentoAction(_prev: unknown, formData: FormD
   await prisma.empreendimento.update({
     where: { id: d.empreendimentoId },
     data: {
-      taxaAnaliseCent: parseBRL(d.taxaAnalise),
       prazoDias: d.prazoDias,
       reenviosSemTaxa: d.reenviosSemTaxa,
-      taxaVisitaCent: parseBRL(d.taxaVisita),
     },
   });
 

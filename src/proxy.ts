@@ -2,7 +2,9 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { homeForRole } from "@/lib/nav";
 
-const PUBLIC_PATHS = ["/login", "/api/auth"];
+// /acompanhar é a tela do proprietário, sem conta: o acesso é conferido pela própria
+// página (protocolo + senha → cookie assinado), não pela sessão.
+const PUBLIC_PATHS = ["/login", "/api/auth", "/acompanhar"];
 
 export const proxy = auth((req) => {
   const { pathname } = req.nextUrl;

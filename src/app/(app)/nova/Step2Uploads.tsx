@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 import { uploadDocumentoAction } from "@/lib/actions/nova-actions";
-import { DOC_LABEL, DOC_ORDER, DOC_REGRAS, formatosAceitos } from "@/lib/status";
+import { DOC_LABEL, DOC_OPCIONAIS, DOC_ORDER, DOC_REGRAS, formatosAceitos } from "@/lib/status";
 import type { DocumentoTipo } from "@/generated/prisma/enums";
 
 type Rascunho = {
@@ -11,7 +11,9 @@ type Rascunho = {
 };
 
 const DICAS: Record<DocumentoTipo, string> = {
-  PROJETO_ARQUITETONICO: "Plantas, cortes, elevações e implantação no lote. Aceita DWG salvo em AutoCAD 2010/LT2010 — os demais documentos do check-list são só PDF.",
+  PROJETO_ARQUITETONICO: "Plantas, cortes, elevações e implantação no lote, em PDF",
+  PROJETO_ARQUITETONICO_DWG:
+    "O mesmo projeto em DWG salvo em AutoCAD 2010/LT2010. Mais de um arquivo DWG: envie todos juntos numa pasta compactada (.zip)",
   ART_RRT_PROJETO: "Anotação de responsabilidade técnica quitada, do autor do projeto",
   ART_RRT_EXECUCAO: "Anotação de responsabilidade técnica quitada, de quem executa a obra",
   MEMORIAL_DESCRITIVO: "Materiais, acabamentos e sistema construtivo",
@@ -91,14 +93,23 @@ function UploadRow({
 export function Step2Uploads({ rascunho }: { rascunho: Rascunho }) {
   const enviados = DOC_ORDER.filter((t) => rascunho.documentos.find((d) => d.tipo === t)).length;
   const pendentes = DOC_ORDER.length - enviados;
-  const outros = rascunho.documentos.find((d) => d.tipo === "OUTROS");
 
   return (
     <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={{ fontSize: 11, letterSpacing: ".13em", textTransform: "uppercase", color: "#7A7472" }}>Documentos obrigatórios</div>
       {DOC_ORDER.map((tipo) => (
         <UploadRow key={tipo} solicitacaoId={rascunho.id} tipo={tipo} existente={rascunho.documentos.find((d) => d.tipo === tipo)} />
       ))}
-      <UploadRow solicitacaoId={rascunho.id} tipo="OUTROS" existente={outros} obrigatorio={false} />
+      <div style={{ fontSize: 11, letterSpacing: ".13em", textTransform: "uppercase", color: "#7A7472", marginTop: 6 }}>Documentos opcionais</div>
+      {DOC_OPCIONAIS.map((tipo) => (
+        <UploadRow
+          key={tipo}
+          solicitacaoId={rascunho.id}
+          tipo={tipo}
+          existente={rascunho.documentos.find((d) => d.tipo === tipo)}
+          obrigatorio={false}
+        />
+      ))}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 14, flexWrap: "wrap", borderTop: "1px solid #EDE9E1", paddingTop: 16 }}>
         <div style={{ fontSize: 12.5, color: "#4A5563" }}>
           {pendentes === 0 ? "Todos os documentos obrigatórios do check-list foram anexados." : `${pendentes} documento(s) obrigatório(s) pendente(s).`}

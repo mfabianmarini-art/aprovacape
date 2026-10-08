@@ -28,6 +28,11 @@ export async function getMeusRequerimentos(userId: string) {
         orderBy: { createdAt: "desc" },
         include: { evidencias: { select: { id: true, nomeArquivo: true } } },
       },
+      // Comentários e arquivo de apontamentos que a CAPE mandou com cada parecer.
+      devolutivas: {
+        orderBy: { createdAt: "desc" },
+        select: { id: true, comentario: true, arquivoNome: true, createdAt: true },
+      },
     },
   });
 }

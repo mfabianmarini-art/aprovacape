@@ -3,6 +3,7 @@ import { get } from "@vercel/blob";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { contentTypeDe } from "@/lib/upload-documento";
+import { contentDisposition } from "@/lib/content-disposition";
 
 // A evidência sustenta a notificação, então alcança quem ela envolve: a CAPE, o síndico
 // do empreendimento e o proprietário/RT do lote.
@@ -37,7 +38,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ evidenc
   return new NextResponse(result.stream, {
     headers: {
       "Content-Type": contentTypeDe(ev.nomeArquivo),
-      "Content-Disposition": `inline; filename="${ev.nomeArquivo}"`,
+      "Content-Disposition": contentDisposition("inline", ev.nomeArquivo),
     },
   });
 }

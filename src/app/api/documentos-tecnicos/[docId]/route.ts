@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { get } from "@vercel/blob";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { contentDisposition } from "@/lib/content-disposition";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ docId: string }> }) {
   const session = await auth();
@@ -40,7 +41,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ docId: 
   return new NextResponse(result.stream, {
     headers: {
       "Content-Type": result.blob.contentType ?? "application/octet-stream",
-      "Content-Disposition": `inline; filename="${doc.nomeArquivo}"`,
+      "Content-Disposition": contentDisposition("inline", doc.nomeArquivo),
     },
   });
 }

@@ -1,8 +1,9 @@
 import { prisma } from "@/lib/prisma";
 
+// Só o RT abre solicitação, então só os lotes em que ele é o responsável técnico.
 export async function getMeusLotes(userId: string) {
   return prisma.lote.findMany({
-    where: { OR: [{ proprietarioId: userId }, { rtId: userId }] },
+    where: { rtId: userId },
     include: { quadra: true, empreendimento: true },
     orderBy: [{ quadra: { nome: "asc" } }, { numero: "asc" }],
   });
@@ -14,7 +15,7 @@ export async function getMeusRascunhos(userId: string) {
   return prisma.solicitacao.findMany({
     where: {
       status: "RASCUNHO",
-      lote: { OR: [{ proprietarioId: userId }, { rtId: userId }] },
+      lote: { rtId: userId },
     },
     orderBy: { createdAt: "desc" },
     include: { documentos: { select: { tipo: true } }, lote: { include: { quadra: true, empreendimento: true } } },

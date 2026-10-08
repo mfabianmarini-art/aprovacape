@@ -5,6 +5,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/require-role";
 import { saveUploadedFile } from "@/lib/upload";
+import { ehZipComArquivos, extensaoDe } from "@/lib/upload-documento";
 import { DOC_ORDER, IRREGULARIDADE_LABEL } from "@/lib/status";
 import type { DocumentoTipo } from "@/generated/prisma/enums";
 
@@ -45,8 +46,8 @@ export async function toggleDocumentoAction(solicitacaoId: string, tipo: Documen
 
 const MAX_OBSERVACAO = 1000;
 
-function normalizarObservacao(texto: string) {
-  const limpo = texto.trim().slice(0, MAX_OBSERVACAO);
+function normalizarObservacao(texto: string, max = MAX_OBSERVACAO) {
+  const limpo = texto.trim().slice(0, max);
   return limpo.length > 0 ? limpo : null;
 }
 
@@ -108,7 +109,7 @@ export async function devolverDocumentacaoAction(solicitacaoId: string) {
   revalidateAll(sol.protocolo);
 }
 
-export async function decidirItemAction(solicitacaoId: string, itemId: string, decisao: "APROVADO" | "REPROVADO") {
+export async function decidirItemAction(solicitacaoId: string, itemId: string, decisao: "APROVADO" | "REPROVADO" | "NAO_SE_APLICA") {
   await requireRole("ADMIN_CAPE", "CAPE_ANALISTA");
   const sol = await prisma.solicitacao.findUniqueOrThrow({ where: { id: solicitacaoId } });
 
@@ -120,8 +121,9 @@ export async function decidirItemAction(solicitacaoId: string, itemId: string, d
   await prisma.checklistResultado.upsert({
     where: { solicitacaoId_itemId: { solicitacaoId, itemId } },
     create: { solicitacaoId, itemId, status: decisao, avaliadoEm: new Date() },
-    // Aprovar encerra a pendência; a observação que a descrevia não vale mais.
-    update: { status: decisao, avaliadoEm: new Date(), ...(decisao === "APROVADO" && { observacao: null }) },
+    // Aprovar ou marcar "não se aplica" encerra a pendência; a observação que a
+    // descrevia não vale mais.
+    update: { status: decisao, avaliadoEm: new Date(), ...(decisao !== "REPROVADO" && { observacao: null }) },
   });
 
   if (sol.status === "ENVIADA") {
@@ -131,7 +133,13 @@ export async function decidirItemAction(solicitacaoId: string, itemId: string, d
   revalidateAll(sol.protocolo);
 }
 
-export async function emitirParecerAction(solicitacaoId: string) {
+export type ParecerState = { error?: string; ok?: boolean } | null;
+
+const MAX_COMENTARIO = 2000;
+const MAX_APONTAMENTOS_BYTES = 15 * 1024 * 1024;
+const EXT_APONTAMENTOS = [".dwg", ".zip", ".pdf"];
+
+export async function emitirParecerAction(solicitacaoId: string, _prev: ParecerState, formData: FormData): Promise<ParecerState> {
   const session = await requireRole("ADMIN_CAPE", "CAPE_ANALISTA");
   const sol = await prisma.solicitacao.findUniqueOrThrow({
     where: { id: solicitacaoId },
@@ -143,13 +151,47 @@ export async function emitirParecerAction(solicitacaoId: string) {
     include: { itens: true },
   });
   const totalItens = categorias.reduce((a, c) => a + c.itens.length, 0);
-  if (totalItens === 0) return;
+  if (totalItens === 0) return { error: "Este empreendimento ainda não tem itens de check-list." };
 
   // Decididos, não linhas: um item devolvido guarda o ChecklistResultado com status
-  // PENDENTE, e contar linhas daria o check-list por concluído sem estar.
+  // PENDENTE, e contar linhas daria o check-list por concluído sem estar. "Não se aplica"
+  // é decisão também — só não gera pendência.
   const reprovados = sol.resultados.filter((r) => r.status === "REPROVADO");
   const aprovados = sol.resultados.filter((r) => r.status === "APROVADO");
-  if (aprovados.length + reprovados.length < totalItens) return;
+  const naoSeAplica = sol.resultados.filter((r) => r.status === "NAO_SE_APLICA");
+  if (aprovados.length + reprovados.length + naoSeAplica.length < totalItens) {
+    return { error: "Decida todos os itens do check-list antes de emitir o parecer." };
+  }
+
+  // Devolutiva opcional ao RT: comentários gerais e/ou o DWG com os apontamentos. Validada
+  // antes de qualquer gravação, para um arquivo recusado não deixar o parecer pela metade.
+  const comentario = normalizarObservacao(String(formData.get("comentario") ?? ""), MAX_COMENTARIO);
+  const arquivo = formData.get("arquivo");
+  const temArquivo = arquivo instanceof File && arquivo.size > 0;
+  if (temArquivo) {
+    const ext = extensaoDe(arquivo.name);
+    if (!EXT_APONTAMENTOS.includes(ext)) return { error: "O arquivo de apontamentos deve ser DWG, ZIP (vários DWG) ou PDF." };
+    if (arquivo.size > MAX_APONTAMENTOS_BYTES) return { error: "Arquivo de apontamentos maior que 15 MB." };
+    if (ext === ".zip" && !(await ehZipComArquivos(arquivo))) return { error: "Arquivo .zip inválido ou vazio." };
+  }
+  const salvo = temArquivo ? await saveUploadedFile(arquivo, `devolutivas/${solicitacaoId}`) : null;
+  const devolutiva =
+    comentario || salvo
+      ? [
+          prisma.devolutivaTecnica.create({
+            data: {
+              solicitacaoId,
+              comentario,
+              arquivoNome: salvo?.nomeArquivo,
+              arquivoCaminho: salvo?.caminhoArquivo,
+              arquivoTamanho: salvo?.tamanhoBytes,
+              autorId: session.user.id,
+            },
+          }),
+        ]
+      : [];
+  // O comentário entra também no histórico, que é o que o proprietário acompanha.
+  const complemento = `${comentario ? `\nComentários da CAPE: ${comentario}` : ""}${salvo ? "\nA CAPE anexou um arquivo com os apontamentos." : ""}`;
 
   if (reprovados.length > 0) {
     await prisma.$transaction([
@@ -157,13 +199,14 @@ export async function emitirParecerAction(solicitacaoId: string) {
         where: { id: solicitacaoId },
         data: { status: "COMPLEMENTO", devolvidaNoChecklist: true },
       }),
-      ...aprovados.map((r) => prisma.checklistResultado.update({ where: { id: r.id }, data: { travado: true } })),
+      ...[...aprovados, ...naoSeAplica].map((r) => prisma.checklistResultado.update({ where: { id: r.id }, data: { travado: true } })),
       ...reprovados.map((r) => prisma.checklistResultado.update({ where: { id: r.id }, data: { status: "PENDENTE", travado: false } })),
+      ...devolutiva,
       prisma.historicoEvento.create({
         data: {
           solicitacaoId,
           tipo: "CHECKLIST_DEVOLVIDO",
-          texto: `Devolvida com ${reprovados.length} pendência(s) no check-list técnico.`,
+          texto: `Devolvida com ${reprovados.length} pendência(s) no check-list técnico.${complemento}`,
           cor: "#B4711A",
           autorId: session.user.id,
         },
@@ -172,11 +215,12 @@ export async function emitirParecerAction(solicitacaoId: string) {
   } else {
     await prisma.$transaction([
       prisma.solicitacao.update({ where: { id: solicitacaoId }, data: { status: "APROVADA" } }),
+      ...devolutiva,
       prisma.historicoEvento.create({
         data: {
           solicitacaoId,
           tipo: "PROJETO_APROVADO",
-          texto: "Projeto aprovado. A aprovação da CAPE não substitui a aprovação da Prefeitura.",
+          texto: `Projeto aprovado. A aprovação da CAPE não substitui a aprovação da Prefeitura.${complemento}`,
           cor: "#24603A",
           autorId: session.user.id,
         },
@@ -185,6 +229,7 @@ export async function emitirParecerAction(solicitacaoId: string) {
   }
 
   revalidateAll(sol.protocolo);
+  return { ok: true };
 }
 
 export async function aceitarAlvaraAction(solicitacaoId: string) {

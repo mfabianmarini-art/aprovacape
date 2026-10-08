@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { get } from "@vercel/blob";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { contentDisposition } from "@/lib/content-disposition";
 
 // A autorização do proprietário é documento de análise do vínculo: só a equipe CAPE,
 // que aprova ou recusa, e o próprio autor do envio podem abrir.
@@ -23,7 +24,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ userId:
   return new NextResponse(result.stream, {
     headers: {
       "Content-Type": result.blob.contentType ?? "application/octet-stream",
-      "Content-Disposition": `inline; filename="${user.vinculoArquivoNome ?? "autorizacao"}"`,
+      "Content-Disposition": contentDisposition("inline", user.vinculoArquivoNome ?? "autorizacao"),
     },
   });
 }

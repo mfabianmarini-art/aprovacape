@@ -102,13 +102,7 @@ export default async function EmpreendimentosPage({ searchParams }: { searchPara
           contagens={{ quadras: quadrasCfg.length, usuarios: usuarios.length, documentos: documentos.length }}
           config={
             <div className="layout-with-aside" style={{ padding: 20 }}>
-              <EmpreendimentoForm
-                id={emp.id}
-                taxaAnaliseCent={emp.taxaAnaliseCent}
-                prazoDias={emp.prazoDias}
-                reenviosSemTaxa={emp.reenviosSemTaxa}
-                taxaVisitaCent={emp.taxaVisitaCent}
-              />
+              <EmpreendimentoForm id={emp.id} prazoDias={emp.prazoDias} reenviosSemTaxa={emp.reenviosSemTaxa} />
               <aside style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                 <PlantaUpload empreendimentoId={emp.id} plantaImageUrl={emp.plantaImageUrl} />
               </aside>

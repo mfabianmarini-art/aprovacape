@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
+import Link from "next/link";
 import {
   loginAction,
   registerAction,
@@ -10,7 +10,7 @@ import {
   type LoginState,
   type RegisterState,
 } from "@/lib/actions/auth-actions";
-
+import { PublicShell as Shell } from "@/components/PublicShell";
 
 const inputStyle: React.CSSProperties = {
   border: "1px solid #DDD8CE",
@@ -27,7 +27,6 @@ const labelTextStyle: React.CSSProperties = {
 
 export function LoginRegisterForm() {
   const [aba, setAba] = useState<"cadastro" | "login">("login");
-  const [cadTipo, setCadTipo] = useState<"prop" | "rt">("prop");
   const [aceite, setAceite] = useState(false);
 
   const [loginState, loginFormAction, loginPending] = useActionState<LoginState, FormData>(loginAction, null);
@@ -183,37 +182,10 @@ export function LoginRegisterForm() {
 
         {aba === "cadastro" && (
           <form action={registerFormAction} style={{ padding: 24, display: "flex", flexDirection: "column", gap: 16 }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <span style={labelTextStyle}>Eu sou</span>
-              <div style={{ display: "flex", gap: 8 }}>
-                {(
-                  [
-                    ["prop", "Proprietário do lote"],
-                    ["rt", "Responsável técnico"],
-                  ] as const
-                ).map(([id, label]) => (
-                  <button
-                    key={id}
-                    type="button"
-                    onClick={() => setCadTipo(id)}
-                    style={{
-                      flex: 1,
-                      border: `1px solid ${cadTipo === id ? "#E01B22" : "#DDD8CE"}`,
-                      background: cadTipo === id ? "#E01B22" : "#FFFFFF",
-                      color: cadTipo === id ? "#FFFFFF" : "#4A5563",
-                      borderRadius: 4,
-                      padding: "11px 10px",
-                      fontSize: 12.5,
-                      fontWeight: 600,
-                      cursor: "pointer",
-                    }}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
+            <div style={{ fontSize: 12.5, lineHeight: 1.5, color: "#4A5563" }}>
+              Cadastro de <strong>responsáveis técnicos</strong>, que abrem e acompanham as solicitações de obra. O
+              proprietário não precisa de conta: acompanha a aprovação com o protocolo e a senha que o RT repassa.
             </div>
-            <input type="hidden" name="tipo" value={cadTipo} />
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <label style={{ display: "flex", flexDirection: "column", gap: 6, gridColumn: "1/-1" }}>
@@ -236,36 +208,34 @@ export function LoginRegisterForm() {
                 <span style={labelTextStyle}>E-mail</span>
                 <input name="email" required type="email" style={inputStyle} />
               </label>
-              {cadTipo === "rt" && (
-                <div style={{ display: "grid", gridTemplateColumns: "110px minmax(0,1fr) 90px", gap: 10, gridColumn: "1/-1" }}>
-                  <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                    <span style={labelTextStyle}>Conselho</span>
-                    <select name="conselho" required defaultValue="CREA" style={{ ...inputStyle, border: "1px solid #B4711A" }}>
-                      <option value="CREA">CREA</option>
-                      <option value="CAU">CAU</option>
-                    </select>
-                  </label>
-                  <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                    <span style={labelTextStyle}>Número do registro</span>
-                    <input
-                      name="registroNumero"
-                      required
-                      placeholder="5069874/D"
-                      style={{ ...inputStyle, border: "1px solid #B4711A", fontFamily: "var(--font-mono)" }}
-                    />
-                  </label>
-                  <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                    <span style={labelTextStyle}>UF emissora</span>
-                    <input
-                      name="registroUf"
-                      required
-                      maxLength={2}
-                      placeholder="SP"
-                      style={{ ...inputStyle, border: "1px solid #B4711A", fontFamily: "var(--font-mono)", textTransform: "uppercase" }}
-                    />
-                  </label>
-                </div>
-              )}
+              <div style={{ display: "grid", gridTemplateColumns: "110px minmax(0,1fr) 90px", gap: 10, gridColumn: "1/-1" }}>
+                <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <span style={labelTextStyle}>Conselho</span>
+                  <select name="conselho" required defaultValue="CREA" style={{ ...inputStyle, border: "1px solid #B4711A" }}>
+                    <option value="CREA">CREA</option>
+                    <option value="CAU">CAU</option>
+                  </select>
+                </label>
+                <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <span style={labelTextStyle}>Número do registro</span>
+                  <input
+                    name="registroNumero"
+                    required
+                    placeholder="5069874/D"
+                    style={{ ...inputStyle, border: "1px solid #B4711A", fontFamily: "var(--font-mono)" }}
+                  />
+                </label>
+                <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <span style={labelTextStyle}>UF emissora</span>
+                  <input
+                    name="registroUf"
+                    required
+                    maxLength={2}
+                    placeholder="SP"
+                    style={{ ...inputStyle, border: "1px solid #B4711A", fontFamily: "var(--font-mono)", textTransform: "uppercase" }}
+                  />
+                </label>
+              </div>
               <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 <span style={labelTextStyle}>Senha</span>
                 <input name="senha" required type="password" placeholder="mínimo 8 caracteres" style={inputStyle} />
@@ -325,31 +295,30 @@ export function LoginRegisterForm() {
           </form>
         )}
       </div>
-    </Shell>
-  );
-}
 
-function Shell({ children }: { children: React.ReactNode }) {
-  return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background: "#F4F2ED",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "40px 24px",
-        gap: 24,
-      }}
-    >
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 5 }}>
-        <Image src="/cape-logo.png" alt="CAPE" width={76} height={76} priority style={{ display: "block" }} />
-        <div style={{ fontSize: 10.5, letterSpacing: ".18em", textTransform: "uppercase", color: "#7A7472" }}>
-          Aprova · Obras em lotes
-        </div>
-      </div>
-      <div style={{ width: "100%", maxWidth: 560, display: "flex", flexDirection: "column", gap: 20 }}>{children}</div>
-    </div>
+      <Link
+        href="/acompanhar"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 14,
+          background: "#fff",
+          border: "1px solid #DDD8CE",
+          borderRadius: 4,
+          padding: "15px 18px",
+          textDecoration: "none",
+          color: "#231F20",
+        }}
+      >
+        <span style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+          <span style={{ fontSize: 13.5, fontWeight: 600 }}>Sou proprietário do lote</span>
+          <span style={{ fontSize: 12, color: "#4A5563", lineHeight: 1.45 }}>
+            Acompanhe a aprovação da sua obra com o protocolo e a senha recebidos do responsável técnico.
+          </span>
+        </span>
+        <span style={{ fontSize: 13, fontWeight: 600, color: "#E01B22", whiteSpace: "nowrap" }}>Acompanhar →</span>
+      </Link>
+    </Shell>
   );
 }
