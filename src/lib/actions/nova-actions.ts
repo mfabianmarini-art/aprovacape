@@ -5,8 +5,8 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/require-role";
-import { saveUploadedFile } from "@/lib/upload";
-import { validarDocumento } from "@/lib/upload-documento";
+import { validarDocumentoEnviado } from "@/lib/upload-documento";
+import { descartarArquivo, lerArquivoEnviado } from "@/lib/upload-direto";
 import { DOC_ORDER } from "@/lib/status";
 import { emitirAcessoProprietario } from "@/lib/acesso-proprietario";
 import type { DocumentoTipo } from "@/generated/prisma/enums";
@@ -70,12 +70,19 @@ export async function uploadDocumentoAction(solicitacaoId: string, tipo: Documen
     if (atual?.validado) return { error: "Este documento já foi validado pela CAPE e não precisa ser substituído." };
   }
 
-  const file = formData.get("arquivo");
-  if (!(file instanceof File) || file.size === 0) return { error: "Selecione um arquivo." };
-  const invalido = await validarDocumento(file, tipo);
-  if (invalido) return { error: invalido };
-
-  const saved = await saveUploadedFile(file, solicitacaoId);
+  // O arquivo já está no Blob (enviado direto pelo navegador, ver upload-cliente.ts);
+  // aqui ele é conferido e só então registrado. Recusado, é apagado.
+  const pathname = String(formData.get("pathname") ?? "");
+  const nomeArquivo = String(formData.get("nomeArquivo") ?? "").slice(0, 255);
+  const destino = { destino: "documento", solicitacaoId, tipo } as const;
+  const arq = pathname && nomeArquivo ? await lerArquivoEnviado(pathname, destino) : null;
+  if (!arq) return { error: "Arquivo não encontrado. Envie de novo." };
+  const invalido = validarDocumentoEnviado({ nome: nomeArquivo, tamanho: arq.tamanho, inicio: arq.inicio }, tipo);
+  if (invalido) {
+    await descartarArquivo(pathname);
+    return { error: invalido };
+  }
+  const saved = { caminhoArquivo: pathname, nomeArquivo, tamanhoBytes: arq.tamanho };
 
   await prisma.solicitacaoDocumento.upsert({
     where: { solicitacaoId_tipo: { solicitacaoId, tipo } },

@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { STATUS_INFO, DOC_LABEL, IRREGULARIDADE_LABEL, TIPO_LABEL, formatDate, formatDateTime } from "@/lib/status";
+import { useActionState, useState } from "react";
+import { STATUS_INFO, DOC_LABEL, DOC_ORDER, IRREGULARIDADE_LABEL, TIPO_LABEL, formatDate, formatDateTime } from "@/lib/status";
 import { etapasDaSolicitacao } from "@/lib/etapas";
-import { reenviarComplementacaoAction } from "@/lib/actions/requerimento-actions";
+import { reenviarComplementacaoAction, type ReenvioState } from "@/lib/actions/requerimento-actions";
 import { EtapasStepper } from "@/components/EtapasStepper";
 import { SubstituirDocumentos } from "./SubstituirDocumentos";
 import { EnviarAlvara } from "./EnviarAlvara";
@@ -197,16 +197,10 @@ export function RequerimentoCard({
           )}
 
           {s.status === "COMPLEMENTO" && podeAgir && (
-            <div style={{ display: "flex", gap: 9, flexWrap: "wrap" }}>
-              <form action={reenviarComplementacaoAction.bind(null, s.id)}>
-                <button
-                  type="submit"
-                  style={{ border: "1px solid #B4711A", background: "#B4711A", color: "#fff", borderRadius: 4, padding: "9px 14px", fontSize: 12.5, fontWeight: 600, cursor: "pointer" }}
-                >
-                  Enviar complementação
-                </button>
-              </form>
-            </div>
+            <EnviarComplementacao
+              solicitacaoId={s.id}
+              faltando={DOC_ORDER.filter((t) => !s.documentos.some((d) => d.tipo === t)).map((t) => DOC_LABEL[t].nome)}
+            />
           )}
 
           {(s.status === "APROVADA" || s.status === "RESSALVAS") && podeAgir && <EnviarAlvara solicitacaoId={s.id} recusa={s.alvaraRecusa} />}
@@ -287,5 +281,36 @@ function SenhaProprietario({
         </div>
       )}
     </div>
+  );
+}
+
+function EnviarComplementacao({ solicitacaoId, faltando }: { solicitacaoId: string; faltando: string[] }) {
+  const [state, formAction, pending] = useActionState<ReenvioState>(() => reenviarComplementacaoAction(solicitacaoId), null);
+  const bloqueado = faltando.length > 0;
+  return (
+    <form action={formAction} style={{ display: "flex", flexDirection: "column", gap: 7, alignItems: "flex-start" }}>
+      {bloqueado && (
+        <div style={{ fontSize: 12.5, color: "#8C2B22", lineHeight: 1.45 }}>
+          Falta enviar: <strong>{faltando.join(", ")}</strong>. A complementação só pode ser enviada com todos os documentos obrigatórios.
+        </div>
+      )}
+      <button
+        type="submit"
+        disabled={bloqueado || pending}
+        style={{
+          border: `1px solid ${bloqueado ? "#DDD8CE" : "#B4711A"}`,
+          background: bloqueado ? "#EDE9E1" : "#B4711A",
+          color: bloqueado ? "#8B939C" : "#fff",
+          borderRadius: 4,
+          padding: "9px 14px",
+          fontSize: 12.5,
+          fontWeight: 600,
+          cursor: bloqueado ? "not-allowed" : pending ? "wait" : "pointer",
+        }}
+      >
+        {pending ? "Enviando…" : "Enviar complementação"}
+      </button>
+      {state?.error && <div style={{ fontSize: 12, color: "#8C2B22" }}>{state.error}</div>}
+    </form>
   );
 }

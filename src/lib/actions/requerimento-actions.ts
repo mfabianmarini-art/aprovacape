@@ -3,9 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/require-role";
-import { saveUploadedFile } from "@/lib/upload";
+import { descartarArquivo, lerArquivoEnviado } from "@/lib/upload-direto";
 import { extensaoDe } from "@/lib/upload-documento";
-import { DOC_ORDER } from "@/lib/status";
+import { DOC_LABEL, DOC_ORDER } from "@/lib/status";
 
 // As ações da solicitação são do responsável técnico do lote; o proprietário só acompanha.
 async function loadOwnedSolicitacao(session: Awaited<ReturnType<typeof requireRole>>, solicitacaoId: string) {
@@ -14,10 +14,20 @@ async function loadOwnedSolicitacao(session: Awaited<ReturnType<typeof requireRo
   return sol;
 }
 
-export async function reenviarComplementacaoAction(solicitacaoId: string) {
+export type ReenvioState = { error?: string } | null;
+
+export async function reenviarComplementacaoAction(solicitacaoId: string): Promise<ReenvioState> {
   const session = await requireRole("RESPONSAVEL_TECNICO");
   const sol = await loadOwnedSolicitacao(session, solicitacaoId);
-  if (sol.status !== "COMPLEMENTO") return;
+  if (sol.status !== "COMPLEMENTO") return { error: "Esta solicitação não está aguardando complementação." };
+
+  // Sem isto a devolução voltava à CAPE com obrigatório faltando — a validação documental
+  // não fecha nunca e o check-list fica travado (caso do SOL-2026-004, DWG que não subiu).
+  const documentos = await prisma.solicitacaoDocumento.findMany({ where: { solicitacaoId: sol.id } });
+  const faltando = DOC_ORDER.filter((t) => !documentos.some((d) => d.tipo === t));
+  if (faltando.length > 0) {
+    return { error: `Envie antes os documentos obrigatórios que faltam: ${faltando.map((t) => DOC_LABEL[t].nome).join(", ")}.` };
+  }
 
   // Conta aqui, quando a documentação nova chega de fato — contar na devolução fazia
   // cada clique do analista consumir uma tentativa. E só conta o ciclo do check-list:
@@ -29,7 +39,6 @@ export async function reenviarComplementacaoAction(solicitacaoId: string) {
   // Os documentos substituídos já ficaram como não validados no próprio upload, e os
   // demais seguem com a validação que o analista deu. Invalidar todo mundo aqui obrigava
   // a CAPE a reconferir arquivos intactos a cada rodada.
-  const documentos = await prisma.solicitacaoDocumento.findMany({ where: { solicitacaoId: sol.id } });
   // OUTROS não entra na conferência documental (não é obrigatório e não tem checkbox de
   // validação), então não pode impedir `documentacaoValidada` de fechar.
   const todosValidados = DOC_ORDER.every((t) => documentos.find((d) => d.tipo === t)?.validado);
@@ -65,6 +74,7 @@ export async function reenviarComplementacaoAction(solicitacaoId: string) {
   revalidatePath("/requerimentos");
   revalidatePath("/fila");
   revalidatePath(`/analise/${sol.protocolo}`);
+  return null;
 }
 
 const MAX_ALVARA_BYTES = 5 * 1024 * 1024;
@@ -79,12 +89,17 @@ export async function enviarAlvaraAction(solicitacaoId: string, _prev: unknown, 
     return { error: "Esta solicitação não está aguardando o alvará." };
   }
 
-  const file = formData.get("alvara");
-  if (!(file instanceof File) || file.size === 0) return { error: "Selecione o arquivo do alvará." };
-  if (extensaoDe(file.name) !== ".pdf") return { error: "Envie o alvará em PDF." };
-  if (file.size > MAX_ALVARA_BYTES) return { error: "Arquivo maior que 5 MB." };
-
-  const saved = await saveUploadedFile(file, `alvaras/${sol.id}`);
+  // O PDF já subiu direto ao Blob (upload-cliente.ts); aqui é conferido e registrado.
+  const pathname = String(formData.get("pathname") ?? "");
+  const nomeArquivo = String(formData.get("nomeArquivo") ?? "").slice(0, 255);
+  const arq = pathname && nomeArquivo ? await lerArquivoEnviado(pathname, { destino: "alvara", solicitacaoId: sol.id }) : null;
+  if (!arq) return { error: "Arquivo do alvará não encontrado. Envie de novo." };
+  const PDF = arq.inicio[0] === 0x25 && arq.inicio[1] === 0x50 && arq.inicio[2] === 0x44 && arq.inicio[3] === 0x46; // %PDF
+  if (extensaoDe(nomeArquivo) !== ".pdf" || !PDF || arq.tamanho > MAX_ALVARA_BYTES) {
+    await descartarArquivo(pathname);
+    return { error: arq.tamanho > MAX_ALVARA_BYTES ? "Arquivo maior que 5 MB." : "Envie o alvará em PDF." };
+  }
+  const saved = { nomeArquivo, caminhoArquivo: pathname, tamanhoBytes: arq.tamanho };
 
   await prisma.$transaction([
     prisma.solicitacao.update({

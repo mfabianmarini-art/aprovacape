@@ -1,7 +1,9 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState, useTransition } from "react";
 import { emitirParecerAction, type ParecerState } from "@/lib/actions/analise-actions";
+import { problemaAntesDeEnviar } from "@/lib/upload-destino";
+import { enviarDireto, mensagemDeFalhaNoEnvio } from "@/lib/upload-cliente";
 
 const labelTextStyle: React.CSSProperties = { fontSize: 10.5, letterSpacing: ".1em", textTransform: "uppercase", color: "#7A7472" };
 
@@ -20,10 +22,44 @@ export function EmitirParecerForm({
   bg: string;
   fg: string;
 }) {
-  const [state, formAction, pending] = useActionState<ParecerState, FormData>(emitirParecerAction.bind(null, solicitacaoId), null);
+  const [state, formAction, emitindo] = useActionState<ParecerState, FormData>(emitirParecerAction.bind(null, solicitacaoId), null);
+  const [progresso, setProgresso] = useState<number | null>(null);
+  const [erroEnvio, setErroEnvio] = useState<string | null>(null);
+  const [, startTransition] = useTransition();
+  const pending = emitindo || progresso !== null;
+
+  // O arquivo sobe direto ao Blob antes da action (o corpo de uma requisição à função da
+  // Vercel não passa de 4,5 MB); a action recebe só o caminho e confere o arquivo.
+  async function emitir(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!podeEmitir || pending) return;
+    const form = e.currentTarget;
+    const fd = new FormData(form);
+    const arquivo = fd.get("arquivo");
+    fd.delete("arquivo");
+    setErroEnvio(null);
+    if (arquivo instanceof File && arquivo.size > 0) {
+      const destino = { destino: "devolutiva", solicitacaoId } as const;
+      const problema = problemaAntesDeEnviar(arquivo, destino);
+      if (problema) return setErroEnvio(problema);
+      setProgresso(0);
+      try {
+        const arq = await enviarDireto(arquivo, destino, setProgresso);
+        fd.set("pathname", arq.pathname);
+        fd.set("nomeArquivo", arq.nomeArquivo);
+      } catch (err) {
+        setProgresso(null);
+        return setErroEnvio(mensagemDeFalhaNoEnvio(err));
+      }
+      setProgresso(null);
+    }
+    startTransition(() => formAction(fd));
+  }
+
+  const erro = erroEnvio ?? state?.error;
 
   return (
-    <form action={podeEmitir ? formAction : undefined} style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%" }}>
+    <form onSubmit={emitir} style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%" }}>
       {mostrarDevolutiva && (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 12, background: "#FAF9F6", border: "1px solid #EDE9E1", borderRadius: 4, padding: "13px 14px" }}>
           <div style={{ gridColumn: "1/-1", fontSize: 12, color: "#4A5563", lineHeight: 1.45 }}>
@@ -47,7 +83,7 @@ export function EmitirParecerForm({
         </div>
       )}
       <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-        {state?.error && <span style={{ fontSize: 12, color: "#8C2B22" }}>{state.error}</span>}
+        {erro && !pending && <span style={{ fontSize: 12, color: "#8C2B22" }}>{erro}</span>}
         <button
           type="submit"
           disabled={!podeEmitir || pending}
@@ -62,7 +98,7 @@ export function EmitirParecerForm({
             cursor: podeEmitir ? (pending ? "wait" : "pointer") : "not-allowed",
           }}
         >
-          {pending ? "Emitindo…" : rotulo}
+          {progresso !== null ? `Enviando arquivo… ${progresso}%` : emitindo ? "Emitindo…" : rotulo}
         </button>
       </div>
     </form>

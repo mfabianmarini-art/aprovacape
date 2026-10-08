@@ -1,7 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
-import { uploadDocumentoAction } from "@/lib/actions/nova-actions";
+import { useEnvioDocumento } from "@/components/useEnvioDocumento";
 import { DOC_LABEL, DOC_OPCIONAIS, DOC_ORDER, DOC_REGRAS, formatosAceitos } from "@/lib/status";
 import type { DocumentoTipo } from "@/generated/prisma/enums";
 
@@ -35,13 +34,11 @@ function UploadRow({
   existente?: { nomeArquivo: string };
   obrigatorio?: boolean;
 }) {
-  const action = uploadDocumentoAction.bind(null, solicitacaoId, tipo);
-  const [state, formAction, pending] = useActionState(action, null as { error?: string } | null);
-  const ok = !!existente && !state?.error;
+  const { enviar, enviando, rotuloEnvio, erro, falhou } = useEnvioDocumento(solicitacaoId, tipo);
+  const ok = !!existente && !falhou;
 
   return (
-    <form
-      action={formAction}
+    <div
       style={{
         display: "grid",
         gridTemplateColumns: "1fr 190px",
@@ -64,7 +61,7 @@ function UploadRow({
           )}
         </div>
         <div style={{ fontSize: 11.5, color: "#7A7472" }}>{existente ? existente.nomeArquivo : DICAS[tipo]}</div>
-        {state?.error && <div style={{ fontSize: 11.5, color: "#8C2B22" }}>{state.error}</div>}
+        {erro && <div style={{ fontSize: 11.5, color: "#8C2B22" }}>{erro}</div>}
       </div>
       <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 10 }}>
         <span style={{ fontSize: 11.5, fontFamily: "var(--font-mono)", color: ok ? "#24603A" : obrigatorio ? "#8A5210" : "#8B939C" }}>
@@ -74,19 +71,23 @@ function UploadRow({
           type="file"
           name="arquivo"
           accept={DOC_REGRAS[tipo].extensoes.join(",")}
-          required={obrigatorio}
+          disabled={enviando}
           style={{ display: "none" }}
           id={`file-${tipo}`}
-          onChange={(e) => e.currentTarget.form?.requestSubmit()}
+          onChange={(e) => {
+            const file = e.currentTarget.files?.[0];
+            e.currentTarget.value = "";
+            if (file) enviar(file);
+          }}
         />
         <label
           htmlFor={`file-${tipo}`}
-          style={{ border: "1px solid #DDD8CE", background: "#fff", color: "#E01B22", borderRadius: 4, padding: "7px 11px", fontSize: 12, fontWeight: 600, cursor: pending ? "wait" : "pointer" }}
+          style={{ border: "1px solid #DDD8CE", background: "#fff", color: "#E01B22", borderRadius: 4, padding: "7px 11px", fontSize: 12, fontWeight: 600, cursor: enviando ? "wait" : "pointer", whiteSpace: "nowrap" }}
         >
-          {pending ? "Enviando…" : existente ? "Substituir" : "Selecionar arquivo"}
+          {rotuloEnvio ?? (existente ? "Substituir" : "Selecionar arquivo")}
         </label>
       </div>
-    </form>
+    </div>
   );
 }
 

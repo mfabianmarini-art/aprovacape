@@ -1,10 +1,12 @@
 "use client";
 
-import { useActionState, useRef, useState } from "react";
+import { useActionState, useRef, useState, useTransition } from "react";
 import { enviarAlvaraAction } from "@/lib/actions/requerimento-actions";
+import { problemaAntesDeEnviar } from "@/lib/upload-destino";
+import { enviarDireto, mensagemDeFalhaNoEnvio } from "@/lib/upload-cliente";
 
 export function EnviarAlvara({ solicitacaoId, recusa }: { solicitacaoId: string; recusa: string | null }) {
-  const [state, formAction, pending] = useActionState(
+  const [state, formAction, registrando] = useActionState(
     enviarAlvaraAction.bind(null, solicitacaoId),
     null as { error?: string } | null,
   );
@@ -12,9 +14,36 @@ export function EnviarAlvara({ solicitacaoId, recusa }: { solicitacaoId: string;
   // e o proprietário confere o nome antes de confirmar.
   const [escolhido, setEscolhido] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [progresso, setProgresso] = useState<number | null>(null);
+  const [erroEnvio, setErroEnvio] = useState<string | null>(null);
+  const [, startTransition] = useTransition();
+  const pending = registrando || progresso !== null;
+
+  // Sobe direto ao Blob e só então registra (a função da Vercel não aceita corpo > 4,5 MB).
+  async function confirmar(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const file = inputRef.current?.files?.[0];
+    if (!file || pending) return;
+    const destino = { destino: "alvara", solicitacaoId } as const;
+    const problema = problemaAntesDeEnviar(file, destino);
+    setErroEnvio(problema);
+    if (problema) return;
+    setProgresso(0);
+    try {
+      const arq = await enviarDireto(file, destino, setProgresso);
+      const fd = new FormData();
+      fd.set("pathname", arq.pathname);
+      fd.set("nomeArquivo", arq.nomeArquivo);
+      startTransition(() => formAction(fd));
+    } catch (err) {
+      setErroEnvio(mensagemDeFalhaNoEnvio(err));
+    } finally {
+      setProgresso(null);
+    }
+  }
 
   return (
-    <form action={formAction} style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+    <form onSubmit={confirmar} style={{ display: "flex", flexDirection: "column", gap: 9 }}>
       {recusa && (
         <div style={{ fontSize: 12.5, color: "#8C2B22", background: "#FDF6F5", border: "1px solid #E8C9C4", borderRadius: 4, padding: "11px 13px", lineHeight: 1.45 }}>
           <strong>Alvará recusado pela CAPE:</strong> {recusa}
@@ -55,7 +84,7 @@ export function EnviarAlvara({ solicitacaoId, recusa }: { solicitacaoId: string;
             disabled={pending}
             style={{ border: "1px solid #E01B22", background: "#E01B22", color: "#fff", borderRadius: 4, padding: "9px 16px", fontSize: 12.5, fontWeight: 600, cursor: pending ? "wait" : "pointer" }}
           >
-            {pending ? "Enviando…" : "Confirmar envio do alvará"}
+            {progresso !== null ? `Enviando… ${progresso}%` : registrando ? "Conferindo…" : "Confirmar envio do alvará"}
           </button>
           <button
             type="button"
@@ -73,7 +102,7 @@ export function EnviarAlvara({ solicitacaoId, recusa }: { solicitacaoId: string;
         </div>
       )}
 
-      {state?.error && <div style={{ fontSize: 12, color: "#8C2B22" }}>{state.error}</div>}
+      {!pending && (erroEnvio ?? state?.error) && <div style={{ fontSize: 12, color: "#8C2B22" }}>{erroEnvio ?? state?.error}</div>}
     </form>
   );
 }

@@ -5,7 +5,8 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/require-role";
 import { saveUploadedFile } from "@/lib/upload";
-import { ehZipComArquivos, extensaoDe } from "@/lib/upload-documento";
+import { ehZip, extensaoDe } from "@/lib/upload-documento";
+import { descartarArquivo, lerArquivoEnviado } from "@/lib/upload-direto";
 import { DOC_ORDER, IRREGULARIDADE_LABEL } from "@/lib/status";
 import { emitirAcessoProprietario } from "@/lib/acesso-proprietario";
 import type { DocumentoTipo } from "@/generated/prisma/enums";
@@ -142,6 +143,14 @@ const EXT_APONTAMENTOS = [".dwg", ".zip", ".pdf"];
 
 export async function emitirParecerAction(solicitacaoId: string, _prev: ParecerState, formData: FormData): Promise<ParecerState> {
   const session = await requireRole("ADMIN_CAPE", "CAPE_ANALISTA");
+  // O arquivo de apontamentos já subiu direto ao Blob (upload-cliente.ts). Qualquer recusa
+  // daqui em diante o apaga, para não sobrar arquivo órfão de um parecer não emitido.
+  const pathname = String(formData.get("pathname") ?? "");
+  const nomeArquivo = String(formData.get("nomeArquivo") ?? "").slice(0, 255);
+  const recusar = async (error: string) => {
+    if (pathname) await descartarArquivo(pathname);
+    return { error };
+  };
   const sol = await prisma.solicitacao.findUniqueOrThrow({
     where: { id: solicitacaoId },
     include: { lote: { include: { empreendimento: true } }, resultados: true },
@@ -152,7 +161,7 @@ export async function emitirParecerAction(solicitacaoId: string, _prev: ParecerS
     include: { itens: true },
   });
   const totalItens = categorias.reduce((a, c) => a + c.itens.length, 0);
-  if (totalItens === 0) return { error: "Este empreendimento ainda não tem itens de check-list." };
+  if (totalItens === 0) return recusar("Este empreendimento ainda não tem itens de check-list.");
 
   // Decididos, não linhas: um item devolvido guarda o ChecklistResultado com status
   // PENDENTE, e contar linhas daria o check-list por concluído sem estar. "Não se aplica"
@@ -161,21 +170,22 @@ export async function emitirParecerAction(solicitacaoId: string, _prev: ParecerS
   const aprovados = sol.resultados.filter((r) => r.status === "APROVADO");
   const naoSeAplica = sol.resultados.filter((r) => r.status === "NAO_SE_APLICA");
   if (aprovados.length + reprovados.length + naoSeAplica.length < totalItens) {
-    return { error: "Decida todos os itens do check-list antes de emitir o parecer." };
+    return recusar("Decida todos os itens do check-list antes de emitir o parecer.");
   }
 
   // Devolutiva opcional ao RT: comentários gerais e/ou o DWG com os apontamentos. Validada
   // antes de qualquer gravação, para um arquivo recusado não deixar o parecer pela metade.
   const comentario = normalizarObservacao(String(formData.get("comentario") ?? ""), MAX_COMENTARIO);
-  const arquivo = formData.get("arquivo");
-  const temArquivo = arquivo instanceof File && arquivo.size > 0;
-  if (temArquivo) {
-    const ext = extensaoDe(arquivo.name);
-    if (!EXT_APONTAMENTOS.includes(ext)) return { error: "O arquivo de apontamentos deve ser DWG, ZIP (vários DWG) ou PDF." };
-    if (arquivo.size > MAX_APONTAMENTOS_BYTES) return { error: "Arquivo de apontamentos maior que 15 MB." };
-    if (ext === ".zip" && !(await ehZipComArquivos(arquivo))) return { error: "Arquivo .zip inválido ou vazio." };
+  let salvo: { nomeArquivo: string; caminhoArquivo: string; tamanhoBytes: number } | null = null;
+  if (pathname) {
+    const arq = await lerArquivoEnviado(pathname, { destino: "devolutiva", solicitacaoId });
+    if (!arq || !nomeArquivo) return recusar("Arquivo de apontamentos não encontrado. Envie de novo.");
+    const ext = extensaoDe(nomeArquivo);
+    if (!EXT_APONTAMENTOS.includes(ext)) return recusar("O arquivo de apontamentos deve ser DWG, ZIP (vários DWG) ou PDF.");
+    if (arq.tamanho > MAX_APONTAMENTOS_BYTES) return recusar("Arquivo de apontamentos maior que 15 MB.");
+    if (ext === ".zip" && !ehZip(arq.inicio)) return recusar("Arquivo .zip inválido ou vazio.");
+    salvo = { nomeArquivo, caminhoArquivo: pathname, tamanhoBytes: arq.tamanho };
   }
-  const salvo = temArquivo ? await saveUploadedFile(arquivo, `devolutivas/${solicitacaoId}`) : null;
   const devolutiva =
     comentario || salvo
       ? [

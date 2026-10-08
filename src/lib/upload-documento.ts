@@ -31,15 +31,17 @@ export function contentTypeDe(nomeArquivo: string) {
   return TIPO_POR_EXTENSAO[extensaoDe(nomeArquivo)] ?? "application/octet-stream";
 }
 
-export async function validarDocumento(file: File, tipo: DocumentoTipo): Promise<string | null> {
+// Confere um documento pelo nome, tamanho e primeiros bytes — o arquivo já está no Blob
+// (vai direto do navegador), então a conferência é feita depois do envio.
+export function validarDocumentoEnviado(arq: { nome: string; tamanho: number; inicio: Uint8Array }, tipo: DocumentoTipo): string | null {
   const regra = DOC_REGRAS[tipo];
-  const ext = extensaoDe(file.name);
+  const ext = extensaoDe(arq.nome);
 
   if (!regra.extensoes.includes(ext)) return `Formato não aceito para este documento — envie ${formatosAceitos(tipo)}.`;
-  if (file.size > regra.maxMB * 1024 * 1024) return `Arquivo maior que ${regra.maxMB} MB.`;
+  if (arq.tamanho > regra.maxMB * 1024 * 1024) return `Arquivo maior que ${regra.maxMB} MB.`;
 
   if (ext === ".dwg") {
-    const versao = new TextDecoder().decode(await file.slice(0, 6).arrayBuffer());
+    const versao = new TextDecoder().decode(arq.inicio.slice(0, 6));
     if (!DWG_ATE_2010.has(versao)) {
       const nome = DWG_VERSAO_NOME[versao] ?? "uma versão posterior";
       return `DWG salvo em ${nome}. Salve como "AutoCAD 2010/LT2010 Desenho" e envie novamente.`;
@@ -48,14 +50,13 @@ export async function validarDocumento(file: File, tipo: DocumentoTipo): Promise
 
   // Um .zip começa por PK\x03\x04. Não abrimos o pacote para conferir a versão de cada DWG
   // dentro dele: a mensagem do campo pede AutoCAD 2010, e o analista confere ao abrir.
-  if (ext === ".zip" && !(await ehZipComArquivos(file))) {
+  if (ext === ".zip" && !ehZip(arq.inicio)) {
     return "Arquivo .zip inválido ou vazio. Compacte os arquivos DWG numa pasta .zip e envie novamente.";
   }
 
   return null;
 }
 
-export async function ehZipComArquivos(file: File) {
-  const b = new Uint8Array(await file.slice(0, 4).arrayBuffer());
-  return b[0] === 0x50 && b[1] === 0x4b && b[2] === 0x03 && b[3] === 0x04;
+export function ehZip(inicio: Uint8Array) {
+  return inicio[0] === 0x50 && inicio[1] === 0x4b && inicio[2] === 0x03 && inicio[3] === 0x04;
 }

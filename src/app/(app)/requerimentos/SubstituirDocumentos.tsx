@@ -1,7 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
-import { uploadDocumentoAction } from "@/lib/actions/nova-actions";
+import { useEnvioDocumento } from "@/components/useEnvioDocumento";
 import { DOC_LABEL, DOC_ORDER, DOC_REGRAS, formatosAceitos } from "@/lib/status";
 import type { DocumentoTipo } from "@/generated/prisma/enums";
 
@@ -24,14 +23,10 @@ function Linha({
   doc?: Documento;
   liberado: boolean;
 }) {
-  const [state, formAction, pending] = useActionState(
-    uploadDocumentoAction.bind(null, solicitacaoId, tipo),
-    null as { error?: string } | null,
-  );
+  const { enviar, enviando, rotuloEnvio, erro } = useEnvioDocumento(solicitacaoId, tipo);
 
   return (
-    <form
-      action={formAction}
+    <div
       style={{
         display: "grid",
         gridTemplateColumns: "1fr auto",
@@ -56,7 +51,7 @@ function Linha({
         <div style={{ fontSize: 11.5, color: "#7A7472", overflow: "hidden", textOverflow: "ellipsis" }}>
           {doc ? doc.nomeArquivo : "Ainda não enviado"}
         </div>
-        {state?.error && <div style={{ fontSize: 11.5, color: "#8C2B22" }}>{state.error}</div>}
+        {erro && <div style={{ fontSize: 11.5, color: "#8C2B22" }}>{erro}</div>}
       </div>
 
       {liberado ? (
@@ -65,10 +60,14 @@ function Linha({
             type="file"
             name="arquivo"
             accept={DOC_REGRAS[tipo].extensoes.join(",")}
-            required
+            disabled={enviando}
             style={{ display: "none" }}
             id={`sub-${solicitacaoId}-${tipo}`}
-            onChange={(e) => e.currentTarget.form?.requestSubmit()}
+            onChange={(e) => {
+              const file = e.currentTarget.files?.[0];
+              e.currentTarget.value = "";
+              if (file) enviar(file);
+            }}
           />
           <label
             htmlFor={`sub-${solicitacaoId}-${tipo}`}
@@ -80,11 +79,11 @@ function Linha({
               padding: "6px 11px",
               fontSize: 12,
               fontWeight: 600,
-              cursor: pending ? "wait" : "pointer",
+              cursor: enviando ? "wait" : "pointer",
               whiteSpace: "nowrap",
             }}
           >
-            {pending ? "Enviando…" : doc ? "Substituir" : "Enviar"}
+            {rotuloEnvio ?? (doc ? "Substituir" : "Enviar")}
           </label>
         </div>
       ) : (
@@ -92,7 +91,7 @@ function Linha({
           validado · mantém
         </span>
       )}
-    </form>
+    </div>
   );
 }
 
