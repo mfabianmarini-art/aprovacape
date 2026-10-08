@@ -9,6 +9,7 @@ import { ehZip, extensaoDe } from "@/lib/upload-documento";
 import { descartarArquivo, lerArquivoEnviado } from "@/lib/upload-direto";
 import { DOC_ORDER, IRREGULARIDADE_LABEL } from "@/lib/status";
 import { emitirAcessoProprietario } from "@/lib/acesso-proprietario";
+import { notificarEtapa } from "@/lib/notificacoes";
 import type { DocumentoTipo } from "@/generated/prisma/enums";
 
 async function loadSolicitacao(solicitacaoId: string) {
@@ -107,6 +108,7 @@ export async function devolverDocumentacaoAction(solicitacaoId: string) {
       },
     }),
   ]);
+  await notificarEtapa(solicitacaoId, { tipo: "DOCUMENTACAO_DEVOLVIDA" });
 
   revalidateAll(sol.protocolo);
 }
@@ -129,7 +131,9 @@ export async function decidirItemAction(solicitacaoId: string, itemId: string, d
   });
 
   if (sol.status === "ENVIADA") {
-    await prisma.solicitacao.update({ where: { id: solicitacaoId }, data: { status: "ANALISE" } });
+    // Condicionado ao status: dois cliques simultâneos não mandam dois avisos.
+    const { count } = await prisma.solicitacao.updateMany({ where: { id: solicitacaoId, status: "ENVIADA" }, data: { status: "ANALISE" } });
+    if (count === 1) await notificarEtapa(solicitacaoId, { tipo: "ANALISE_INICIADA" });
   }
 
   revalidateAll(sol.protocolo);
@@ -153,7 +157,7 @@ export async function emitirParecerAction(solicitacaoId: string, _prev: ParecerS
   };
   const sol = await prisma.solicitacao.findUniqueOrThrow({
     where: { id: solicitacaoId },
-    include: { lote: { include: { empreendimento: true } }, resultados: true },
+    include: { lote: { include: { empreendimento: true } }, resultados: { include: { item: true } } },
   });
 
   const categorias = await prisma.checklistCategoria.findMany({
@@ -223,6 +227,12 @@ export async function emitirParecerAction(solicitacaoId: string, _prev: ParecerS
         },
       }),
     ]);
+    await notificarEtapa(solicitacaoId, {
+      tipo: "CHECKLIST_DEVOLVIDO",
+      itens: reprovados.map((r) => ({ texto: r.item.texto, observacao: r.observacao })),
+      comentario,
+      comArquivo: !!salvo,
+    });
   } else {
     await prisma.$transaction([
       prisma.solicitacao.update({ where: { id: solicitacaoId }, data: { status: "APROVADA" } }),
@@ -237,6 +247,7 @@ export async function emitirParecerAction(solicitacaoId: string, _prev: ParecerS
         },
       }),
     ]);
+    await notificarEtapa(solicitacaoId, { tipo: "PROJETO_APROVADO", comentario, comArquivo: !!salvo });
   }
 
   revalidateAll(sol.protocolo);
@@ -263,6 +274,7 @@ export async function aceitarAlvaraAction(solicitacaoId: string) {
       },
     }),
   ]);
+  await notificarEtapa(solicitacaoId, { tipo: "ALVARA_ACEITO" });
 
   revalidateAll(sol.protocolo);
 }
@@ -298,6 +310,7 @@ export async function recusarAlvaraAction(solicitacaoId: string, formData: FormD
       },
     }),
   ]);
+  await notificarEtapa(solicitacaoId, { tipo: "ALVARA_RECUSADO", motivo });
 
   revalidateAll(sol.protocolo);
 }
@@ -363,6 +376,7 @@ export async function registrarIrregularidadeAction(
       },
     }),
   ]);
+  await notificarEtapa(solicitacaoId, { tipo: "IRREGULARIDADE_REGISTRADA", irregularidade: parsed.data.tipo, descricao: parsed.data.descricao });
 
   revalidateAll(sol.protocolo);
   revalidatePath("/relatorios");
@@ -389,6 +403,7 @@ export async function regularizarIrregularidadeAction(irregularidadeId: string) 
       },
     }),
   ]);
+  await notificarEtapa(irr.solicitacaoId, { tipo: "IRREGULARIDADE_REGULARIZADA", irregularidade: irr.tipo });
 
   revalidateAll(irr.solicitacao.protocolo);
   revalidatePath("/relatorios");
@@ -420,6 +435,7 @@ export async function concluirObraAction(solicitacaoId: string) {
       },
     }),
   ]);
+  await notificarEtapa(solicitacaoId, { tipo: "OBRA_CONCLUIDA" });
 
   revalidateAll(sol.protocolo);
   revalidatePath("/relatorios");
