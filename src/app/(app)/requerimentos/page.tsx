@@ -7,6 +7,7 @@ import { decifrarSenha, formatarSenha } from "@/lib/acompanhamento";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { ScreenBody } from "@/components/ScreenBody";
 import { RequerimentoCard, type SomenteLeitura } from "./RequerimentoCard";
+import { ProtocolosEncerrados } from "./ProtocolosEncerrados";
 import { proximaAcaoDoRT } from "@/lib/proxima-acao";
 
 export default async function RequerimentosPage({ searchParams }: { searchParams: Promise<{ protocolada?: string }> }) {
@@ -38,7 +39,24 @@ export default async function RequerimentosPage({ searchParams }: { searchParams
   // O que depende do RT vem primeiro; o resto segue a ordem de protocolo.
   const ordem = (c: (typeof cards)[number]) => (!c.somenteLeitura && proximaAcaoDoRT(c.s.status) ? 0 : 1);
   cards.sort((a, b) => ordem(a) - ordem(b));
+  // Fora da aprovação (obra liberada, concluída ou reprovada) vai para "encerrados", que só
+  // abre a pedido. Obra com irregularidade em aberto continua à vista: pede ação do RT.
+  const encerrado = (c: (typeof cards)[number]) =>
+    ["EXECUCAO", "CONCLUIDA", "REPROVADA"].includes(c.s.status) && !c.s.irregularidades.some((i) => !i.regularizadaEm);
+  const ativos = cards.filter((c) => !encerrado(c));
+  const encerrados = cards.filter(encerrado);
   const recemProtocolada = protocolada ? cards.find((c) => c.s.protocolo === protocolada && !c.somenteLeitura) : undefined;
+
+  const cartao = ({ s, somenteLeitura, senha }: (typeof cards)[number]) => (
+    <RequerimentoCard
+      key={s.id}
+      s={s}
+      somenteLeitura={somenteLeitura}
+      senhaAcompanhamento={senha}
+      urlAcompanhamento={urlAcompanhamento}
+      abertoInicial={s.protocolo === recemProtocolada?.s.protocolo}
+    />
+  );
 
   return (
     <>
@@ -135,16 +153,11 @@ export default async function RequerimentosPage({ searchParams }: { searchParams
           {pedidos.length === 0 && (
             <div style={{ fontSize: 13.5, color: "#7A7472" }}>Nenhuma solicitação enviada ainda.</div>
           )}
-          {cards.map(({ s, somenteLeitura, senha }) => (
-            <RequerimentoCard
-              key={s.id}
-              s={s}
-              somenteLeitura={somenteLeitura}
-              senhaAcompanhamento={senha}
-              urlAcompanhamento={urlAcompanhamento}
-              abertoInicial={s.protocolo === recemProtocolada?.s.protocolo}
-            />
-          ))}
+          {pedidos.length > 0 && ativos.length === 0 && (
+            <div style={{ fontSize: 13.5, color: "#7A7472" }}>Nenhuma solicitação em andamento.</div>
+          )}
+          {ativos.map(cartao)}
+          <ProtocolosEncerrados quantidade={encerrados.length}>{encerrados.map(cartao)}</ProtocolosEncerrados>
           <div style={{ background: "#FDF8EE", border: "1px solid #E8D7B4", borderRadius: 4, padding: "15px 18px", fontSize: 12.5, color: "#6B4A11", lineHeight: 1.5, maxWidth: "92ch" }}>
             <strong>Só contam como reenvio as devoluções da etapa de análise técnica (check-list).</strong> Quando a
             devolução é da validação documental — arquivo ilegível, faltando ou trocado —, corrigir e reenviar não
