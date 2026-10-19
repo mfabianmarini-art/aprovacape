@@ -4,8 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { servirArquivo } from "@/lib/servir-arquivo";
 import { podeVerArquivo } from "@/lib/acesso-arquivos";
 
-// Qualquer arquivo do inventário pelo id — inclusive versões substituídas, que por
-// contrato continuam disponíveis.
+// Qualquer arquivo do inventário pelo id — inclusive versões substituídas, disponíveis até
+// a liberação da obra.
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
   if (!session) return new NextResponse("Não autenticado.", { status: 401 });

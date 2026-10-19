@@ -1,5 +1,6 @@
 import { del, list } from "@vercel/blob";
 import { prisma } from "@/lib/prisma";
+import { excluirVersoesDaAprovacao, STATUS_OBRA_LIBERADA } from "@/lib/arquivos";
 import type { ArquivoCategoria } from "@/generated/prisma/enums";
 
 // Data em que o inventário (model Arquivo) entrou no ar. Blob anterior a isto e fora do
@@ -70,7 +71,7 @@ async function adotar(b: Blob) {
 }
 
 export async function executarManutencao(agora = new Date()) {
-  const r = { blobs: 0, adotados: 0, abandonadosApagados: 0, protegidos: 0, limitesApagados: 0, redefinicoesApagadas: 0 };
+  const r = { blobs: 0, adotados: 0, abandonadosApagados: 0, protegidos: 0, versoesExcluidas: 0, limitesApagados: 0, redefinicoesApagadas: 0 };
   let cursor: string | undefined;
   do {
     const pagina = await list({ cursor, limit: 1000 });
@@ -103,6 +104,14 @@ export async function executarManutencao(agora = new Date()) {
       console.log(JSON.stringify({ evento: "manutencao_apagou_abandonados", caminhos: apagar }));
     }
   } while (cursor);
+
+  // Obras já liberadas que ainda têm versões da aprovação (liberadas antes desta regra,
+  // exclusão que falhou na hora, ou arquivo antigo adotado acima).
+  const pendentes = await prisma.solicitacao.findMany({
+    where: { status: { in: [...STATUS_OBRA_LIBERADA] }, arquivos: { some: { substituidoEm: { not: null }, excluidoEm: null } } },
+    select: { id: true },
+  });
+  for (const s of pendentes) r.versoesExcluidas += await excluirVersoesDaAprovacao(s.id);
 
   const umDia = new Date(agora.getTime() - 24 * 60 * 60 * 1000);
   r.limitesApagados = (await prisma.limiteTaxa.deleteMany({ where: { inicio: { lt: umDia } } })).count;

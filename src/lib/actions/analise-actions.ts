@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/require-role";
@@ -9,7 +10,7 @@ import { descartarArquivo, lerArquivoEnviado, receberArquivo } from "@/lib/uploa
 import { DOC_ORDER, IRREGULARIDADE_LABEL } from "@/lib/status";
 import { emitirAcessoProprietario } from "@/lib/acesso-proprietario";
 import { notificarEtapa } from "@/lib/notificacoes";
-import { marcarSubstituido, registrarArquivo } from "@/lib/arquivos";
+import { excluirVersoesDaAprovacao, marcarSubstituido, registrarArquivo } from "@/lib/arquivos";
 import type { DocumentoTipo } from "@/generated/prisma/enums";
 
 async function loadSolicitacao(solicitacaoId: string) {
@@ -289,6 +290,9 @@ export async function aceitarAlvaraAction(solicitacaoId: string) {
     }),
   ]);
   await notificarEtapa(solicitacaoId, { tipo: "ALVARA_ACEITO" });
+  // Obra liberada: as versões recusadas/substituídas durante a aprovação saem. Depois da
+  // resposta; se falhar, a manutenção diária refaz.
+  after(() => excluirVersoesDaAprovacao(solicitacaoId).catch((e) => console.error("[liberação] exclusão de versões:", e)));
 
   revalidateAll(sol.protocolo);
 }

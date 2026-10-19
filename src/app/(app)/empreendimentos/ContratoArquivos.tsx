@@ -54,8 +54,9 @@ export function ContratoArquivos({
         </div>
       ) : (
         <div style={{ fontSize: 12, color: "#4A5563", lineHeight: 1.5 }}>
-          Contrato vigente. Toda a documentação — inclusive versões substituídas — fica guardada e disponível ao condomínio até{" "}
-          {DIAS_DE_GUARDA_APOS_RESCISAO} dias após uma eventual rescisão.
+          Contrato vigente. A documentação das obras liberadas fica guardada e disponível ao condomínio até{" "}
+          {DIAS_DE_GUARDA_APOS_RESCISAO} dias após uma eventual rescisão. Versões recusadas ou substituídas durante a aprovação são excluídas
+          quando a obra é liberada.
         </div>
       )}
 

@@ -495,11 +495,13 @@ enum ArquivoCategoria {
   RECUPERADO         // arquivo anterior ao inventário, adotado sem metadados
 }
 
-// Inventário de tudo o que está no Blob. Por contrato, a documentação fica disponível
-// enquanto durar o contrato com o condomínio e por 30 dias após a rescisão: nenhuma linha
-// daqui é apagada e substituir um documento só marca a versão anterior (substituidoEm) —
-// ela continua acessível. Também é o que separa arquivo registrado de upload abandonado
-// na limpeza (manutencao.ts) e o que o backup copia.
+// Inventário de tudo o que está no Blob. Por contrato, a documentação vigente na liberação
+// da obra fica disponível enquanto durar o contrato com o condomínio e por 30 dias após a
+// rescisão. Durante a aprovação, substituir um documento só marca a versão anterior
+// (substituidoEm) — ela segue acessível; na liberação da obra essas versões são excluídas.
+// Nenhuma linha daqui é apagada (excluidoEm registra a exclusão do arquivo). Também é o
+// que separa arquivo registrado de upload abandonado na limpeza (manutencao.ts) e o que o
+// backup copia.
 model Arquivo {
   id               String           @id @default(cuid())
   caminho          String           @unique
@@ -520,10 +522,11 @@ model Arquivo {
   enviadoPor       User?            @relation("ArquivoEnviadoPor", fields: [enviadoPorId], references: [id], onDelete: SetNull)
   createdAt        DateTime         @default(now())
   // Deixou de ser a versão em uso (documento substituído, alvará recusado, documento
-  // técnico retirado da lista). Continua guardado e acessível.
+  // técnico retirado da lista). Continua acessível até a liberação da obra (arquivos de
+  // solicitação) ou indefinidamente (planta, documentos técnicos, autorização de vínculo).
   substituidoEm    DateTime?
-  // Só depois de 30 dias da rescisão, por ação do admin: o blob é apagado, a linha fica
-  // como registro do que existiu.
+  // Blob apagado, linha mantida como registro do que existiu: versão da aprovação excluída
+  // na liberação da obra, ou tudo do empreendimento após 30 dias da rescisão (ação do admin).
   excluidoEm       DateTime?
 
   acessos AcessoArquivo[]

@@ -12,9 +12,9 @@ export type VersaoAnterior = {
   substituidoEm: Date | string | null;
 };
 
-// Inclui no select do Prisma: só as versões que deixaram de ser a vigente.
+// Inclui no select do Prisma: só as versões que deixaram de ser a vigente e ainda existem.
 export const SELECT_VERSOES_ANTERIORES = {
-  where: { substituidoEm: { not: null } },
+  where: { substituidoEm: { not: null }, excluidoEm: null },
   orderBy: { createdAt: "desc" },
   select: { id: true, nome: true, tamanho: true, categoria: true, documentoTipo: true, createdAt: true, substituidoEm: true },
 } as const;
@@ -26,8 +26,9 @@ const CATEGORIA: Partial<Record<ArquivoCategoria, string>> = {
   RECUPERADO: "Arquivo anterior",
 };
 
-// Por contrato, toda a documentação fica disponível ao condomínio: substituir um documento
-// não apaga o anterior. Esta lista dá acesso a eles, recolhida para não pesar na tela.
+// Durante a aprovação, substituir um documento não apaga o anterior: o histórico da análise
+// fica consultável. Na liberação da obra essas versões são excluídas (regra contratual: só
+// a documentação vigente na liberação é guardada). Lista recolhida para não pesar na tela.
 export function VersoesAnteriores({ versoes }: { versoes: VersaoAnterior[] }) {
   if (versoes.length === 0) return null;
   return (
@@ -36,7 +37,7 @@ export function VersoesAnteriores({ versoes }: { versoes: VersaoAnterior[] }) {
         Versões anteriores ({versoes.length})
       </summary>
       <div style={{ fontSize: 11.5, color: "#7A7472", margin: "6px 0 8px", lineHeight: 1.45 }}>
-        Arquivos substituídos ao longo da análise. Ficam guardados e disponíveis.
+        Arquivos recusados ou substituídos ao longo da aprovação. Ficam disponíveis até a liberação da obra, quando são excluídos.
       </div>
       <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 6 }}>
         {versoes.map((v) => (

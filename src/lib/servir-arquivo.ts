@@ -7,9 +7,9 @@ import { contentTypeDe } from "@/lib/upload-documento";
 
 // Entrega de qualquer arquivo do Blob, depois de a rota conferir a permissão.
 // - Tipo pela extensão do nome validado no upload, nunca o declarado por quem enviou.
-// - Cache privado no navegador: o caminho de cada arquivo é único e nunca muda, então
-//   reabrir não baixa de novo; passado o prazo, o ETag faz o Blob responder 304, sem
-//   transferir o arquivo.
+// - Cache privado revalidado a cada abertura: o navegador guarda o arquivo, mas pergunta
+//   antes de usar; nada mudou, o Blob responde 304 pelo ETag e nada é transferido. Assim
+//   arquivo excluído ou acesso retirado valem na hora, sem cópia velha no cache.
 // - Range: o leitor de PDF pede trechos e mostra a primeira página sem esperar o resto.
 // - Cada abertura fica registrada (AcessoArquivo), depois da resposta.
 export async function servirArquivo(
@@ -17,7 +17,8 @@ export async function servirArquivo(
   o: { caminho: string; nome: string; usuarioId: string; inline?: boolean },
 ): Promise<NextResponse> {
   const registro = await prisma.arquivo.findUnique({ where: { caminho: o.caminho }, select: { id: true, excluidoEm: true } });
-  if (registro?.excluidoEm) return new NextResponse("Arquivo excluído após o encerramento do contrato.", { status: 410 });
+  // Versão substituída excluída na liberação da obra, ou documentação encerrada após a rescisão.
+  if (registro?.excluidoEm) return new NextResponse("Este arquivo foi excluído conforme a política de guarda de documentos.", { status: 410 });
 
   const range = req.headers.get("range");
   const ifNoneMatch = req.headers.get("if-none-match") ?? undefined;
@@ -25,7 +26,7 @@ export async function servirArquivo(
   if (!r) return new NextResponse("Arquivo indisponível.", { status: 404 });
 
   const etag = r.blob.etag || r.headers.get("etag") || "";
-  const comuns: Record<string, string> = { "Cache-Control": "private, max-age=86400", "Accept-Ranges": "bytes", ...(etag && { ETag: etag }) };
+  const comuns: Record<string, string> = { "Cache-Control": "private, no-cache", "Accept-Ranges": "bytes", ...(etag && { ETag: etag }) };
   if (r.statusCode === 304) return new NextResponse(null, { status: 304, headers: comuns });
 
   const tipo = contentTypeDe(o.nome);
