@@ -260,6 +260,9 @@ model ChecklistCategoria {
   empreendimento   Empreendimento @relation(fields: [empreendimentoId], references: [id])
   nome             String
   ordem            Int      @default(0)
+  // Check-list substituído: some da configuração e das análises novas, mas continua à
+  // vista nas solicitações que já têm decisões sobre os itens dele.
+  arquivadaEm      DateTime?
 
   itens ChecklistItem[]
 }
@@ -271,6 +274,9 @@ model ChecklistItem {
   texto       String
   referencia  String
   ordem       Int      @default(0)
+  // Item removido depois de já ter sido decidido em alguma solicitação: arquivado em vez
+  // de apagado, para não sumir com o histórico da análise.
+  arquivadoEm DateTime?
 
   resultados ChecklistResultado[]
 }

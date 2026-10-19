@@ -3,6 +3,7 @@
 // showing the exact scenario the design was reviewed against.
 import bcrypt from "bcryptjs";
 import { prisma } from "../src/lib/prisma";
+import { CHECKLIST_QUINTA_DA_PRIMAVERA } from "../src/lib/checklists/quinta-da-primavera";
 import type { Conselho, DocumentoTipo, SolicitacaoStatus, SolicitacaoTipo } from "../src/generated/prisma/enums";
 
 const DEMO_PASSWORD = "cape2026!";
@@ -193,29 +194,11 @@ async function main() {
     },
   });
 
-  const CATS: Array<[string, Array<[string, string, string]>]> = [
-    ["Recuos e afastamentos", [
-      ["r1", "Recuo frontal mínimo de 5,00 m atendido", "Art. 12 — Normativa do residencial"],
-      ["r2", "Recuos laterais mínimos de 1,50 m em ambas as divisas", "Art. 12 §2º"],
-      ["r3", "Recuo de fundos mínimo de 3,00 m atendido", "Art. 12 §3º"],
-    ]],
-    ["Gabarito e volumetria", [
-      ["g1", "Máximo de 2 pavimentos acima do nível da rua", "Art. 15"],
-      ["g2", "Altura máxima de 8,50 m até a cumeeira", "Art. 15 §1º"],
-      ["g3", "Caixa d’água e casa de máquinas dentro do volume permitido", "Art. 15 §4º"],
-    ]],
-    ["Ocupação e permeabilidade", [
-      ["o1", "Taxa de ocupação ≤ 50% da área do lote", "Art. 18"],
-      ["o2", "Área permeável ≥ 20% da área do lote", "Art. 19"],
-      ["o3", "Movimentação de terra e arrimos compatíveis com o lote vizinho", "Art. 21"],
-    ]],
-    ["Fachada e infraestrutura", [
-      ["f1", "Materiais de fachada dentro do padrão do residencial", "Art. 24"],
-      ["f2", "Muros de divisa no gabarito e acabamento previstos", "Art. 25"],
-      ["f3", "Reservatório, fossa e ligações conforme projeto hidrossanitário", "Art. 28"],
-      ["f4", "Calçada, guia rebaixada e acesso de veículos conforme padrão", "Art. 30"],
-    ]],
-  ];
+  // Check-list real do regulamento do condomínio (mesmo da migração de produção).
+  const CATS: Array<[string, Array<[string, string, string]>]> = CHECKLIST_QUINTA_DA_PRIMAVERA.map((c) => [
+    c.nome,
+    c.itens.map((i) => [i.codigo, i.texto, i.referencia] as [string, string, string]),
+  ]);
 
   const itemById: Record<string, string> = {};
   let ordem = 0;
@@ -396,9 +379,9 @@ async function main() {
 
         const allItemIds = Object.values(itemById);
         if (solStatus === "ANALISE") {
-          // Partially decided: r3 reprovado, a handful of others already approved-and-locked.
+          // Partially decided: 06 (recuos) reprovado, a handful of others already approved-and-locked.
           for (const [id, itemId] of Object.entries(itemById).slice(0, 6)) {
-            const resultado = id === "r3" ? "REPROVADO" : "APROVADO";
+            const resultado = id === "06" ? "REPROVADO" : "APROVADO";
             await prisma.checklistResultado.create({
               data: { solicitacaoId: sol.id, itemId, status: resultado, travado: resultado === "APROVADO", avaliadoEm: new Date() },
             });
@@ -406,7 +389,7 @@ async function main() {
         } else if (solStatus === "COMPLEMENTO") {
           // Previously-approved items stay locked; the rest reopen pending the owner's fix.
           for (const [id, itemId] of Object.entries(itemById).slice(0, 5)) {
-            if (id === "r3") continue;
+            if (id === "06") continue;
             await prisma.checklistResultado.create({
               data: { solicitacaoId: sol.id, itemId, status: "APROVADO", travado: true, avaliadoEm: new Date() },
             });
@@ -419,7 +402,7 @@ async function main() {
           }
         } else if (solStatus === "REPROVADA") {
           for (const itemId of allItemIds) {
-            const reprovado = itemId === itemById["o1"];
+            const reprovado = itemId === itemById["04"];
             await prisma.checklistResultado.create({
               data: { solicitacaoId: sol.id, itemId, status: reprovado ? "REPROVADO" : "APROVADO", travado: !reprovado, avaliadoEm: new Date() },
             });

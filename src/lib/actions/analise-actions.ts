@@ -11,6 +11,8 @@ import { descartarArquivo, lerArquivoEnviado, receberArquivo } from "@/lib/uploa
 import { DOC_ORDER, IRREGULARIDADE_LABEL } from "@/lib/status";
 import { emitirAcessoProprietario } from "@/lib/acesso-proprietario";
 import { notificarEtapa } from "@/lib/notificacoes";
+import { checklistDaSolicitacao } from "@/lib/queries/checklist";
+import { partesDoItem } from "@/lib/checklist-texto";
 import { excluirVersoesDaAprovacao, marcarSubstituido, registrarArquivo } from "@/lib/arquivos";
 import type { DocumentoTipo } from "@/generated/prisma/enums";
 
@@ -187,10 +189,8 @@ export async function emitirParecerAction(solicitacaoId: string, _prev: ParecerS
   // ENVIADA/ANALISE e um novo clique não registra nem notifica de novo.
   if (sol.status !== "ENVIADA" && sol.status !== "ANALISE") return recusar("O parecer desta rodada já foi emitido.");
 
-  const categorias = await prisma.checklistCategoria.findMany({
-    where: { empreendimentoId: sol.lote.empreendimentoId },
-    include: { itens: true },
-  });
+  // Os mesmos itens que a tela de análise mostra (vigentes + já decididos).
+  const categorias = await checklistDaSolicitacao(sol.lote.empreendimentoId, sol);
   const totalItens = categorias.reduce((a, c) => a + c.itens.length, 0);
   if (totalItens === 0) return recusar("Este empreendimento ainda não tem itens de check-list.");
 
@@ -273,7 +273,7 @@ export async function emitirParecerAction(solicitacaoId: string, _prev: ParecerS
     if (!ok) return recusar("O parecer desta rodada já foi emitido.");
     await notificarEtapa(solicitacaoId, {
       tipo: "CHECKLIST_DEVOLVIDO",
-      itens: reprovados.map((r) => ({ texto: r.item.texto, observacao: r.observacao })),
+      itens: reprovados.map((r) => ({ texto: partesDoItem(r.item.texto).titulo, observacao: r.observacao })),
       comentario,
       comArquivo: !!salvo,
     });

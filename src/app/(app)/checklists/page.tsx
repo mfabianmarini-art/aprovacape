@@ -26,7 +26,14 @@ export default async function ChecklistsPage({ searchParams }: { searchParams: P
   const emp = atual
     ? await prisma.empreendimento.findUnique({
         where: { id: atual.id },
-        include: { categorias: { orderBy: { ordem: "asc" }, include: { itens: { orderBy: { ordem: "asc" } } } } },
+        // Só o check-list vigente: categorias e itens arquivados ficam só nas análises que os usaram.
+        include: {
+          categorias: {
+            where: { arquivadaEm: null },
+            orderBy: { ordem: "asc" },
+            include: { itens: { where: { arquivadoEm: null }, orderBy: { ordem: "asc" } } },
+          },
+        },
       })
     : null;
 
@@ -96,11 +103,12 @@ export default async function ChecklistsPage({ searchParams }: { searchParams: P
                 <div className="table-scroll">
                   <div style={{ minWidth: 480 }}>
                     {c.itens.map((i) => (
-                      <div key={i.id} style={{ display: "grid", gridTemplateColumns: "1fr 220px 34px", alignItems: "center", gap: 12, padding: "11px 18px", borderTop: "1px solid #F5F2EC" }}>
+                      <div key={i.id} style={{ display: "grid", gridTemplateColumns: "1fr 220px 34px", alignItems: "start", gap: 12, padding: "11px 18px", borderTop: "1px solid #F5F2EC" }}>
                         <EditableField
+                          multilinha
                           defaultValue={i.texto}
                           onSave={updateItemAction.bind(null, i.id, "texto")}
-                          style={{ border: "1px solid #EDE9E1", borderRadius: 4, padding: "8px 10px", fontSize: 13, background: "#fff" }}
+                          style={{ border: "1px solid #EDE9E1", borderRadius: 4, padding: "8px 10px", fontSize: 13, background: "#fff", lineHeight: 1.45, fontFamily: "inherit" }}
                         />
                         <EditableField
                           defaultValue={i.referencia}
@@ -116,7 +124,7 @@ export default async function ChecklistsPage({ searchParams }: { searchParams: P
                     ))}
                     <div style={{ padding: "10px 18px 14px" }}>
                       <form key={c.itens.length} action={addItemAction.bind(null, c.id)} style={{ display: "grid", gridTemplateColumns: "1fr 220px auto", gap: 8 }}>
-                        <input name="texto" placeholder="Novo item…" required style={{ border: "1px dashed #C9C2B4", borderRadius: 4, padding: "8px 10px", fontSize: 13 }} />
+                        <textarea name="texto" placeholder={"Novo item…\nCritérios, um por linha (opcional)"} required rows={2} style={{ border: "1px dashed #C9C2B4", borderRadius: 4, padding: "8px 10px", fontSize: 13, fontFamily: "inherit", resize: "vertical" }} />
                         <input name="referencia" placeholder="Referência (art.)" style={{ border: "1px dashed #C9C2B4", borderRadius: 4, padding: "8px 10px", fontSize: 12 }} />
                         <button type="submit" style={{ border: "1px dashed #C9C2B4", background: "#fff", color: "#E01B22", borderRadius: 4, padding: "8px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
                           + item
@@ -133,7 +141,7 @@ export default async function ChecklistsPage({ searchParams }: { searchParams: P
               <div style={{ fontSize: 11, letterSpacing: ".14em", textTransform: "uppercase", color: "#7A7472" }}>Aplicado a</div>
               <div style={{ fontSize: 13, fontWeight: 600 }}>{emp.nome}</div>
               <div style={{ fontSize: 11.5, color: "#7A7472", lineHeight: 1.45 }}>
-                Cada empreendimento tem seu próprio check-list. Alterações valem para solicitações novas; as em andamento seguem os itens já vinculados.
+                Cada empreendimento tem seu próprio check-list. Na primeira linha do item vai o título; nas seguintes, os critérios (um por linha). Alterações valem para as análises a partir de agora; itens já decididos numa solicitação continuam registrados nela, mesmo se removidos daqui.
               </div>
             </section>
             <section style={{ background: "#FDF8EE", border: "1px solid #E8D7B4", borderRadius: 4, padding: "16px 17px", fontSize: 12.5, color: "#6B4A11", lineHeight: 1.5 }}>

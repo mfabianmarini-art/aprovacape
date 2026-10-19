@@ -5,6 +5,7 @@ import { STATUS_INFO, DOC_LABEL, DOC_ORDER, IRREGULARIDADE_LABEL, TIPO_LABEL, fo
 import { etapasDaSolicitacao } from "@/lib/etapas";
 import { prazoAnaliseTexto } from "@/lib/prazo";
 import { proximaAcaoDoRT } from "@/lib/proxima-acao";
+import { partesDoItem } from "@/lib/checklist-texto";
 import { reenviarComplementacaoAction, type ReenvioState } from "@/lib/actions/requerimento-actions";
 import { EtapasStepper } from "@/components/EtapasStepper";
 import { SubstituirDocumentos } from "./SubstituirDocumentos";
@@ -66,7 +67,7 @@ export function RequerimentoCard({
     ...s.documentos
       .filter((d) => d.observacao)
       .map((d) => ({ titulo: DOC_LABEL[d.tipo].nome, referencia: null as string | null, texto: d.observacao! })),
-    ...s.resultados.map((r) => ({ titulo: r.item.texto, referencia: r.item.referencia, texto: r.observacao! })),
+    ...s.resultados.map((r) => ({ titulo: partesDoItem(r.item.texto).titulo, referencia: r.item.referencia, texto: r.observacao! })),
   ];
   // Histórico vem do mais novo para o mais antigo.
   const devolucao = s.historico.find((h) => DEVOLUCAO.has(h.tipo));

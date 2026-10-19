@@ -19,7 +19,7 @@ export async function getEmpreendimentoConfig(empreendimentoId: string) {
           },
         },
       },
-      categorias: { include: { itens: true } },
+      categorias: { where: { arquivadaEm: null }, include: { itens: { where: { arquivadoEm: null } } } },
     },
   });
   if (!emp) return null;

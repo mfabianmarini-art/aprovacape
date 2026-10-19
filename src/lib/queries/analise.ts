@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { SELECT_VERSOES_ANTERIORES } from "@/components/VersoesAnteriores";
+import { checklistDaSolicitacao } from "@/lib/queries/checklist";
 
 export async function getAnalise(protocolo: string) {
   const solicitacao = await prisma.solicitacao.findUnique({
@@ -19,11 +20,7 @@ export async function getAnalise(protocolo: string) {
   });
   if (!solicitacao) return null;
 
-  const categorias = await prisma.checklistCategoria.findMany({
-    where: { empreendimentoId: solicitacao.lote.empreendimentoId },
-    orderBy: { ordem: "asc" },
-    include: { itens: { orderBy: { ordem: "asc" } } },
-  });
+  const categorias = await checklistDaSolicitacao(solicitacao.lote.empreendimentoId, solicitacao);
 
   return { solicitacao, categorias };
 }

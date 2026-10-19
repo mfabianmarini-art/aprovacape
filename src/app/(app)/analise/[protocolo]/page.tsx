@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { VersoesAnteriores } from "@/components/VersoesAnteriores";
 import { prazoAnaliseTexto } from "@/lib/prazo";
+import { partesDoItem } from "@/lib/checklist-texto";
 import { requireRole } from "@/lib/require-role";
 import { getUserDisplay } from "@/lib/user-display";
 import { getAnalise } from "@/lib/queries/analise";
@@ -501,7 +502,10 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
                 return (
                   <div key={c.id} style={{ borderBottom: "1px solid #EDE9E1" }}>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "11px 18px", background: "#FAF9F6" }}>
-                      <div style={{ fontSize: 11, letterSpacing: ".14em", textTransform: "uppercase", color: "#E01B22", fontWeight: 600 }}>{c.nome}</div>
+                      <div style={{ fontSize: 11, letterSpacing: ".14em", textTransform: "uppercase", color: c.arquivadaEm ? "#7A7472" : "#E01B22", fontWeight: 600 }}>
+                        {c.nome}
+                        {c.arquivadaEm && <span style={{ letterSpacing: 0, textTransform: "none", fontWeight: 400 }}> · check-list anterior (decisões já registradas)</span>}
+                      </div>
                       <div style={{ fontSize: 11, color: "#7A7472", fontFamily: "var(--font-mono)" }}>
                         {done}/{c.itens.length}
                         {travados ? ` · ${travados} travados` : ""}
@@ -512,13 +516,15 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
                       const travado = !!resultado?.travado;
                       const ativo = podeEditar && allDocs && !travado;
                       const est = resultado?.status ?? "PENDENTE";
+                      const { titulo, criterios } = partesDoItem(item.texto);
                       return (
                         <div
                           key={item.id}
                           style={{
                             display: "grid",
                             gridTemplateColumns: "minmax(0,1fr) auto",
-                            alignItems: "center",
+                            // Topo: itens com muitos critérios não empurram os botões para o meio.
+                            alignItems: "start",
                             gap: 14,
                             rowGap: 10,
                             padding: "12px 18px",
@@ -527,7 +533,17 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
                           }}
                         >
                           <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                            <div style={{ fontSize: 13.5, fontWeight: 500, color: travado || est === "NAO_SE_APLICA" ? "#7A828C" : "#231F20" }}>{item.texto}</div>
+                            <div style={{ fontSize: 13.5, fontWeight: 500, color: travado || est === "NAO_SE_APLICA" ? "#7A828C" : "#231F20" }}>{titulo}</div>
+                            {criterios.length > 0 && (
+                              <ul style={{ margin: "2px 0 2px", paddingLeft: 16, display: "flex", flexDirection: "column", gap: 2, fontSize: 12, lineHeight: 1.45, color: "#4A5563" }}>
+                                {criterios.map((linha, n) => (
+                                  // Subitens "a) …" e cabeçalhos "…:" já se identificam; o resto ganha marcador.
+                                  <li key={n} style={{ listStyle: /^[a-z]\)/.test(linha) || linha.endsWith(":") ? "none" : "disc" }}>
+                                    {linha}
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
                             <div style={{ fontSize: 11.5, color: "#7A7472" }}>{item.referencia}</div>
                           </div>
                           <div style={{ display: "flex", gap: 7, justifyContent: "flex-end", flexWrap: "wrap" }}>
@@ -536,7 +552,7 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
                                 <button
                                   type="submit"
                                   disabled={!ativo}
-                                  aria-label={`${d.acao}: ${item.texto}`}
+                                  aria-label={`${d.acao}: ${titulo}`}
                                   aria-pressed={est === d.valor}
                                   style={{
                                     border: `1px solid ${est === d.valor ? d.cor : "#DDD8CE"}`,
