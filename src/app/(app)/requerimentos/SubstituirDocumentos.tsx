@@ -17,11 +17,13 @@ function Linha({
   tipo,
   doc,
   liberado,
+  trocado,
 }: {
   solicitacaoId: string;
   tipo: DocumentoTipo;
   doc?: Documento;
   liberado: boolean;
+  trocado: boolean;
 }) {
   const { enviar, enviando, rotuloEnvio, erro } = useEnvioDocumento(solicitacaoId, tipo);
 
@@ -33,8 +35,8 @@ function Linha({
         alignItems: "center",
         gap: 12,
         padding: "11px 13px",
-        border: `1px solid ${liberado ? "#E8D7B4" : "#EDE9E1"}`,
-        background: liberado ? "#FFFDF8" : "#FBFAF7",
+        border: `1px solid ${trocado ? "#C6DAC9" : liberado ? "#E8D7B4" : "#EDE9E1"}`,
+        background: trocado ? "#F6FAF7" : liberado ? "#FFFDF8" : "#FBFAF7",
         borderRadius: 4,
       }}
     >
@@ -50,6 +52,7 @@ function Linha({
         </div>
         <div style={{ fontSize: 11.5, color: "#7A7472", overflow: "hidden", textOverflow: "ellipsis" }}>
           {doc ? doc.nomeArquivo : "Ainda não enviado"}
+          {trocado && <span style={{ color: "#24603A", fontWeight: 600 }}> · substituído ✓</span>}
         </div>
         {erro && <div style={{ fontSize: 11.5, color: "#8C2B22" }}>{erro}</div>}
       </div>
@@ -99,10 +102,13 @@ export function SubstituirDocumentos({
   solicitacaoId,
   documentos,
   devolvidaNoChecklist,
+  trocadosIds = [],
 }: {
   solicitacaoId: string;
   documentos: Documento[];
   devolvidaNoChecklist: boolean;
+  // Documentos enviados depois da devolução (já substituídos nesta rodada).
+  trocadosIds?: string[];
 }) {
   // Devolução na conferência documental aponta arquivos específicos: só eles trocam,
   // o que a CAPE já validou fica como está. Devolução no check-list é o projeto que
@@ -112,15 +118,15 @@ export function SubstituirDocumentos({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      <div style={{ fontSize: 11, letterSpacing: ".13em", textTransform: "uppercase", color: "#7A7472" }}>
+      <div style={{ fontSize: 12, color: "#4A5563", lineHeight: 1.45 }}>
         {devolvidaNoChecklist
-          ? "Substituir documentos antes de reenviar"
-          : `Substituir ${alvos.length === 1 ? "o documento apontado" : "os documentos apontados"} antes de reenviar`}
+          ? "Envie as pranchas e documentos corrigidos. Os que não mudaram podem ficar como estão."
+          : `Substitua ${alvos.length === 1 ? "o documento apontado" : `os ${alvos.length} documentos apontados`}. Os já validados pela CAPE ficam como estão.`}
       </div>
       {DOC_ORDER.map((tipo) => {
         const doc = documentos.find((d) => d.tipo === tipo);
         return (
-          <Linha key={tipo} solicitacaoId={solicitacaoId} tipo={tipo} doc={doc} liberado={liberado(doc)} />
+          <Linha key={tipo} solicitacaoId={solicitacaoId} tipo={tipo} doc={doc} liberado={liberado(doc)} trocado={!!doc && trocadosIds.includes(doc.id)} />
         );
       })}
     </div>

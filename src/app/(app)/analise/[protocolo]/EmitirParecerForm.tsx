@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState, useTransition } from "react";
+import { useActionState, useRef, useState, useTransition } from "react";
 import { emitirParecerAction, type ParecerState } from "@/lib/actions/analise-actions";
 import { enviarDireto, mensagemDeFalhaNoEnvio, prepararEnvio } from "@/lib/upload-cliente";
 
@@ -25,13 +25,25 @@ export function EmitirParecerForm({
   const [progresso, setProgresso] = useState<number | null>(null);
   const [erroEnvio, setErroEnvio] = useState<string | null>(null);
   const [, startTransition] = useTransition();
-  const pending = emitindo || progresso !== null;
+  // Trava no clique e só solta quando chega uma resposta nova da action (ela sempre devolve
+  // um objeto novo): um duplo clique, ou um clique durante o envio do arquivo, não dispara
+  // um segundo parecer. O servidor também barra; isto evita até a tentativa.
+  const ultimoEnvio = useRef<ParecerState | undefined>(undefined);
+  const [estadoNoEnvio, setEstadoNoEnvio] = useState<ParecerState | undefined>(undefined);
+  const travado = estadoNoEnvio !== undefined && estadoNoEnvio === state;
+  const pending = emitindo || progresso !== null || travado;
 
   // O arquivo sobe direto ao Blob antes da action (o corpo de uma requisição à função da
   // Vercel não passa de 4,5 MB); a action recebe só o caminho e confere o arquivo.
   async function emitir(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (!podeEmitir || pending) return;
+    if (!podeEmitir || pending || (ultimoEnvio.current !== undefined && ultimoEnvio.current === state)) return;
+    ultimoEnvio.current = state;
+    setEstadoNoEnvio(state);
+    const soltar = () => {
+      ultimoEnvio.current = undefined;
+      setEstadoNoEnvio(undefined);
+    };
     const form = e.currentTarget;
     const fd = new FormData(form);
     const arquivo = fd.get("arquivo");
@@ -40,7 +52,10 @@ export function EmitirParecerForm({
     if (arquivo instanceof File && arquivo.size > 0) {
       const destino = { destino: "devolutiva", solicitacaoId } as const;
       const prep = await prepararEnvio(arquivo, destino);
-      if (prep.problema) return setErroEnvio(prep.problema);
+      if (prep.problema) {
+        soltar();
+        return setErroEnvio(prep.problema);
+      }
       setProgresso(0);
       try {
         const arq = await enviarDireto(prep, destino, setProgresso);
@@ -49,6 +64,7 @@ export function EmitirParecerForm({
         fd.set("hash", arq.hash);
       } catch (err) {
         setProgresso(null);
+        soltar();
         return setErroEnvio(mensagemDeFalhaNoEnvio(err));
       }
       setProgresso(null);

@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { VersoesAnteriores } from "@/components/VersoesAnteriores";
+import { prazoAnaliseTexto } from "@/lib/prazo";
 import { requireRole } from "@/lib/require-role";
 import { getUserDisplay } from "@/lib/user-display";
 import { getAnalise } from "@/lib/queries/analise";
@@ -68,7 +69,16 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
   let emitirBg: string;
   let emitirFg: string;
   let podeEmitir = false;
-  if (!allDocs) {
+  if (aguardandoProprietario) {
+    // Parecer desta rodada já emitido: o próximo só depois do reenvio do RT.
+    veredito = sol.devolvidaNoChecklist
+      ? "Parecer enviado ao RT com as pendências. O check-list reabre quando a complementação chegar."
+      : "Documentação devolvida ao RT. A análise continua quando a complementação chegar.";
+    vereditoCor = "#8A5210";
+    emitirLabel = "Aguardando reenvio do RT";
+    emitirBg = "#EDE9E1";
+    emitirFg = "#8B939C";
+  } else if (!allDocs) {
     veredito = "Check-list bloqueado até a validação de toda a documentação.";
     vereditoCor = "#8A5210";
     emitirLabel = "Emitir parecer";
@@ -110,7 +120,7 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
     ["RT da execução", `${sol.rtExecucaoNome} · ${sol.rtExecucaoRegistro}`],
     ["Tipo de obra", TIPO_LABEL[sol.tipo]],
     ["Protocolado em", formatDate(sol.createdAt)],
-    ["Prazo de análise", `${sol.prazoDias} dias corridos`],
+    ["Prazo de análise", prazoAnaliseTexto(sol)],
     ["Reenvios", `${sol.reenvios} / ${sol.lote.empreendimento.reenviosSemTaxa} (${sol.lote.empreendimento.reenviosSemTaxa + 1}º exige nova taxa)`],
   ];
 
@@ -202,17 +212,22 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
               Alvará de execução em conferência
             </div>
             <div style={{ fontSize: 12.5, color: "#4A5563", lineHeight: 1.5 }}>
-              O proprietário anexou o alvará da Prefeitura{sol.alvaraEnviadoEm ? ` em ${formatDateTime(sol.alvaraEnviadoEm)}` : ""}.
-              A obra só é liberada depois que a CAPE aceitar o documento.
+              O responsável técnico anexou o alvará da Prefeitura e a ART/RRT de execução
+              {sol.alvaraEnviadoEm ? ` em ${formatDateTime(sol.alvaraEnviadoEm)}` : ""}. Confira os dois — a ART deve estar
+              válida e corresponder a esta obra. A obra só é liberada depois que a CAPE aceitar.
             </div>
-            <a
-              href={`/api/alvara/${sol.id}`}
-              target="_blank"
-              rel="noreferrer"
-              style={{ fontSize: 13, fontWeight: 600, color: "#4B3A7A" }}
-            >
-              Abrir {sol.alvaraNome ?? "alvará"}
-            </a>
+            <div style={{ display: "flex", gap: 18, flexWrap: "wrap" }}>
+              <a href={`/api/alvara/${sol.id}`} target="_blank" rel="noreferrer" style={{ fontSize: 13, fontWeight: 600, color: "#4B3A7A" }}>
+                Alvará: {sol.alvaraNome ?? "abrir"}
+              </a>
+              {sol.alvaraArtCaminho ? (
+                <a href={`/api/alvara/${sol.id}?arquivo=art`} target="_blank" rel="noreferrer" style={{ fontSize: 13, fontWeight: 600, color: "#4B3A7A" }}>
+                  ART/RRT de execução: {sol.alvaraArtNome ?? "abrir"}
+                </a>
+              ) : (
+                <span style={{ fontSize: 12.5, color: "#8C2B22" }}>ART/RRT de execução não enviada (envio anterior à exigência).</span>
+              )}
+            </div>
             <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) auto", gap: 12, alignItems: "end" }}>
               <form action={recusarAlvaraAction.bind(null, sol.id)} style={{ display: "flex", gap: 9, alignItems: "flex-end", flexWrap: "wrap" }}>
                 <label style={{ display: "flex", flexDirection: "column", gap: 5, flex: 1, minWidth: 260 }}>

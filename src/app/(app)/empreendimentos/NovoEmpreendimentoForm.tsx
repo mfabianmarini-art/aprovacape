@@ -48,7 +48,7 @@ export function NovoEmpreendimentoForm() {
           </label>
         </div>
         <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <span style={labelTextStyle}>Prazo de análise (dias corridos)</span>
+          <span style={labelTextStyle}>Prazo de análise (dias úteis)</span>
           <input name="prazoDias" required type="number" min={1} defaultValue={10} style={{ ...inputStyle, fontFamily: "var(--font-mono)" }} />
         </label>
 

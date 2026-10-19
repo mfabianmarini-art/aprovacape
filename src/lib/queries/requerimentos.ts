@@ -20,7 +20,7 @@ export async function getMeusRequerimentos(userId: string) {
       historico: { orderBy: { createdAt: "desc" }, include: { autor: { select: { name: true, role: true } } } },
       // Todos os documentos: os com `observacao` viram a lista de pendências, e em
       // COMPLEMENTO a pessoa precisa da lista inteira para poder substituir qualquer um.
-      documentos: { select: { id: true, tipo: true, nomeArquivo: true, observacao: true, validado: true } },
+      documentos: { select: { id: true, tipo: true, nomeArquivo: true, observacao: true, validado: true, uploadedAt: true } },
       resultados: {
         where: { observacao: { not: null } },
         select: { observacao: true, item: { select: { texto: true, referencia: true } } },

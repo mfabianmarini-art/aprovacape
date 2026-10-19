@@ -7,6 +7,7 @@ import { decifrarSenha, formatarSenha } from "@/lib/acompanhamento";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { ScreenBody } from "@/components/ScreenBody";
 import { RequerimentoCard, type SomenteLeitura } from "./RequerimentoCard";
+import { proximaAcaoDoRT } from "@/lib/proxima-acao";
 
 export default async function RequerimentosPage({ searchParams }: { searchParams: Promise<{ protocolada?: string }> }) {
   const session = await requireRole("PROPRIETARIO", "RESPONSAVEL_TECNICO");
@@ -34,6 +35,9 @@ export default async function RequerimentosPage({ searchParams }: { searchParams
     const senha = !somenteLeitura && acompanhamentoSenhaCifrada ? decifrarSenha(acompanhamentoSenhaCifrada) : null;
     return { s, somenteLeitura, senha: senha ? formatarSenha(senha) : null };
   });
+  // O que depende do RT vem primeiro; o resto segue a ordem de protocolo.
+  const ordem = (c: (typeof cards)[number]) => (!c.somenteLeitura && proximaAcaoDoRT(c.s.status) ? 0 : 1);
+  cards.sort((a, b) => ordem(a) - ordem(b));
   const recemProtocolada = protocolada ? cards.find((c) => c.s.protocolo === protocolada && !c.somenteLeitura) : undefined;
 
   return (

@@ -13,7 +13,7 @@ export function EmpreendimentoForm({ id, prazoDias, reenviosSemTaxa }: { id: str
     <form action={formAction} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 16 }}>
       <input type="hidden" name="empreendimentoId" value={id} />
       <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <span style={labelTextStyle}>Prazo de análise (dias corridos)</span>
+        <span style={labelTextStyle}>Prazo de análise (dias úteis)</span>
         <input name="prazoDias" defaultValue={prazoDias} type="number" min={1} style={inputStyle} />
       </label>
       <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>

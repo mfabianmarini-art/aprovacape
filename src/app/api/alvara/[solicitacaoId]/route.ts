@@ -10,8 +10,12 @@ export async function GET(req: Request, { params }: { params: Promise<{ solicita
 
   const { solicitacaoId } = await params;
   const sol = await prisma.solicitacao.findUnique({ where: { id: solicitacaoId }, include: INCLUI_LOTE_E_SINDICO });
-  if (!sol?.alvaraCaminho) return new NextResponse("Não encontrado.", { status: 404 });
+  // ?arquivo=art: a ART/RRT de execução enviada junto com o alvará.
+  const art = new URL(req.url).searchParams.get("arquivo") === "art";
+  const caminho = art ? sol?.alvaraArtCaminho : sol?.alvaraCaminho;
+  if (!sol || !caminho) return new NextResponse("Não encontrado.", { status: 404 });
   if (!podeVerArquivosDaSolicitacao(session.user, sol)) return new NextResponse("Sem permissão.", { status: 403 });
 
-  return servirArquivo(req, { caminho: sol.alvaraCaminho, nome: sol.alvaraNome ?? "alvara.pdf", usuarioId: session.user.id });
+  const nome = (art ? sol.alvaraArtNome : sol.alvaraNome) ?? (art ? "art-execucao.pdf" : "alvara.pdf");
+  return servirArquivo(req, { caminho, nome, usuarioId: session.user.id });
 }

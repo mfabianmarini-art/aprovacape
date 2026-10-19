@@ -282,7 +282,12 @@ model Solicitacao {
   areaIntervencao  Float
   descricao        String
   status           SolicitacaoStatus @default(ENVIADA)
+  // Prazo de análise em DIAS ÚTEIS, copiado da configuração do empreendimento no
+  // protocolo. Conta a partir de prazoInicioEm.
   prazoDias        Int
+  // Quando a documentação ficou toda validada nesta rodada — é daí que o prazo de análise
+  // corre. Volta a nulo quando a solicitação é devolvida para complementação.
+  prazoInicioEm    DateTime?
   // Só o ciclo do check-list conta como reenvio: devolução na validação documental é
   // conferência de forma, não reanálise técnica. Marca de qual fase veio a devolução,
   // para `reenviarComplementacaoAction` saber se incrementa ao receber de volta.
@@ -307,6 +312,10 @@ model Solicitacao {
   alvaraNome       String?
   alvaraCaminho    String?
   alvaraTamanho    Int?
+  // ART/RRT de execução atual e válida, exigida junto com o alvará.
+  alvaraArtNome    String?
+  alvaraArtCaminho String?
+  alvaraArtTamanho Int?
   alvaraEnviadoEm  DateTime?
   alvaraRecusa     String?
   concluidaEm      DateTime?
@@ -488,6 +497,7 @@ enum ArquivoCategoria {
   DOCUMENTO          // documento da solicitação (check-list)
   DEVOLUTIVA         // apontamentos da CAPE ao RT
   ALVARA             // alvará de execução
+  ART_EXECUCAO       // ART/RRT de execução enviada com o alvará
   EVIDENCIA          // evidência de irregularidade
   VINCULO            // autorização do proprietário para o vínculo do RT
   DOCUMENTO_TECNICO  // documentos técnicos do empreendimento

@@ -41,7 +41,9 @@ export function regraDoDestino(d: DestinoUpload): { pasta: string; extensoes: re
 // centenas de KB). A planta pode ser maior: é o mapa, precisa de detalhe.
 export function ladoMaximoDaImagem(d: DestinoUpload): number | null {
   if (d.destino === "planta") return 4096;
-  if (d.destino === "evidencia" || d.destino === "documento" || d.destino === "vinculo" || d.destino === "tecnico") return 2000;
+  // Foto de evidência é registro de obra: 1600 px bastam e ela é sempre recomprimida.
+  if (d.destino === "evidencia") return 1600;
+  if (d.destino === "documento" || d.destino === "vinculo" || d.destino === "tecnico") return 2000;
   return null;
 }
 

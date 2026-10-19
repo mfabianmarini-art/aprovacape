@@ -7,6 +7,7 @@ export type DadosAcesso = {
   base: string; // endereço do app, sem barra no fim
   lote: string; // "Quinta da Primavera · Q3 L12"
   nomeRT: string;
+  prazoDias: number; // prazo de análise, em dias úteis
   destinatario: "proprietario" | "rt";
 };
 
@@ -24,7 +25,7 @@ export function emailAcesso(d: DadosAcesso) {
       proprietario
         ? `O responsável técnico ${d.nomeRT} protocolou na CAPE a solicitação de obra do seu lote. Você pode acompanhar a análise pela internet, sem precisar criar conta, com o protocolo e a senha abaixo.`
         : `A solicitação foi protocolada na CAPE. Abaixo, a cópia do acesso enviado ao proprietário: ele acompanha o andamento com estes dados; você continua conduzindo a solicitação pela plataforma.`,
-      "Próxima etapa: a CAPE confere a documentação enviada. O prazo de análise do projeto, de até 15 dias úteis, começa a contar depois da validação documental. Cada mudança de etapa é avisada por e-mail.",
+      `Próxima etapa: a CAPE confere a documentação enviada. O prazo de análise do projeto, de até ${d.prazoDias} dias úteis, começa a contar depois da validação documental. Cada mudança de etapa é avisada por e-mail.`,
     ],
     dados: [
       ["Lote", d.lote],

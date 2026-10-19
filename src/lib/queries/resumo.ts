@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { diasUteisRestantes, prazoAnaliseTexto } from "@/lib/prazo";
 import { SELECT_VERSOES_ANTERIORES } from "@/components/VersoesAnteriores";
 import { STATUS_INFO, LIVRE_INFO } from "@/lib/status";
 import type { SolicitacaoStatus } from "@/generated/prisma/enums";
@@ -71,7 +72,10 @@ export async function getResumoData(empreendimentoId: string) {
   const emRisco = lotesComStatus.filter((l) => {
     const s = l.statusAtual;
     if (!s) return false;
-    if (s.status === "ANALISE") return s.prazoDias - diasDesde(s.createdAt) <= 3;
+    if (s.status === "ANALISE" || s.status === "ENVIADA") {
+      const r = diasUteisRestantes(s);
+      return r !== null && r <= 3;
+    }
     if (s.status === "COMPLEMENTO") return diasDesde(s.updatedAt) > emp.prazoComplementoDias - 60;
     return false;
   });
@@ -80,7 +84,7 @@ export async function getResumoData(empreendimentoId: string) {
     { valor: String(totalLotes), rotulo: "Lotes cadastrados", cor: "#231F20" },
     { valor: String(ativos.length), rotulo: "Solicitações ativas", cor: "#E01B22" },
     { valor: String(complemento.length), rotulo: "Aguardando complementação", cor: "#B4711A" },
-    { valor: String(emRisco.length), rotulo: `Em risco de prazo (${emp.prazoDias} dias)`, cor: "#8C2B22" },
+    { valor: String(emRisco.length), rotulo: `Em risco de prazo (${emp.prazoDias} dias úteis)`, cor: "#8C2B22" },
     { valor: String(aprovados.length), rotulo: "Projetos aprovados", cor: "#24603A" },
     { valor: String(execucao.length), rotulo: "Obras aprovadas", cor: "#3B3486" },
     { valor: String(comIrregularidade.length), rotulo: "Lotes com irregularidade", cor: "#8C2B22" },
@@ -108,15 +112,15 @@ export async function getResumoData(empreendimentoId: string) {
 
   const prazosEmRisco = emRisco
     .slice()
-    .sort((a, b) => diasDesde(b.statusAtual!.createdAt) - diasDesde(a.statusAtual!.createdAt))
+    .sort((a, b) => (diasUteisRestantes(a.statusAtual!) ?? 0) - (diasUteisRestantes(b.statusAtual!) ?? 0))
     .slice(0, 4)
     .map((l) => {
       const s = l.statusAtual!;
       const texto =
-        s.status === "ANALISE"
-          ? `${s.protocolo} · ${l.quadra.nome} L${l.numero} — ${Math.max(0, s.prazoDias - diasDesde(s.createdAt))} dias corridos restantes do prazo de ${s.prazoDias} dias.`
+        s.status !== "COMPLEMENTO"
+          ? `${s.protocolo} · ${l.quadra.nome} L${l.numero} — prazo de ${prazoAnaliseTexto(s)}.`
           : `${s.protocolo} · ${l.quadra.nome} L${l.numero} — complementação pendente há ${diasDesde(s.updatedAt)} dias (limite ${emp.prazoComplementoDias} dias).`;
-      return { texto, cor: s.status === "ANALISE" ? "#8C2B22" : "#8A5210" };
+      return { texto, cor: s.status !== "COMPLEMENTO" ? "#8C2B22" : "#8A5210" };
     });
 
   const legenda = (

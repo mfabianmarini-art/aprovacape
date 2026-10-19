@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@/generated/prisma/client";
 import { requireRole } from "@/lib/require-role";
 import { ehZip, extensaoDe } from "@/lib/upload-documento";
 import { descartarArquivo, lerArquivoEnviado, receberArquivo } from "@/lib/upload-direto";
@@ -43,7 +44,10 @@ export async function toggleDocumentoAction(solicitacaoId: string, tipo: Documen
 
   const updated = await prisma.solicitacaoDocumento.findMany({ where: { solicitacaoId } });
   const allValidados = DOC_ORDER.every((t) => updated.find((d) => d.tipo === t)?.validado);
-  await prisma.solicitacao.update({ where: { id: solicitacaoId }, data: { documentacaoValidada: allValidados } });
+  // O prazo de análise corre da validação documental: começa quando o último documento é
+  // validado e, se um deles for desmarcado antes da análise, volta a esperar.
+  const prazoInicioEm = allValidados ? (sol.prazoInicioEm ?? new Date()) : sol.status === "ENVIADA" ? null : sol.prazoInicioEm;
+  await prisma.solicitacao.update({ where: { id: solicitacaoId }, data: { documentacaoValidada: allValidados, prazoInicioEm } });
 
   revalidateAll(sol.protocolo);
 }
@@ -84,6 +88,19 @@ export async function salvarObservacaoItemAction(solicitacaoId: string, itemId: 
   revalidateAll(sol.protocolo);
 }
 
+// Executa uma transação cuja primeira operação muda o status com condição. Se outra
+// requisição chegou antes (clique repetido), o update não encontra a linha (P2025), a
+// transação inteira é desfeita e devolve false — nada é gravado nem notificado.
+async function umaVez(fn: () => Promise<unknown>) {
+  try {
+    await fn();
+    return true;
+  } catch (e) {
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2025") return false;
+    throw e;
+  }
+}
+
 export async function devolverDocumentacaoAction(solicitacaoId: string) {
   const session = await requireRole("ADMIN_CAPE", "CAPE_ANALISTA");
   const sol = await loadSolicitacao(solicitacaoId);
@@ -93,22 +110,28 @@ export async function devolverDocumentacaoAction(solicitacaoId: string) {
   // Nada pendente na conferência documental: não há o que pedir de volta.
   if (DOC_ORDER.every((t) => sol.documentos.find((d) => d.tipo === t)?.validado)) return;
 
-  await prisma.$transaction([
-    prisma.solicitacao.update({
-      where: { id: solicitacaoId },
-      // Devolução na conferência documental não consome reenvio.
-      data: { status: "COMPLEMENTO", documentacaoValidada: false, devolvidaNoChecklist: false },
-    }),
-    prisma.historicoEvento.create({
-      data: {
-        solicitacaoId,
-        tipo: "DOCUMENTACAO_DEVOLVIDA",
-        texto: "Documentação devolvida para complementação: um ou mais documentos inválidos ou ilegíveis.",
-        cor: "#B4711A",
-        autorId: session.user.id,
-      },
-    }),
-  ]);
+  const ok = await umaVez(() =>
+    prisma.$transaction([
+      // Condicionado ao status: dois cliques simultâneos passam pela checagem acima, mas só
+      // o primeiro muda o status — o segundo derruba a transação inteira (sem evento, sem
+      // e-mail).
+      prisma.solicitacao.update({
+        where: { id: solicitacaoId, status: { in: ["ENVIADA", "ANALISE"] } },
+        // Devolução na conferência documental não consome reenvio.
+        data: { status: "COMPLEMENTO", documentacaoValidada: false, devolvidaNoChecklist: false, prazoInicioEm: null },
+      }),
+      prisma.historicoEvento.create({
+        data: {
+          solicitacaoId,
+          tipo: "DOCUMENTACAO_DEVOLVIDA",
+          texto: "Documentação devolvida para complementação: um ou mais documentos inválidos ou ilegíveis.",
+          cor: "#B4711A",
+          autorId: session.user.id,
+        },
+      }),
+    ]),
+  );
+  if (!ok) return;
   await notificarEtapa(solicitacaoId, { tipo: "DOCUMENTACAO_DEVOLVIDA" });
 
   revalidateAll(sol.protocolo);
@@ -160,6 +183,9 @@ export async function emitirParecerAction(solicitacaoId: string, _prev: ParecerS
     where: { id: solicitacaoId },
     include: { lote: { include: { empreendimento: true } }, resultados: { include: { item: true } } },
   });
+  // Parecer é um por rodada de análise: devolvida ou aprovada, a solicitação sai de
+  // ENVIADA/ANALISE e um novo clique não registra nem notifica de novo.
+  if (sol.status !== "ENVIADA" && sol.status !== "ANALISE") return recusar("O parecer desta rodada já foi emitido.");
 
   const categorias = await prisma.checklistCategoria.findMany({
     where: { empreendimentoId: sol.lote.empreendimentoId },
@@ -224,24 +250,27 @@ export async function emitirParecerAction(solicitacaoId: string, _prev: ParecerS
   const complemento = `${comentario ? `\nComentários da CAPE: ${comentario}` : ""}${salvo ? "\nA CAPE anexou um arquivo com os apontamentos." : ""}`;
 
   if (reprovados.length > 0) {
-    await prisma.$transaction([
-      prisma.solicitacao.update({
-        where: { id: solicitacaoId },
-        data: { status: "COMPLEMENTO", devolvidaNoChecklist: true },
-      }),
-      ...[...aprovados, ...naoSeAplica].map((r) => prisma.checklistResultado.update({ where: { id: r.id }, data: { travado: true } })),
-      ...reprovados.map((r) => prisma.checklistResultado.update({ where: { id: r.id }, data: { status: "PENDENTE", travado: false } })),
-      ...devolutiva,
-      prisma.historicoEvento.create({
-        data: {
-          solicitacaoId,
-          tipo: "CHECKLIST_DEVOLVIDO",
-          texto: `Devolvida com ${reprovados.length} pendência(s) no check-list técnico.${complemento}`,
-          cor: "#B4711A",
-          autorId: session.user.id,
-        },
-      }),
-    ]);
+    const ok = await umaVez(() =>
+      prisma.$transaction([
+        prisma.solicitacao.update({
+          where: { id: solicitacaoId, status: { in: ["ENVIADA", "ANALISE"] } },
+          data: { status: "COMPLEMENTO", devolvidaNoChecklist: true, prazoInicioEm: null },
+        }),
+        ...[...aprovados, ...naoSeAplica].map((r) => prisma.checklistResultado.update({ where: { id: r.id }, data: { travado: true } })),
+        ...reprovados.map((r) => prisma.checklistResultado.update({ where: { id: r.id }, data: { status: "PENDENTE", travado: false } })),
+        ...devolutiva,
+        prisma.historicoEvento.create({
+          data: {
+            solicitacaoId,
+            tipo: "CHECKLIST_DEVOLVIDO",
+            texto: `Devolvida com ${reprovados.length} pendência(s) no check-list técnico.${complemento}`,
+            cor: "#B4711A",
+            autorId: session.user.id,
+          },
+        }),
+      ]),
+    );
+    if (!ok) return recusar("O parecer desta rodada já foi emitido.");
     await notificarEtapa(solicitacaoId, {
       tipo: "CHECKLIST_DEVOLVIDO",
       itens: reprovados.map((r) => ({ texto: r.item.texto, observacao: r.observacao })),
@@ -249,19 +278,22 @@ export async function emitirParecerAction(solicitacaoId: string, _prev: ParecerS
       comArquivo: !!salvo,
     });
   } else {
-    await prisma.$transaction([
-      prisma.solicitacao.update({ where: { id: solicitacaoId }, data: { status: "APROVADA" } }),
-      ...devolutiva,
-      prisma.historicoEvento.create({
-        data: {
-          solicitacaoId,
-          tipo: "PROJETO_APROVADO",
-          texto: `Projeto aprovado. A aprovação da CAPE não substitui a aprovação da Prefeitura.${complemento}`,
-          cor: "#24603A",
-          autorId: session.user.id,
-        },
-      }),
-    ]);
+    const ok = await umaVez(() =>
+      prisma.$transaction([
+        prisma.solicitacao.update({ where: { id: solicitacaoId, status: { in: ["ENVIADA", "ANALISE"] } }, data: { status: "APROVADA" } }),
+        ...devolutiva,
+        prisma.historicoEvento.create({
+          data: {
+            solicitacaoId,
+            tipo: "PROJETO_APROVADO",
+            texto: `Projeto aprovado. A aprovação da CAPE não substitui a aprovação da Prefeitura.${complemento}`,
+            cor: "#24603A",
+            autorId: session.user.id,
+          },
+        }),
+      ]),
+    );
+    if (!ok) return recusar("O parecer desta rodada já foi emitido.");
     await notificarEtapa(solicitacaoId, { tipo: "PROJETO_APROVADO", comentario, comArquivo: !!salvo });
   }
 
@@ -314,12 +346,17 @@ export async function recusarAlvaraAction(solicitacaoId: string, formData: FormD
         alvaraNome: null,
         alvaraCaminho: null,
         alvaraTamanho: null,
+        alvaraArtNome: null,
+        alvaraArtCaminho: null,
+        alvaraArtTamanho: null,
         alvaraEnviadoEm: null,
         alvaraRecusa: motivo,
       },
     }),
-    // O alvará recusado sai da solicitação, mas o arquivo segue guardado no inventário.
+    // Alvará e ART recusados saem da solicitação; os arquivos ficam como versões anteriores
+    // até a liberação da obra. O RT reenvia os dois.
     marcarSubstituido(sol.alvaraCaminho),
+    marcarSubstituido(sol.alvaraArtCaminho),
     prisma.historicoEvento.create({
       data: {
         solicitacaoId,

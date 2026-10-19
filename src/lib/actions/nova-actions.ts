@@ -30,7 +30,7 @@ export async function criarRascunhoAction(_prev: unknown, formData: FormData) {
   const parsed = rascunhoSchema.safeParse(Object.fromEntries(formData.entries()));
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
 
-  const lote = await prisma.lote.findUniqueOrThrow({ where: { id: parsed.data.loteId } });
+  const lote = await prisma.lote.findUniqueOrThrow({ where: { id: parsed.data.loteId }, include: { empreendimento: { select: { prazoDias: true } } } });
   if (lote.rtId !== session.user.id) return { error: "Este lote não está vinculado à sua conta." };
 
   const sol = await prisma.solicitacao.create({
@@ -42,7 +42,7 @@ export async function criarRascunhoAction(_prev: unknown, formData: FormData) {
       descricao: parsed.data.descricao,
       proprietarioEmail: parsed.data.proprietarioEmail,
       status: "RASCUNHO",
-      prazoDias: 10,
+      prazoDias: lote.empreendimento.prazoDias,
       criadoPorId: session.user.id,
       responsavelTecnicoNome: "",
       responsavelTecnicoRegistro: "",
@@ -132,22 +132,37 @@ export async function documentoIdenticoAction(solicitacaoId: string, tipo: Docum
 
 const enviarSchema = z.object({
   solicitacaoId: z.string().min(1),
-  rtNome: z.string().min(3, "Informe o responsável técnico pelo projeto"),
-  rtRegistro: z.string().min(3, "Informe o registro CAU/CREA do responsável técnico pelo projeto"),
-  rtEmail: z.string().email("E-mail inválido para o responsável técnico pelo projeto"),
-  rtExecNome: z.string().min(3, "Informe o responsável técnico pela execução"),
-  rtExecRegistro: z.string().min(3, "Informe o registro CAU/CREA do responsável técnico pela execução"),
-  rtExecEmail: z.string().email("E-mail inválido para o responsável técnico pela execução"),
+  rtNome: z.string().trim().min(3, "Informe o responsável técnico pelo projeto"),
+  rtRegistro: z.string().trim().min(3, "Informe o registro CAU/CREA do responsável técnico pelo projeto"),
+  rtEmail: z.string().trim().email("E-mail inválido para o responsável técnico pelo projeto"),
+  mesmoRTExecucao: z.enum(["sim", "nao"], { message: "Informe se o responsável pelo projeto também responde pela execução" }),
+  rtExecNome: z.string().trim().min(3, "Informe o responsável técnico pela execução"),
+  rtExecRegistro: z.string().trim().min(3, "Informe o registro CAU/CREA do responsável técnico pela execução"),
+  rtExecEmail: z.string().trim().email("E-mail inválido para o responsável técnico pela execução"),
   // Só para rascunhos criados antes de o e-mail ser pedido no passo 1.
   proprietarioEmail: z.string().trim().toLowerCase().email("Informe um e-mail válido do proprietário").optional(),
   d1: z.literal("on"),
   d2: z.literal("on"),
   d3: z.literal("on"),
+  // Matrícula atualizada após o TVO.
+  d4: z.literal("on"),
 });
+
+// "Sim" na pergunta do passo 3: o RT do projeto também responde pela execução, e os
+// campos da execução nem aparecem — valem os mesmos dados.
+function dadosDoEnvio(formData: FormData) {
+  const d = Object.fromEntries(formData.entries());
+  if (d.mesmoRTExecucao === "sim") {
+    d.rtExecNome = d.rtNome;
+    d.rtExecRegistro = d.rtRegistro;
+    d.rtExecEmail = d.rtEmail;
+  }
+  return d;
+}
 
 export async function enviarSolicitacaoAction(_prev: unknown, formData: FormData) {
   const session = await requireRole(RT);
-  const parsed = enviarSchema.safeParse(Object.fromEntries(formData.entries()));
+  const parsed = enviarSchema.safeParse(dadosDoEnvio(formData));
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Preencha todos os campos e aceite as declarações." };
 
   const sol = await prisma.solicitacao.findUniqueOrThrow({

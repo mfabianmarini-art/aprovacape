@@ -5,6 +5,22 @@ import { enviarVarios, mensagemDeFalhaNoEnvio, ProblemaNoArquivo } from "@/lib/u
 import { registrarIrregularidadeAction, type IrregularidadeState } from "@/lib/actions/analise-actions";
 import { IRREGULARIDADE_LABEL } from "@/lib/status";
 
+const MAX_EVIDENCIAS = 8;
+
+const botaoEvidencia = (principal: boolean): React.CSSProperties => ({
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 6,
+  border: "1px solid #8C2B22",
+  background: principal ? "#8C2B22" : "#fff",
+  color: principal ? "#fff" : "#8C2B22",
+  borderRadius: 4,
+  padding: "10px 14px",
+  fontSize: 13,
+  fontWeight: 600,
+  cursor: "pointer",
+});
+
 const inputStyle: React.CSSProperties = {
   border: "1px solid #DDD8CE",
   borderRadius: 4,
@@ -33,7 +49,36 @@ export function IrregularidadeForm({
     registrarIrregularidadeAction.bind(null, solicitacaoId),
     null,
   );
-  const [arquivos, setArquivos] = useState<string[]>([]);
+  // Fotos tiradas na hora e arquivos escolhidos se acumulam aqui (o input de câmera traz
+  // uma foto por vez). A prévia usa uma URL local, sem enviar nada antes do registro.
+  const [evidencias, setEvidencias] = useState<{ id: string; file: File; previa: string | null }[]>([]);
+  // Registrou com sucesso: limpa a lista e remonta o formulário (ajuste de estado na
+  // renderização, quando a resposta da action muda).
+  const [ultimoEstado, setUltimoEstado] = useState(state);
+  const [rodada, setRodada] = useState(0);
+  if (state !== ultimoEstado) {
+    setUltimoEstado(state);
+    if (state?.ok) {
+      setEvidencias([]);
+      setRodada((n) => n + 1);
+    }
+  }
+  function adicionar(lista: FileList | null) {
+    const novos = Array.from(lista ?? []).map((file) => ({
+      id: crypto.randomUUID(),
+      file,
+      previa: file.type.startsWith("image/") ? URL.createObjectURL(file) : null,
+    }));
+    setEvidencias((atual) => [...atual, ...novos].slice(0, MAX_EVIDENCIAS));
+    if (evidencias.length + novos.length > MAX_EVIDENCIAS) setErroEnvio(`No máximo ${MAX_EVIDENCIAS} evidências por registro.`);
+  }
+  function remover(id: string) {
+    setEvidencias((atual) => {
+      const ev = atual.find((e) => e.id === id);
+      if (ev?.previa) URL.revokeObjectURL(ev.previa);
+      return atual.filter((e) => e.id !== id);
+    });
+  }
   const [progresso, setProgresso] = useState<number | null>(null);
   const [erroEnvio, setErroEnvio] = useState<string | null>(null);
   const [, startTransition] = useTransition();
@@ -45,10 +90,10 @@ export function IrregularidadeForm({
     e.preventDefault();
     if (ocupado) return;
     const fd = new FormData(e.currentTarget);
-    const files = fd.getAll("evidencias").filter((f): f is File => f instanceof File && f.size > 0);
-    fd.delete("evidencias");
+    fd.delete("foto");
+    fd.delete("arquivos");
+    const files = evidencias.map((ev) => ev.file);
     setErroEnvio(null);
-    if (files.length > 8) return setErroEnvio("Anexe no máximo 8 evidências.");
     if (files.length > 0) {
       setProgresso(0);
       try {
@@ -70,8 +115,7 @@ export function IrregularidadeForm({
   return (
     <form
       onSubmit={registrar}
-      // Remontar após o sucesso limpa os campos sem mexer em estado durante a render.
-      key={state?.ok ? "registrada" : "nova"}
+      key={rodada}
       style={{ display: "flex", flexDirection: "column", gap: 11, border: "1px solid #E8C9C4", background: "#FDF6F5", borderRadius: 4, padding: 15 }}
     >
       {state?.ok ? (
@@ -107,22 +151,43 @@ export function IrregularidadeForm({
         />
       </label>
 
-      <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-        <span style={labelStyle}>Evidências (fotos ou PDF, até 8 arquivos; fotos são reduzidas antes do envio)</span>
-        <input
-          type="file"
-          name="evidencias"
-          multiple
-          accept="image/png,image/jpeg,image/webp,.pdf"
-          onChange={(e) => setArquivos(Array.from(e.target.files ?? []).map((f) => f.name))}
-          style={{ fontSize: 12 }}
-        />
-        {arquivos.length > 0 && (
-          <span style={{ fontSize: 11.5, color: "#4A5563", fontFamily: "var(--font-mono)" }}>
-            {arquivos.length} arquivo(s): {arquivos.join(", ")}
-          </span>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <span style={labelStyle}>Evidências — até {MAX_EVIDENCIAS}; as fotos são comprimidas antes do envio</span>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {/* capture abre direto a câmera traseira no celular; no computador, o seletor. */}
+          <input id={`foto-${solicitacaoId}`} name="foto" type="file" accept="image/*" capture="environment" style={{ display: "none" }} onChange={(e) => { adicionar(e.target.files); e.target.value = ""; }} />
+          <label htmlFor={`foto-${solicitacaoId}`} style={botaoEvidencia(true)}>
+            📷 Tirar foto
+          </label>
+          <input id={`arq-${solicitacaoId}`} name="arquivos" type="file" multiple accept="image/png,image/jpeg,image/webp,.pdf" style={{ display: "none" }} onChange={(e) => { adicionar(e.target.files); e.target.value = ""; }} />
+          <label htmlFor={`arq-${solicitacaoId}`} style={botaoEvidencia(false)}>
+            ⬆ Escolher fotos ou PDF
+          </label>
+        </div>
+        {evidencias.length > 0 && (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(96px, 1fr))", gap: 8 }}>
+            {evidencias.map((ev) => (
+              <div key={ev.id} style={{ position: "relative", border: "1px solid #E8C9C4", borderRadius: 4, background: "#fff", overflow: "hidden" }}>
+                {ev.previa ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={ev.previa} alt={ev.file.name} style={{ width: "100%", height: 80, objectFit: "cover", display: "block" }} />
+                ) : (
+                  <div style={{ height: 80, display: "grid", placeItems: "center", fontSize: 12, fontWeight: 700, color: "#8C2B22" }}>PDF</div>
+                )}
+                <div style={{ fontSize: 10.5, padding: "3px 5px", color: "#4A5563", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{ev.file.name}</div>
+                <button
+                  type="button"
+                  onClick={() => remover(ev.id)}
+                  aria-label={`Remover ${ev.file.name}`}
+                  style={{ position: "absolute", top: 3, right: 3, width: 22, height: 22, borderRadius: "50%", border: 0, background: "rgba(35,31,32,.75)", color: "#fff", fontSize: 13, lineHeight: "22px", cursor: "pointer", padding: 0 }}
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
         )}
-      </label>
+      </div>
 
       {(erroEnvio ?? state?.error) && !ocupado && <div style={{ fontSize: 12, color: "#8C2B22" }}>{erroEnvio ?? state?.error}</div>}
 

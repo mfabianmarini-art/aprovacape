@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { formatDate, formatDateTime, STATUS_INFO, TIPO_LABEL, DOC_LABEL, IRREGULARIDADE_LABEL } from "@/lib/status";
 import { ROLE_LABEL } from "@/lib/nav";
+import { prazoAnaliseTexto } from "@/lib/prazo";
 import type { getResumoData } from "@/lib/queries/resumo";
 
 type Data = NonNullable<Awaited<ReturnType<typeof getResumoData>>>;
@@ -523,7 +524,7 @@ export function ResumoMapa({ data, podeAnalisar }: { data: Data; podeAnalisar: b
                             <Bloco titulo="Protocolo">
                               <Campo k="Aberta por" v={s.criadoPor?.name ?? "—"} />
                               <Campo k="Abertura" v={formatDate(s.createdAt)} />
-                              <Campo k="Prazo de análise" v={`${s.prazoDias} dias`} />
+                              <Campo k="Prazo de análise" v={prazoAnaliseTexto(s)} />
                               {/* Pagamento é assunto entre CAPE e proprietário; o síndico
                                   acompanha o andamento, não a cobrança. */}
                               {podeAnalisar && <Campo k="Taxa" v={s.pago ? "paga" : "não paga"} />}

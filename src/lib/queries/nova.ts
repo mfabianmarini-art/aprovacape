@@ -46,3 +46,13 @@ export async function getRascunho(id: string) {
     include: { documentos: true, lote: { include: { quadra: true, empreendimento: true } } },
   });
 }
+
+// Dados de cadastro do RT para pré-preencher o responsável técnico no envio.
+export async function getPerfilRT(userId: string) {
+  const u = await prisma.user.findUniqueOrThrow({
+    where: { id: userId },
+    select: { name: true, email: true, conselho: true, registroNumero: true, registroUf: true },
+  });
+  const registro = u.registroNumero ? `${u.conselho ?? ""} ${u.registroNumero}${u.registroUf ? `/${u.registroUf}` : ""}`.trim() : "";
+  return { nome: u.name, email: u.email, registro };
+}

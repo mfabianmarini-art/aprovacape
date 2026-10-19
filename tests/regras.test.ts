@@ -92,3 +92,14 @@ test("tamanho legível", () => {
   assert.equal(formatarTamanho(512), "512 B");
   assert.equal(formatarTamanho(1.5 * MB), "1,5 MB");
 });
+
+test("prazo em dias úteis: fim de semana e feriados nacionais não contam", async () => {
+  const { diasUteisEntre, diasUteisRestantes } = await import("@/lib/prazo");
+  const d = (s: string) => new Date(`${s}T12:00:00-03:00`);
+  assert.equal(diasUteisEntre(d("2026-10-16"), d("2026-10-19")), 1, "sexta → segunda: 1 dia útil");
+  assert.equal(diasUteisEntre(d("2026-10-09"), d("2026-10-13")), 1, "12/10 (feriado) não conta");
+  assert.equal(diasUteisEntre(d("2026-04-02"), d("2026-04-06")), 1, "Sexta-feira Santa (03/04/2026) não conta");
+  assert.equal(diasUteisEntre(d("2026-10-19"), d("2026-10-19")), 0);
+  assert.equal(diasUteisRestantes({ prazoDias: 10, prazoInicioEm: null }), null, "sem validação documental, o prazo não corre");
+  assert.equal(diasUteisRestantes({ prazoDias: 10, prazoInicioEm: d("2026-10-01") }, d("2026-10-15")), 1, "15/10: 9 úteis passados (12/10 feriado)");
+});

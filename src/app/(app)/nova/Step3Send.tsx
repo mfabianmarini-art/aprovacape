@@ -14,12 +14,42 @@ const DECLARACOES = [
       "Declaro ciência de que o início da obra depende da apresentação do projeto aprovado pela Prefeitura, do respectivo alvará de execução e da ART/RRT de execução da obra.",
   },
   { id: "d3", texto: "Declaro ciência de que alterações no projeto aprovado pela Prefeitura em relação ao aprovado pelo residencial exigem substituição do projeto." },
+  {
+    id: "d4",
+    texto:
+      "Declaro ciência de que é obrigatória a apresentação à CAPE da matrícula atualizada do imóvel assim que for liberado o TVO (Termo de Vistoria de Obra).",
+  },
 ] as const;
+type Decl = (typeof DECLARACOES)[number]["id"];
 
-export function Step3Send({ rascunho, nomeRT, emailProprietario }: { rascunho: { id: string }; nomeRT: string; emailProprietario: string | null }) {
+export type PerfilRT = { nome: string; email: string; registro: string };
+
+function CamposRT({ prefixo, inicial }: { prefixo: "rt" | "rtExec"; inicial?: PerfilRT }) {
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 16 }}>
+      <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <span style={labelTextStyle}>Nome</span>
+        <input name={`${prefixo}Nome`} required defaultValue={inicial?.nome} style={inputStyle} />
+      </label>
+      <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <span style={labelTextStyle}>Registro CAU / CREA</span>
+        <input name={`${prefixo}Registro`} required defaultValue={inicial?.registro} style={{ ...inputStyle, fontFamily: "var(--font-mono)" }} />
+      </label>
+      <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <span style={labelTextStyle}>E-mail para notificações</span>
+        <input name={`${prefixo}Email`} required type="email" defaultValue={inicial?.email} style={inputStyle} />
+      </label>
+    </div>
+  );
+}
+
+export function Step3Send({ rascunho, perfilRT, emailProprietario }: { rascunho: { id: string }; perfilRT: PerfilRT; emailProprietario: string | null }) {
   const [state, formAction, pending] = useActionState(enviarSolicitacaoAction, null as { error?: string } | null);
-  const [decl, setDecl] = useState({ d1: false, d2: false, d3: false });
-  const podeEnviar = decl.d1 && decl.d2 && decl.d3;
+  const [decl, setDecl] = useState<Record<Decl, boolean>>({ d1: false, d2: false, d3: false, d4: false });
+  // Sem resposta pré-marcada: quem envia decide de propósito quem responde pela execução.
+  const [mesmoRT, setMesmoRT] = useState<"sim" | "nao" | null>(null);
+  const declaracoesOk = DECLARACOES.every((d) => decl[d.id]);
+  const podeEnviar = declaracoesOk && mesmoRT !== null;
 
   return (
     <form action={formAction} style={{ padding: 20, display: "flex", flexDirection: "column", gap: 16 }}>
@@ -27,39 +57,41 @@ export function Step3Send({ rascunho, nomeRT, emailProprietario }: { rascunho: {
 
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         <span style={labelTextStyle}>Responsável técnico pelo projeto</span>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 16 }}>
-          <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <span style={labelTextStyle}>Nome</span>
-            <input name="rtNome" required defaultValue={nomeRT} style={inputStyle} />
-          </label>
-          <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <span style={labelTextStyle}>Registro CAU / CREA</span>
-            <input name="rtRegistro" required style={{ ...inputStyle, fontFamily: "var(--font-mono)" }} />
-          </label>
-          <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <span style={labelTextStyle}>E-mail para notificações</span>
-            <input name="rtEmail" required type="email" style={inputStyle} />
-          </label>
-        </div>
+        <span style={{ fontSize: 11.5, color: "#7A7472" }}>Preenchido com os dados do seu cadastro. Ajuste se necessário.</span>
+        <CamposRT prefixo="rt" inicial={perfilRT} />
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        <span style={labelTextStyle}>Responsável técnico pela execução</span>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 16 }}>
-          <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <span style={labelTextStyle}>Nome</span>
-            <input name="rtExecNome" required style={inputStyle} />
-          </label>
-          <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <span style={labelTextStyle}>Registro CAU / CREA</span>
-            <input name="rtExecRegistro" required style={{ ...inputStyle, fontFamily: "var(--font-mono)" }} />
-          </label>
-          <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <span style={labelTextStyle}>E-mail para notificações</span>
-            <input name="rtExecEmail" required type="email" style={inputStyle} />
-          </label>
+      <fieldset style={{ border: "1px solid #EDE9E1", borderRadius: 4, padding: "14px 16px", margin: 0, display: "flex", flexDirection: "column", gap: 10 }}>
+        <legend style={{ ...labelTextStyle, padding: "0 6px" }}>Responsável técnico pela execução</legend>
+        <span style={{ fontSize: 13, color: "#231F20", fontWeight: 600 }}>O responsável pelo projeto também será o responsável pela execução da obra?</span>
+        <div style={{ display: "flex", gap: 18, flexWrap: "wrap" }}>
+          {(
+            [
+              ["sim", "Sim, sou eu também"],
+              ["nao", "Não, é outro profissional"],
+            ] as const
+          ).map(([v, rotulo]) => (
+            <label key={v} style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13, cursor: "pointer" }}>
+              <input
+                type="radio"
+                name="mesmoRTExecucao"
+                value={v}
+                required
+                checked={mesmoRT === v}
+                onChange={() => setMesmoRT(v)}
+                style={{ width: 16, height: 16, accentColor: "#E01B22", cursor: "pointer" }}
+              />
+              {rotulo}
+            </label>
+          ))}
         </div>
-      </div>
+        {mesmoRT === "sim" && (
+          <span style={{ fontSize: 12, color: "#24603A", lineHeight: 1.45 }}>
+            Os dados do responsável pelo projeto valem também para a execução — nada a preencher.
+          </span>
+        )}
+        {mesmoRT === "nao" && <CamposRT prefixo="rtExec" />}
+      </fieldset>
 
       {/* O e-mail é informado no passo 1; aqui só aparece para rascunhos criados antes disso. */}
       <div style={{ display: "flex", flexDirection: "column", gap: 6, maxWidth: 460 }}>
@@ -95,7 +127,11 @@ export function Step3Send({ rascunho, nomeRT, emailProprietario }: { rascunho: {
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
         <div style={{ fontSize: 12.5, color: podeEnviar ? "#24603A" : "#8A5210", maxWidth: "60ch", lineHeight: 1.45 }}>
-          {podeEnviar ? "Pronto para envio." : "Aceite as três declarações para enviar."}
+          {podeEnviar
+            ? "Pronto para envio."
+            : mesmoRT === null
+              ? "Informe quem é o responsável pela execução e aceite as declarações para enviar."
+              : `Aceite as ${DECLARACOES.length} declarações para enviar.`}
         </div>
         <div style={{ display: "flex", gap: 9 }}>
           <a

@@ -16,6 +16,7 @@ export async function emitirAcessoProprietario(solicitacaoId: string, proprietar
       updatedAt: true,
       responsavelTecnicoNome: true,
       responsavelTecnicoEmail: true,
+      prazoDias: true,
       lote: { select: { numero: true, rt: { select: { email: true } }, quadra: { select: { nome: true } }, empreendimento: { select: { nome: true } } } },
     },
   });
@@ -40,6 +41,7 @@ export async function emitirAcessoProprietario(solicitacaoId: string, proprietar
     base: await urlDoApp(),
     lote: `${sol.lote.empreendimento.nome} · ${sol.lote.quadra.nome} L${sol.lote.numero}`,
     nomeRT: sol.responsavelTecnicoNome,
+    prazoDias: sol.prazoDias,
   };
   const paraProprietario = emailAcesso({ ...base, destinatario: "proprietario" });
   const proprietario = await enviarEmail({ para: [proprietarioEmail], ...paraProprietario });

@@ -1,6 +1,6 @@
 import { requireRole } from "@/lib/require-role";
 import { getUserDisplay } from "@/lib/user-display";
-import { emailsSugeridosPorLote, getMeusLotes, getMeusRascunhos, getRascunho } from "@/lib/queries/nova";
+import { emailsSugeridosPorLote, getMeusLotes, getMeusRascunhos, getPerfilRT, getRascunho } from "@/lib/queries/nova";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { ScreenBody } from "@/components/ScreenBody";
 import { Step1Form } from "./Step1Form";
@@ -16,10 +16,11 @@ export default async function NovaPage({
   const session = await requireRole("RESPONSAVEL_TECNICO");
   const { rascunho: rascunhoId, passo: passoParam } = await searchParams;
 
-  const [user, lotes, rascunhos] = await Promise.all([
+  const [user, lotes, rascunhos, perfilRT] = await Promise.all([
     getUserDisplay(session.user.id, session.user.role),
     getMeusLotes(session.user.id),
     getMeusRascunhos(session.user.id),
+    getPerfilRT(session.user.id),
   ]);
 
   const [rascunho, emailsSugeridos] = await Promise.all([
@@ -82,7 +83,7 @@ export default async function NovaPage({
             {passo === 3 && rascunhoValido && (
               <Step3Send
                 rascunho={rascunhoValido}
-                nomeRT={session.user.name}
+                perfilRT={perfilRT}
                 emailProprietario={rascunhoValido.proprietarioEmail}
               />
             )}
@@ -94,7 +95,7 @@ export default async function NovaPage({
               <div style={{ fontSize: 12, color: "#4A5563", lineHeight: 1.5 }}>Contabilizados somente após a validação documental.</div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 10, borderTop: "1px solid #EDE9E1", paddingTop: 10 }}>
                 <span style={{ fontSize: 12.5, fontWeight: 600, color: "#231F20" }}>Análise de projeto</span>
-                <span style={{ fontSize: 13, fontWeight: 600, fontFamily: "var(--font-mono)", whiteSpace: "nowrap" }}>até 15 dias úteis</span>
+                <span style={{ fontSize: 13, fontWeight: 600, fontFamily: "var(--font-mono)", whiteSpace: "nowrap" }}>{emp ? `até ${emp.prazoDias} dias úteis` : "—"}</span>
               </div>
             </section>
             <section style={{ background: "#231F20", color: "#fff", borderRadius: 4, padding: "16px 17px", fontSize: 12.5, lineHeight: 1.5 }}>

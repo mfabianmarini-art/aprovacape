@@ -2,9 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@/generated/prisma/client";
 import { requireRole } from "@/lib/require-role";
-import { descartarArquivo, lerArquivoEnviado } from "@/lib/upload-direto";
-import { extensaoDe } from "@/lib/upload-documento";
+import { descartarArquivo, receberArquivo } from "@/lib/upload-direto";
 import { DOC_LABEL, DOC_ORDER } from "@/lib/status";
 import { notificarEtapa } from "@/lib/notificacoes";
 import { registrarArquivo } from "@/lib/arquivos";
@@ -31,6 +31,17 @@ export async function reenviarComplementacaoAction(solicitacaoId: string): Promi
     return { error: `Envie antes os documentos obrigatórios que faltam: ${faltando.map((t) => DOC_LABEL[t].nome).join(", ")}.` };
   }
 
+  // Devolvida é para corrigir: reenviar sem trocar nenhum arquivo só devolveria à CAPE o
+  // mesmo material. Pelo menos um documento precisa ter sido enviado depois da devolução.
+  const devolucao = await prisma.historicoEvento.findFirst({
+    where: { solicitacaoId: sol.id, tipo: { in: ["DOCUMENTACAO_DEVOLVIDA", "CHECKLIST_DEVOLVIDO"] } },
+    orderBy: { createdAt: "desc" },
+    select: { createdAt: true },
+  });
+  if (devolucao && !documentos.some((d) => d.uploadedAt > devolucao.createdAt)) {
+    return { error: "Substitua pelo menos um dos arquivos apontados pela CAPE antes de enviar a complementação." };
+  }
+
   // Conta aqui, quando a documentação nova chega de fato — contar na devolução fazia
   // cada clique do analista consumir uma tentativa. E só conta o ciclo do check-list:
   // devolução na conferência documental é acerto de forma, não reanálise técnica.
@@ -51,6 +62,9 @@ export async function reenviarComplementacaoAction(solicitacaoId: string): Promi
       data: {
         status: "ENVIADA",
         documentacaoValidada: todosValidados,
+        // Documentação já toda validada (devolução do check-list sem documento
+        // invalidado): o prazo da nova rodada corre a partir do reenvio.
+        prazoInicioEm: todosValidados ? new Date() : null,
         devolvidaNoChecklist: false,
         reenvios,
         pago: conta && reenvios > emp.reenviosSemTaxa ? false : sol.pago,
@@ -80,63 +94,83 @@ export async function reenviarComplementacaoAction(solicitacaoId: string): Promi
   return null;
 }
 
-const MAX_ALVARA_BYTES = 5 * 1024 * 1024;
-
-// O alvará é documento da Prefeitura: o proprietário anexa, mas quem libera o início da
-// obra é a CAPE, depois de conferir. Antes disto o clique do proprietário já colocava a
-// obra em execução sozinho.
+// O alvará é documento da Prefeitura: o RT anexa, mas quem libera o início da obra é a
+// CAPE, depois de conferir. Junto vai a ART/RRT de execução atual e válida — é ela que
+// identifica quem responde pela obra a partir daqui.
 export async function enviarAlvaraAction(solicitacaoId: string, _prev: unknown, formData: FormData) {
   const session = await requireRole("RESPONSAVEL_TECNICO");
   const sol = await loadOwnedSolicitacao(session, solicitacaoId);
-  if (sol.status !== "RESSALVAS" && sol.status !== "APROVADA") {
-    return { error: "Esta solicitação não está aguardando o alvará." };
-  }
+  // Os dois PDFs já subiram direto ao Blob (upload-cliente.ts); qualquer recusa os apaga.
+  const alvaraPath = String(formData.get("pathname") ?? "");
+  const artPath = String(formData.get("artPathname") ?? "");
+  const recusar = async (error: string) => {
+    await Promise.all([alvaraPath, artPath].filter(Boolean).map(descartarArquivo));
+    return { error };
+  };
+  if (sol.status !== "RESSALVAS" && sol.status !== "APROVADA") return recusar("Esta solicitação não está aguardando o alvará.");
+  if (!alvaraPath) return recusar("Anexe o alvará de execução.");
+  if (!artPath) return recusar("Anexe a ART/RRT de execução atual e válida.");
 
-  // O PDF já subiu direto ao Blob (upload-cliente.ts); aqui é conferido e registrado.
-  const pathname = String(formData.get("pathname") ?? "");
-  const nomeArquivo = String(formData.get("nomeArquivo") ?? "").slice(0, 255);
-  const arq = pathname && nomeArquivo ? await lerArquivoEnviado(pathname, { destino: "alvara", solicitacaoId: sol.id }) : null;
-  if (!arq) return { error: "Arquivo do alvará não encontrado. Envie de novo." };
-  const PDF = arq.inicio[0] === 0x25 && arq.inicio[1] === 0x50 && arq.inicio[2] === 0x44 && arq.inicio[3] === 0x46; // %PDF
-  if (extensaoDe(nomeArquivo) !== ".pdf" || !PDF || arq.tamanho > MAX_ALVARA_BYTES) {
-    await descartarArquivo(pathname);
-    return { error: arq.tamanho > MAX_ALVARA_BYTES ? "Arquivo maior que 5 MB." : "Envie o alvará em PDF." };
-  }
-  const saved = { nomeArquivo, caminhoArquivo: pathname, tamanhoBytes: arq.tamanho };
+  const destino = { destino: "alvara", solicitacaoId: sol.id } as const;
+  const alvaraNome = String(formData.get("nomeArquivo") ?? "").slice(0, 255);
+  const artNome = String(formData.get("artNomeArquivo") ?? "").slice(0, 255);
+  const [alvara, art] = await Promise.all([receberArquivo(alvaraPath, alvaraNome, destino), receberArquivo(artPath, artNome, destino)]);
+  if ("erro" in alvara) return recusar(`Alvará: ${alvara.erro}`);
+  if ("erro" in art) return recusar(`ART/RRT de execução: ${art.erro}`);
+  const saved = { nomeArquivo: alvaraNome, caminhoArquivo: alvaraPath, tamanhoBytes: alvara.tamanho };
 
-  await prisma.$transaction([
-    prisma.solicitacao.update({
-      where: { id: sol.id },
-      data: {
-        status: "ALVARA_CONFERENCIA",
-        statusAntesAlvara: sol.status,
-        alvaraNome: saved.nomeArquivo,
-        alvaraCaminho: saved.caminhoArquivo,
-        alvaraTamanho: saved.tamanhoBytes,
-        alvaraEnviadoEm: new Date(),
-        alvaraRecusa: null,
-      },
-    }),
-    registrarArquivo({
-      caminho: saved.caminhoArquivo,
-      nome: saved.nomeArquivo,
-      tamanho: saved.tamanhoBytes,
-      hash: String(formData.get("hash") ?? ""),
-      categoria: "ALVARA",
-      solicitacaoId: sol.id,
-      empreendimentoId: sol.lote.empreendimentoId,
-      enviadoPorId: session.user.id,
-    }),
-    prisma.historicoEvento.create({
-      data: {
+  try {
+    await prisma.$transaction([
+      // Condicionado ao status: um segundo envio simultâneo não passa.
+      prisma.solicitacao.update({
+        where: { id: sol.id, status: { in: ["APROVADA", "RESSALVAS"] } },
+        data: {
+          status: "ALVARA_CONFERENCIA",
+          statusAntesAlvara: sol.status,
+          alvaraNome: saved.nomeArquivo,
+          alvaraCaminho: saved.caminhoArquivo,
+          alvaraTamanho: saved.tamanhoBytes,
+          alvaraArtNome: artNome,
+          alvaraArtCaminho: artPath,
+          alvaraArtTamanho: art.tamanho,
+          alvaraEnviadoEm: new Date(),
+          alvaraRecusa: null,
+        },
+      }),
+      registrarArquivo({
+        caminho: artPath,
+        nome: artNome,
+        tamanho: art.tamanho,
+        hash: String(formData.get("artHash") ?? ""),
+        categoria: "ART_EXECUCAO",
         solicitacaoId: sol.id,
-        tipo: "ALVARA_ENVIADO",
-        texto: "Alvará de execução enviado. Aguardando conferência da CAPE para liberar o início da obra.",
-        cor: "#4B3A7A",
-        autorId: session.user.id,
-      },
-    }),
-  ]);
+        empreendimentoId: sol.lote.empreendimentoId,
+        enviadoPorId: session.user.id,
+      }),
+      registrarArquivo({
+        caminho: saved.caminhoArquivo,
+        nome: saved.nomeArquivo,
+        tamanho: saved.tamanhoBytes,
+        hash: String(formData.get("hash") ?? ""),
+        categoria: "ALVARA",
+        solicitacaoId: sol.id,
+        empreendimentoId: sol.lote.empreendimentoId,
+        enviadoPorId: session.user.id,
+      }),
+      prisma.historicoEvento.create({
+        data: {
+          solicitacaoId: sol.id,
+          tipo: "ALVARA_ENVIADO",
+          texto: "Alvará de execução e ART/RRT de execução enviados. Aguardando conferência da CAPE para liberar o início da obra.",
+          cor: "#4B3A7A",
+          autorId: session.user.id,
+        },
+      }),
+    ]);
+  } catch (e) {
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2025") return recusar("O alvará desta solicitação já foi enviado.");
+    throw e;
+  }
   await notificarEtapa(sol.id, { tipo: "ALVARA_ENVIADO" });
 
   revalidatePath("/requerimentos");
