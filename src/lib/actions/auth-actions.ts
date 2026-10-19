@@ -9,6 +9,7 @@ import { homeForRole } from "@/lib/nav";
 import { UF_REGEX } from "@/lib/registro-profissional";
 import { cpfValido, digitosCpf } from "@/lib/cpf";
 import { ondeIdentificador } from "@/lib/identificador-login";
+import { problemaNaSenha } from "@/lib/redefinicao-senha";
 import { ipAtual, limiteExcedido, mensagemLimite, registrarTentativa } from "@/lib/limite-taxa";
 
 export type LoginState = { error?: string; redirectTo?: string } | null;
@@ -44,36 +45,40 @@ const registerSchema = z
   .object({
     nome: z.string().min(3, "Informe o nome completo"),
     cpf: z.string().transform(digitosCpf).refine(cpfValido, "CPF inválido"),
-    nascimento: z.string().min(1, "Informe a data de nascimento"),
     telefone: z.string().min(8, "Informe o telefone"),
     email: z.string().email("E-mail inválido"),
     conselho: z.enum(["CREA", "CAU"], { message: "Selecione o conselho (CREA ou CAU)" }),
     registroNumero: z.string().trim().min(3, "Informe o número do registro"),
     registroUf: z.string().trim().toUpperCase(),
-    senha: z.string().min(8, "Mínimo 8 caracteres"),
+    senha: z.string(),
     confirmarSenha: z.string(),
     aceite: z.literal("on", { message: "É necessário aceitar os termos" }),
   })
-  .refine((d) => d.senha === d.confirmarSenha, { message: "As senhas não coincidem", path: ["confirmarSenha"] })
   .refine((d) => UF_REGEX.test(d.registroUf), {
     message: "Informe a UF emissora do registro (ex.: SP)",
     path: ["registroUf"],
   });
 
-export type RegisterState = { error?: string; ok?: boolean; identifier?: string } | null;
+// `campo`: nome do campo com problema, para a tela destacá-lo. Os valores digitados
+// não voltam na resposta: o formulário não é limpo (ver LoginRegisterForm).
+export type RegisterState = { error?: string; campo?: string; ok?: boolean; identifier?: string } | null;
 
 export async function registerAction(_prev: RegisterState, formData: FormData): Promise<RegisterState> {
   if (await registrarTentativa("cadastro", await ipAtual())) return { error: mensagemLimite("cadastro") };
   const raw = Object.fromEntries(formData.entries());
   const parsed = registerSchema.safeParse(raw);
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
+    const issue = parsed.error.issues[0];
+    return { error: issue?.message ?? "Dados inválidos.", campo: typeof issue?.path[0] === "string" ? issue.path[0] : undefined };
   }
   const d = parsed.data;
+  // Mesma política da redefinição de senha (tamanho, limite do bcrypt, não ser e-mail/CPF).
+  const senhaRuim = problemaNaSenha(d.senha, d.confirmarSenha, { email: d.email, cpf: d.cpf });
+  if (senhaRuim) return { error: senhaRuim, campo: d.senha === d.confirmarSenha ? "senha" : "confirmarSenha" };
 
   const existing = await prisma.user.findFirst({ where: { OR: [{ email: d.email }, { cpf: d.cpf }] } });
   if (existing) {
-    return { error: "Já existe uma conta com este e-mail ou CPF." };
+    return { error: "Já existe uma conta com este e-mail ou CPF.", campo: existing.email === d.email ? "email" : "cpf" };
   }
 
 
@@ -83,7 +88,6 @@ export async function registerAction(_prev: RegisterState, formData: FormData): 
       name: d.nome,
       email: d.email,
       cpf: d.cpf,
-      birthDate: new Date(d.nascimento),
       phone: d.telefone,
       passwordHash,
       role: "RESPONSAVEL_TECNICO",

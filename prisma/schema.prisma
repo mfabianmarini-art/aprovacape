@@ -115,7 +115,9 @@ model User {
   name          String
   email         String        @unique
   cpf           String        @unique
-  birthDate     DateTime
+  // Não é mais pedida no cadastro (dado pessoal sem uso na análise); fica só nas contas
+  // antigas.
+  birthDate     DateTime?
   phone         String
   passwordHash  String
   role          Role
@@ -154,6 +156,8 @@ model User {
   vinculoSolicitadoEm    DateTime?
   vinculoRevisadoPorId String?
   vinculoRevisadoEm    DateTime?
+  // Motivo informado pela CAPE ao reprovar o pedido de vínculo (vai no e-mail ao RT).
+  vinculoMotivoRecusa  String?
 
   lotesComoProprietario Lote[]        @relation("LoteProprietario")
   lotesComoRT           Lote[]        @relation("LoteRT")

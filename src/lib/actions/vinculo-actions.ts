@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/require-role";
 import { descartarArquivo, receberArquivo } from "@/lib/upload-direto";
 import { marcarSubstituido, registrarArquivo } from "@/lib/arquivos";
+import { notificarVinculo } from "@/lib/email-vinculo";
 
 import {
   camposProprietarioDeclarado,
@@ -101,9 +102,11 @@ export async function solicitarVinculoAction(_prev: VinculoState, formData: Form
         // A revisão gravada era do pedido anterior.
         vinculoRevisadoPorId: null,
         vinculoRevisadoEm: null,
+        vinculoMotivoRecusa: null,
       },
     }),
   ]);
+  await notificarVinculo(user.id, { tipo: "SOLICITADO" });
 
   revalidatePath("/vinculo");
   revalidatePath("/vinculos");

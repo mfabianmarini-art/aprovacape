@@ -82,6 +82,11 @@ export default async function VinculoPage() {
                   {meu.vinculoSolicitadoEm ? `pedido em ${formatDate(meu.vinculoSolicitadoEm)}` : ""}
                   {meu.vinculoRevisadoEm ? ` · respondido em ${formatDate(meu.vinculoRevisadoEm)}` : ""}
                 </div>
+                {meu.vinculoStatus === "RECUSADO" && meu.vinculoMotivoRecusa && (
+                  <div style={{ fontSize: 12.5, color: "#3B4653", lineHeight: 1.5, whiteSpace: "pre-line" }}>
+                    <strong>Motivo:</strong> {meu.vinculoMotivoRecusa}
+                  </div>
+                )}
               </section>
             )}
           </aside>

@@ -132,7 +132,8 @@ export function VinculosTable({ pendentes }: { pendentes: Pendentes }) {
                       ["E-mail", p.email],
                       ["Telefone", p.phone],
                       ["CPF", formatarCpf(p.cpf)],
-                      ["Nascimento", formatDataPura(p.birthDate)],
+                      // Só contas antigas têm a data: o cadastro não a pede mais.
+                      ...(p.birthDate ? [["Nascimento", formatDataPura(p.birthDate)] as const] : []),
                       ["Perfil", ROLE_LABEL[p.role]],
                       ...(registro ? [["Registro", registro] as const] : []),
                       ["Empreendimento", p.vinculoLote?.empreendimento.nome ?? "—"],
@@ -249,7 +250,14 @@ export function VinculosTable({ pendentes }: { pendentes: Pendentes }) {
                       Aprovar vínculo
                     </button>
                   </form>
-                  <form action={recusarVinculoAction.bind(null, p.id)}>
+                  <form action={recusarVinculoAction.bind(null, p.id)} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <textarea
+                      name="motivo"
+                      rows={2}
+                      maxLength={1000}
+                      placeholder="Motivo da reprovação (vai no e-mail ao solicitante)"
+                      style={{ border: "1px solid #DDD8CE", borderRadius: 4, padding: "8px 10px", fontSize: 12.5, fontFamily: "inherit", resize: "vertical" }}
+                    />
                     <button
                       type="submit"
                       style={{

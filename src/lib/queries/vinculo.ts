@@ -39,6 +39,7 @@ export async function getMeuVinculo(userId: string) {
       vinculoStatus: true,
       vinculoSolicitadoEm: true,
       vinculoRevisadoEm: true,
+      vinculoMotivoRecusa: true,
       vinculoLote: loteResumo,
       lotesComoProprietario: { ...loteResumo, orderBy: [{ quadra: { nome: "asc" } }, { numero: "asc" }] },
       lotesComoRT: { ...loteResumo, orderBy: [{ quadra: { nome: "asc" } }, { numero: "asc" }] },

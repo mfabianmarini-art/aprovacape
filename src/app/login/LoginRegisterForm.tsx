@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState, useTransition } from "react";
+import { useActionState, useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -35,6 +35,27 @@ export function LoginRegisterForm({ senhaRedefinida = false }: { senhaRedefinida
   );
   const router = useRouter();
   const [entering, startEntering] = useTransition();
+  const [, startEnvio] = useTransition();
+  const formCadastro = useRef<HTMLFormElement>(null);
+
+  // Envio sem <form action>: com action, o React limpa o formulário ao terminar, e um erro
+  // num campo apagava todos os outros. Assim o que foi digitado fica, e só o campo com
+  // problema precisa ser corrigido.
+  function enviarSemLimpar(despachar: (fd: FormData) => void) {
+    return (e: React.FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
+      const fd = new FormData(e.currentTarget);
+      startEnvio(() => despachar(fd));
+    };
+  }
+
+  // Leva o foco ao campo recusado.
+  useEffect(() => {
+    if (registerState?.campo) formCadastro.current?.querySelector<HTMLElement>(`[name="${registerState.campo}"]`)?.focus();
+  }, [registerState]);
+  const campoComErro = registerState?.campo;
+  const destaque = (nome: string, base: React.CSSProperties = inputStyle): React.CSSProperties =>
+    campoComErro === nome ? { ...base, border: "2px solid #8C2B22", background: "#FDF6F5" } : base;
 
   useEffect(() => {
     if (loginState?.redirectTo) router.push(loginState.redirectTo);
@@ -136,7 +157,7 @@ export function LoginRegisterForm({ senhaRedefinida = false }: { senhaRedefinida
         </div>
 
         {aba === "login" && (
-          <form action={loginFormAction} style={{ padding: 24, display: "flex", flexDirection: "column", gap: 14 }}>
+          <form onSubmit={enviarSemLimpar(loginFormAction)} style={{ padding: 24, display: "flex", flexDirection: "column", gap: 14 }}>
             {senhaRedefinida && (
               <div role="status" style={{ background: "#F6FAF7", border: "1px solid #C6DAC9", borderRadius: 4, padding: "10px 12px", fontSize: 12.5, color: "#24603A", lineHeight: 1.5 }}>
                 Senha redefinida. Entre com a nova senha.
@@ -185,7 +206,7 @@ export function LoginRegisterForm({ senhaRedefinida = false }: { senhaRedefinida
         )}
 
         {aba === "cadastro" && (
-          <form action={registerFormAction} style={{ padding: 24, display: "flex", flexDirection: "column", gap: 16 }}>
+          <form ref={formCadastro} onSubmit={enviarSemLimpar(registerFormAction)} style={{ padding: 24, display: "flex", flexDirection: "column", gap: 16 }}>
             <div style={{ fontSize: 12.5, lineHeight: 1.5, color: "#4A5563" }}>
               Cadastro de <strong>responsáveis técnicos</strong>, que abrem e acompanham as solicitações de obra. O
               proprietário não precisa de conta: acompanha a aprovação com o protocolo e a senha que o RT repassa.
@@ -194,28 +215,24 @@ export function LoginRegisterForm({ senhaRedefinida = false }: { senhaRedefinida
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <label style={{ display: "flex", flexDirection: "column", gap: 6, gridColumn: "1/-1" }}>
                 <span style={labelTextStyle}>Nome completo</span>
-                <input name="nome" required placeholder="Como consta no documento" style={inputStyle} />
+                <input name="nome" required placeholder="Como consta no documento" style={destaque("nome")} />
               </label>
               <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 <span style={labelTextStyle}>CPF</span>
-                <input name="cpf" required placeholder="000.000.000-00" style={{ ...inputStyle, fontFamily: "var(--font-mono)" }} />
-              </label>
-              <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                <span style={labelTextStyle}>Data de nascimento</span>
-                <input name="nascimento" required type="date" style={{ ...inputStyle, fontFamily: "var(--font-mono)" }} />
+                <input name="cpf" required placeholder="000.000.000-00" style={destaque("cpf", { ...inputStyle, fontFamily: "var(--font-mono)" })} />
               </label>
               <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 <span style={labelTextStyle}>Telefone</span>
-                <input name="telefone" required placeholder="(11) 90000-0000" style={{ ...inputStyle, fontFamily: "var(--font-mono)" }} />
+                <input name="telefone" required placeholder="(11) 90000-0000" style={destaque("telefone", { ...inputStyle, fontFamily: "var(--font-mono)" })} />
               </label>
               <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 <span style={labelTextStyle}>E-mail</span>
-                <input name="email" required type="email" style={inputStyle} />
+                <input name="email" required type="email" style={destaque("email")} />
               </label>
               <div style={{ display: "grid", gridTemplateColumns: "110px minmax(0,1fr) 90px", gap: 10, gridColumn: "1/-1" }}>
                 <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                   <span style={labelTextStyle}>Conselho</span>
-                  <select name="conselho" required defaultValue="CREA" style={{ ...inputStyle, border: "1px solid #B4711A" }}>
+                  <select name="conselho" required defaultValue="CREA" style={destaque("conselho", { ...inputStyle, border: "1px solid #B4711A" })}>
                     <option value="CREA">CREA</option>
                     <option value="CAU">CAU</option>
                   </select>
@@ -226,7 +243,7 @@ export function LoginRegisterForm({ senhaRedefinida = false }: { senhaRedefinida
                     name="registroNumero"
                     required
                     placeholder="5069874/D"
-                    style={{ ...inputStyle, border: "1px solid #B4711A", fontFamily: "var(--font-mono)" }}
+                    style={destaque("registroNumero", { ...inputStyle, border: "1px solid #B4711A", fontFamily: "var(--font-mono)" })}
                   />
                 </label>
                 <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -236,17 +253,17 @@ export function LoginRegisterForm({ senhaRedefinida = false }: { senhaRedefinida
                     required
                     maxLength={2}
                     placeholder="SP"
-                    style={{ ...inputStyle, border: "1px solid #B4711A", fontFamily: "var(--font-mono)", textTransform: "uppercase" }}
+                    style={destaque("registroUf", { ...inputStyle, border: "1px solid #B4711A", fontFamily: "var(--font-mono)", textTransform: "uppercase" })}
                   />
                 </label>
               </div>
               <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 <span style={labelTextStyle}>Senha</span>
-                <input name="senha" required type="password" placeholder="mínimo 8 caracteres" style={inputStyle} />
+                <input name="senha" required type="password" placeholder="mínimo 8 caracteres" style={destaque("senha")} />
               </label>
               <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 <span style={labelTextStyle}>Confirmar senha</span>
-                <input name="confirmarSenha" required type="password" style={inputStyle} />
+                <input name="confirmarSenha" required type="password" style={destaque("confirmarSenha")} />
               </label>
             </div>
             <div
@@ -278,7 +295,11 @@ export function LoginRegisterForm({ senhaRedefinida = false }: { senhaRedefinida
               </span>
             </label>
 
-            {registerState?.error && <div style={{ fontSize: 12.5, color: "#8C2B22" }}>{registerState.error}</div>}
+            {registerState?.error && (
+              <div role="alert" style={{ fontSize: 12.5, color: "#8C2B22" }}>
+                {registerState.error} Os demais dados continuam preenchidos.
+              </div>
+            )}
 
             <button
               type="submit"

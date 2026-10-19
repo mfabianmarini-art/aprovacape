@@ -9,11 +9,15 @@ import { requireRole } from "@/lib/require-role";
 import { UF_REGEX } from "@/lib/registro-profissional";
 import { divergenciaDeTitular } from "@/lib/conferencia-vinculo";
 import { digitosCpf } from "@/lib/cpf";
+import { notificarVinculo } from "@/lib/email-vinculo";
 
 export async function aprovarVinculoAction(userId: string) {
   const session = await requireRole("ADMIN_CAPE", "CAPE_ANALISTA");
   const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
   if (!user.vinculoLoteId) return;
+
+  // Só pedido em análise: um clique repetido não reaprova nem reenvia o e-mail.
+  if (user.vinculoStatus !== "PENDENTE") return;
 
   const ehRT = user.role === "RESPONSAVEL_TECNICO";
   const lote = await prisma.lote.findUniqueOrThrow({
@@ -58,7 +62,7 @@ export async function aprovarVinculoAction(userId: string) {
   await prisma.$transaction([
     prisma.user.update({
       where: { id: userId },
-      data: { vinculoStatus: "APROVADO", vinculoRevisadoPorId: session.user.id, vinculoRevisadoEm: new Date() },
+      data: { vinculoStatus: "APROVADO", vinculoRevisadoPorId: session.user.id, vinculoRevisadoEm: new Date(), vinculoMotivoRecusa: null },
     }),
     prisma.lote.update({
       where: { id: lote.id },
@@ -76,6 +80,7 @@ export async function aprovarVinculoAction(userId: string) {
       }),
     ),
   ]);
+  await notificarVinculo(userId, { tipo: "APROVADO" });
 
   revalidatePath("/vinculos");
   revalidatePath("/empreendimentos");
@@ -83,12 +88,15 @@ export async function aprovarVinculoAction(userId: string) {
   revalidatePath("/resumo");
 }
 
-export async function recusarVinculoAction(userId: string) {
+export async function recusarVinculoAction(userId: string, formData: FormData) {
   const session = await requireRole("ADMIN_CAPE", "CAPE_ANALISTA");
-  await prisma.user.update({
-    where: { id: userId },
-    data: { vinculoStatus: "RECUSADO", vinculoRevisadoPorId: session.user.id, vinculoRevisadoEm: new Date() },
+  const motivo = String(formData.get("motivo") ?? "").trim().slice(0, 1000) || null;
+  // Condicionado a PENDENTE: um clique repetido não grava nem avisa de novo.
+  const { count } = await prisma.user.updateMany({
+    where: { id: userId, vinculoStatus: "PENDENTE" },
+    data: { vinculoStatus: "RECUSADO", vinculoRevisadoPorId: session.user.id, vinculoRevisadoEm: new Date(), vinculoMotivoRecusa: motivo },
   });
+  if (count === 1) await notificarVinculo(userId, { tipo: "RECUSADO", motivo });
   revalidatePath("/vinculos");
   revalidatePath("/empreendimentos");
 }
@@ -130,7 +138,6 @@ export async function criarUsuarioInternoAction(_prev: NovoInternoState, formDat
       name: d.nome,
       email: d.email,
       cpf: cpfPlaceholder,
-      birthDate: new Date("1990-01-01"),
       phone: "",
       passwordHash,
       role: d.perfil,
@@ -172,7 +179,6 @@ export async function criarSindicoAction(
         name: d.nome,
         email: d.email,
         cpf: `PEND-${crypto.randomUUID().slice(0, 12)}`,
-        birthDate: new Date("1990-01-01"),
         phone: "",
         passwordHash,
         role: "SINDICO",
