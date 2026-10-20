@@ -42,7 +42,7 @@ export default async function VinculoPage() {
               </div>
               <div style={{ fontSize: 12, color: "#7A7472", marginTop: 4, lineHeight: 1.5 }}>
                 {ehRT
-                  ? "Anexe a autorização assinada pelo proprietário do lote e informe os dados dele."
+                  ? "Anexe a procuração do proprietário do lote, o RG ou CNH dele e o seu, e informe os dados do proprietário."
                   : "Informe a matrícula do lote no cartório de registro de imóveis."}{" "}
                 A CAPE confere e, aprovado, o lote passa a aparecer em Nova solicitação.
               </div>

@@ -25,13 +25,25 @@ export type VinculoState = { error?: string; ok?: boolean } | null;
 // Usuário já cadastrado pedindo vínculo com outro lote. Reaproveita o slot vinculo* do
 // User — por isso um pedido por vez — e a aprovação segue o mesmo caminho do auto-cadastro
 // (aprovarVinculoAction). Nada é perdido: os lotes já aprovados vivem em Lote.proprietarioId/rtId.
+// Arquivos que o RT anexa ao pedir vínculo, na ordem do formulário. `campo` é o prefixo dos
+// campos que o navegador manda depois do upload direto (…Pathname, …Nome, …Hash).
+const ARQUIVOS_DO_PEDIDO = [
+  { campo: "procuracao", rotulo: "a procuração do proprietário", rotuloCurto: "Procuração do proprietário" },
+  { campo: "docProprietario", rotulo: "o RG ou a CNH do proprietário", rotuloCurto: "RG ou CNH do proprietário" },
+  { campo: "docRT", rotulo: "o seu RG ou CNH", rotuloCurto: "RG ou CNH do responsável técnico" },
+] as const;
+
 export async function solicitarVinculoAction(_prev: VinculoState, formData: FormData): Promise<VinculoState> {
   const session = await requireRole("RESPONSAVEL_TECNICO");
-  // A autorização já subiu direto ao Blob; qualquer recusa daqui em diante a apaga.
-  const pathname = String(formData.get("pathname") ?? "");
-  const nomeArquivo = String(formData.get("nomeArquivo") ?? "").slice(0, 255);
+  // Os arquivos já subiram direto ao Blob; qualquer recusa daqui em diante apaga todos.
+  const arquivos = ARQUIVOS_DO_PEDIDO.map((a) => ({
+    ...a,
+    pathname: String(formData.get(`${a.campo}Pathname`) ?? ""),
+    nome: String(formData.get(`${a.campo}Nome`) ?? "").slice(0, 255),
+    hash: String(formData.get(`${a.campo}Hash`) ?? ""),
+  }));
   const recusar = async (error: string): Promise<VinculoState> => {
-    if (pathname) await descartarArquivo(pathname);
+    await Promise.all(arquivos.filter((a) => a.pathname).map((a) => descartarArquivo(a.pathname)));
     return { error };
   };
   const parsed = schema.safeParse(Object.fromEntries(formData.entries()));
@@ -58,34 +70,42 @@ export async function solicitarVinculoAction(_prev: VinculoState, formData: Form
     return recusar(`${lote.quadra.nome} L${lote.numero} já está vinculado à sua conta.`);
   }
 
-  let autorizacao: { nomeArquivo: string; caminhoArquivo: string; tamanhoBytes: number } | null = null;
+  const recebidos: ((typeof arquivos)[number] & { tamanho: number })[] = [];
   if (ehRT) {
     const semProprietario = proprietarioDeclaradoInvalido(d);
     if (semProprietario) return recusar(semProprietario);
-    if (!pathname) return { error: "Anexe a autorização do proprietário." };
-    const recebido = await receberArquivo(pathname, nomeArquivo, { destino: "vinculo", usuarioId: user.id });
-    if ("erro" in recebido) return { error: recebido.erro };
-    autorizacao = { nomeArquivo, caminhoArquivo: pathname, tamanhoBytes: recebido.tamanho };
+    const faltando = arquivos.find((a) => !a.pathname);
+    if (faltando) return recusar(`Anexe ${faltando.rotulo}.`);
+    for (const a of arquivos) {
+      const r = await receberArquivo(a.pathname, a.nome, { destino: "vinculo", usuarioId: user.id });
+      if ("erro" in r) return recusar(`${a.rotuloCurto}: ${r.erro}`);
+      recebidos.push({ ...a, tamanho: r.tamanho });
+    }
   } else if (!d.comprovacao) {
     return recusar("Informe a matrícula do lote.");
   }
+  const [procuracao, docProp, docRt] = recebidos;
 
-  // A autorização de um pedido anterior não é apagada: fica no inventário como versão
-  // substituída.
+  // Os arquivos de um pedido anterior não são apagados: ficam no inventário como versões
+  // substituídas.
   await prisma.$transaction([
-    ...(autorizacao
+    ...(ehRT
       ? [
           marcarSubstituido(user.vinculoArquivoCaminho),
-          registrarArquivo({
-            caminho: autorizacao.caminhoArquivo,
-            nome: autorizacao.nomeArquivo,
-            tamanho: autorizacao.tamanhoBytes,
-            hash: String(formData.get("hash") ?? ""),
-            categoria: "VINCULO",
-            usuarioId: user.id,
-            empreendimentoId: lote.empreendimentoId,
-            enviadoPorId: user.id,
-          }),
+          marcarSubstituido(user.vinculoDocPropCaminho),
+          marcarSubstituido(user.vinculoDocRtCaminho),
+          ...recebidos.map((a) =>
+            registrarArquivo({
+              caminho: a.pathname,
+              nome: a.nome,
+              tamanho: a.tamanho,
+              hash: a.hash,
+              categoria: "VINCULO",
+              usuarioId: user.id,
+              empreendimentoId: lote.empreendimentoId,
+              enviadoPorId: user.id,
+            }),
+          ),
         ]
       : []),
     prisma.user.update({
@@ -95,9 +115,15 @@ export async function solicitarVinculoAction(_prev: VinculoState, formData: Form
         vinculoLoteId: lote.id,
         vinculoSolicitadoEm: new Date(),
         vinculoComprovacao: ehRT ? null : d.comprovacao,
-        vinculoArquivoNome: autorizacao?.nomeArquivo ?? null,
-        vinculoArquivoCaminho: autorizacao?.caminhoArquivo ?? null,
-        vinculoArquivoTamanho: autorizacao?.tamanhoBytes ?? null,
+        vinculoArquivoNome: procuracao?.nome ?? null,
+        vinculoArquivoCaminho: procuracao?.pathname ?? null,
+        vinculoArquivoTamanho: procuracao?.tamanho ?? null,
+        vinculoDocPropNome: docProp?.nome ?? null,
+        vinculoDocPropCaminho: docProp?.pathname ?? null,
+        vinculoDocPropTamanho: docProp?.tamanho ?? null,
+        vinculoDocRtNome: docRt?.nome ?? null,
+        vinculoDocRtCaminho: docRt?.pathname ?? null,
+        vinculoDocRtTamanho: docRt?.tamanho ?? null,
         ...dadosProprietarioParaGravar(d, ehRT),
         // A revisão gravada era do pedido anterior.
         vinculoRevisadoPorId: null,

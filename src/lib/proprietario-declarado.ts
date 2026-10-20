@@ -2,7 +2,7 @@ import { z } from "zod";
 import { cpfValido, digitosCpf } from "@/lib/cpf";
 
 // Dados do proprietário que o responsável técnico declara ao pedir vínculo. A
-// autorização que ele anexa é um documento assinado; sem saber de quem é a assinatura,
+// procuração que ele anexa é um documento assinado; sem saber de quem é a assinatura,
 // a CAPE não tem contra quem conferi-la. Os dois formulários que abrem um pedido
 // (cadastro no login e tela de vínculo) coletam os mesmos campos, então a regra de
 // validação mora aqui e não em cada um.

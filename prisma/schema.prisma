@@ -139,12 +139,19 @@ model User {
   vinculoStatus     VinculoStatus?
   vinculoLoteId     String?
   vinculoLote       Lote?          @relation("VinculoLote", fields: [vinculoLoteId], references: [id])
-  // Proprietário comprova pela matrícula do lote; o RT anexa a
-  // autorização assinada pelo proprietário.
+  // Proprietário comprova pela matrícula do lote; o RT anexa a procuração do
+  // proprietário (vinculoArquivo*) e os documentos de identidade (RG ou CNH) do
+  // proprietário e dele próprio, para a CAPE conferir quem assinou e quem pede.
   vinculoComprovacao String?
   vinculoArquivoNome     String?
   vinculoArquivoCaminho  String?
   vinculoArquivoTamanho  Int?
+  vinculoDocPropNome     String?
+  vinculoDocPropCaminho  String?
+  vinculoDocPropTamanho  Int?
+  vinculoDocRtNome       String?
+  vinculoDocRtCaminho    String?
+  vinculoDocRtTamanho    Int?
   // Dados do proprietário, declarados pelo RT ao pedir vínculo. A autorização é um
   // arquivo assinado; sem saber quem assinou, a CAPE não tem contra quem conferi-lo.
   vinculoPropNome        String?

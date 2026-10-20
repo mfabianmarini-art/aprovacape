@@ -14,7 +14,7 @@ export function ProprietarioDeclaradoFields({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       <div style={{ fontSize: 11.5, color: "#7A7472", lineHeight: 1.5 }}>
-        Dados do proprietário que assinou a autorização. A CAPE confere o documento contra estes dados
+        Dados do proprietário que assinou a procuração. A CAPE confere o documento contra estes dados
         antes de aprovar o vínculo.
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(190px,1fr))", gap: 10 }}>

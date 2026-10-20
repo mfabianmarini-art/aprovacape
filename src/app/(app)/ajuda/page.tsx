@@ -28,7 +28,7 @@ const PASSOS: { id: string; titulo: string; onde?: { href: string; rotulo: strin
       <>
         <p style={texto}>
           Antes de abrir uma solicitação, o lote precisa estar vinculado à sua conta. Peça o vínculo informando o empreendimento,
-          a quadra e o lote, os dados do proprietário e a <strong>autorização assinada por ele</strong> (procuração ou contrato).
+          a quadra e o lote, os dados do proprietário, a <strong>procuração assinada por ele</strong> e os documentos de identidade (RG ou CNH) dele e seu.
         </p>
         <p style={texto}>A CAPE confere o pedido e você recebe um e-mail com a resposta. Aprovado, o lote passa a aparecer em Nova solicitação.</p>
       </>
@@ -169,7 +169,7 @@ const PERGUNTAS: { p: string; r: React.ReactNode }[] = [
   },
   {
     p: "Outro profissional vai assumir a obra.",
-    r: "O novo responsável técnico pede o vínculo com o lote, com a autorização do proprietário. Quando a CAPE aprova, as ações da solicitação passam para ele; você continua vendo o que protocolou.",
+    r: "O novo responsável técnico pede o vínculo com o lote, com a procuração do proprietário. Quando a CAPE aprova, as ações da solicitação passam para ele; você continua vendo o que protocolou.",
   },
   {
     p: "Onde vejo arquivos que já substituí?",

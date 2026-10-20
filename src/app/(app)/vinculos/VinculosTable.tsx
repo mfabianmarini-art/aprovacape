@@ -149,8 +149,8 @@ export function VinculosTable({ pendentes }: { pendentes: Pendentes }) {
                           ? lotesJa.map((l) => `${l.empreendimento.nome} · ${l.quadra.nome} L${l.numero}`).join(", ")
                           : "nenhum — cadastro novo",
                       ],
-                      // Declarados pelo RT: é contra estes dados que a autorização
-                      // anexada precisa bater.
+                      // Declarados pelo RT: é contra estes dados que a procuração e o
+                      // documento do proprietário precisam bater.
                       ...(p.vinculoPropNome
                         ? ([
                             ["Proprietário declarado", p.vinculoPropNome],
@@ -168,25 +168,36 @@ export function VinculosTable({ pendentes }: { pendentes: Pendentes }) {
                       <span style={{ fontFamily: "var(--font-mono)", color: "#3B4653" }}>{v}</span>
                     </div>
                   ))}
-                  <div style={{ display: "grid", gridTemplateColumns: "140px 1fr", gap: 10, fontSize: 12.5 }}>
-                    <span style={{ color: "#7A7472", letterSpacing: ".06em", textTransform: "uppercase", fontSize: 10, paddingTop: 2 }}>
-                      Comprovação
-                    </span>
-                    {p.vinculoArquivoCaminho ? (
-                      <a
-                        href={`/api/vinculo-autorizacao/${p.id}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        style={{ fontSize: 12.5, fontWeight: 600, color: "#E01B22" }}
-                      >
-                        {p.vinculoArquivoNome ?? "Autorização do proprietário"}
-                      </a>
-                    ) : (
-                      <span style={{ fontFamily: "var(--font-mono)", color: "#3B4653" }}>
-                        {p.vinculoComprovacao ?? "—"}
+                  {p.vinculoArquivoCaminho ? (
+                    (
+                      [
+                        ["Procuração do proprietário", "", p.vinculoArquivoCaminho, p.vinculoArquivoNome],
+                        ["RG ou CNH do proprietário", "?doc=proprietario", p.vinculoDocPropCaminho, p.vinculoDocPropNome],
+                        ["RG ou CNH do RT", "?doc=rt", p.vinculoDocRtCaminho, p.vinculoDocRtNome],
+                      ] as const
+                    ).map(([rotulo, sufixo, caminho, nome]) => (
+                      <div key={rotulo} style={{ display: "grid", gridTemplateColumns: "140px 1fr", gap: 10, fontSize: 12.5 }}>
+                        <span style={{ color: "#7A7472", letterSpacing: ".06em", textTransform: "uppercase", fontSize: 10, paddingTop: 2 }}>
+                          {rotulo}
+                        </span>
+                        {caminho ? (
+                          <a href={`/api/vinculo-autorizacao/${p.id}${sufixo}`} target="_blank" rel="noreferrer" style={{ fontSize: 12.5, fontWeight: 600, color: "#E01B22", overflowWrap: "anywhere" }}>
+                            {nome ?? "Abrir"}
+                          </a>
+                        ) : (
+                          // Pedido feito antes de os documentos de identidade serem exigidos.
+                          <span style={{ fontSize: 12, color: "#8A5210" }}>não enviado (pedido anterior à exigência)</span>
+                        )}
+                      </div>
+                    ))
+                  ) : (
+                    <div style={{ display: "grid", gridTemplateColumns: "140px 1fr", gap: 10, fontSize: 12.5 }}>
+                      <span style={{ color: "#7A7472", letterSpacing: ".06em", textTransform: "uppercase", fontSize: 10, paddingTop: 2 }}>
+                        Comprovação
                       </span>
-                    )}
-                  </div>
+                      <span style={{ fontFamily: "var(--font-mono)", color: "#3B4653" }}>{p.vinculoComprovacao ?? "—"}</span>
+                    </div>
+                  )}
                 </div>
 
                 <div
