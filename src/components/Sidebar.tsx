@@ -160,33 +160,31 @@ export function Sidebar({ nav }: { nav: NavEntry[] }) {
             );
           })}
         </nav>
-        <div
-          style={{
-            marginTop: "auto",
-            padding: "16px 20px 0",
-            borderTop: "1px solid rgba(255,255,255,.12)",
-            display: "flex",
-            flexDirection: "column",
-            gap: 8,
-          }}
-        >
+        {/* Seção própria logo abaixo do menu: perto do resto da navegação, mas separada,
+            para não ser confundida com uma tela nem clicada sem querer. */}
+        <div style={{ padding: "0 10px" }}>
+          <div style={{ margin: "12px 12px 8px", borderTop: "1px solid rgba(255,255,255,.14)" }} />
+          <div style={{ padding: "0 12px 6px", fontSize: 10.5, letterSpacing: ".16em", textTransform: "uppercase", color: "#8C8482" }}>Conta</div>
           <form action={signOutAction}>
             <button
               type="submit"
               style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
                 width: "100%",
-                border: "1px solid rgba(255,255,255,.22)",
+                textAlign: "left",
+                border: 0,
+                cursor: "pointer",
+                padding: "10px 12px",
+                borderRadius: 6,
+                fontSize: 13.5,
                 background: "transparent",
                 color: "#CFC8C6",
-                borderRadius: 5,
-                padding: "9px 10px",
-                fontSize: 12.5,
-                fontWeight: 600,
-                textAlign: "left",
-                cursor: "pointer",
               }}
             >
-              Sair da conta
+              <span aria-hidden style={{ width: 6, height: 6, borderRadius: "50%", flex: "none", border: "1px solid rgba(255,255,255,.45)" }} />
+              <span style={{ flex: 1 }}>Sair da conta</span>
             </button>
           </form>
         </div>
