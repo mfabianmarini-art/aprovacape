@@ -103,3 +103,17 @@ test("prazo em dias úteis: fim de semana e feriados nacionais não contam", asy
   assert.equal(diasUteisRestantes({ prazoDias: 10, prazoInicioEm: null }), null, "sem validação documental, o prazo não corre");
   assert.equal(diasUteisRestantes({ prazoDias: 10, prazoInicioEm: d("2026-10-01") }, d("2026-10-15")), 1, "15/10: 9 úteis passados (12/10 feriado)");
 });
+
+test("vídeo tutorial: links do YouTube e do Vimeo viram o player embutido", async () => {
+  const { embedDoVideo } = await import("@/lib/video-tutorial");
+  const yt = "https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?rel=0&modestbranding=1";
+  assert.equal(embedDoVideo("https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=10s"), yt);
+  assert.equal(embedDoVideo("https://youtu.be/dQw4w9WgXcQ?si=abc"), yt);
+  assert.equal(embedDoVideo("https://youtube.com/shorts/dQw4w9WgXcQ"), yt);
+  assert.equal(embedDoVideo("https://vimeo.com/123456789"), "https://player.vimeo.com/video/123456789");
+  assert.equal(embedDoVideo("https://vimeo.com/123456789/abcdef1234"), "https://player.vimeo.com/video/123456789?h=abcdef1234");
+  assert.equal(embedDoVideo(""), null);
+  assert.equal(embedDoVideo(undefined), null);
+  assert.equal(embedDoVideo("https://exemplo.com/video.mp4"), null, "outros endereços não são embutidos");
+  assert.equal(embedDoVideo("javascript:alert(1)"), null);
+});

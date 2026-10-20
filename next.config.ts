@@ -15,7 +15,8 @@ const csp = [
   "img-src 'self' data: blob:",
   "font-src 'self'",
   `connect-src 'self' https://vercel.com https://*.blob.vercel-storage.com${preview ? " https://vercel.live wss://ws-us3.pusher.com" : ""}`,
-  `frame-src 'self'${preview ? " https://vercel.live" : ""}`,
+  // Players do vídeo tutorial (/ajuda, src/lib/video-tutorial.ts).
+  `frame-src 'self' https://www.youtube-nocookie.com https://player.vimeo.com${preview ? " https://vercel.live" : ""}`,
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",

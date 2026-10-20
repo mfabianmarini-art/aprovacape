@@ -33,6 +33,7 @@ export async function getNavCounts(role: Role, userId: string): Promise<Record<S
     usuarios: String(equipeCape),
     documentos: "",
     relatorios: "",
+    ajuda: "",
   };
 }
 

@@ -151,7 +151,18 @@ export default async function RequerimentosPage({ searchParams }: { searchParams
             </div>
           )}
           {pedidos.length === 0 && (
-            <div style={{ fontSize: 13.5, color: "#7A7472" }}>Nenhuma solicitação enviada ainda.</div>
+            <div style={{ fontSize: 13.5, color: "#7A7472" }}>
+              Nenhuma solicitação enviada ainda.
+              {ehRT && (
+                <>
+                  {" "}
+                  Primeira vez por aqui?{" "}
+                  <a href="/ajuda" style={{ fontWeight: 600 }}>
+                    Veja como usar a plataforma →
+                  </a>
+                </>
+              )}
+            </div>
           )}
           {pedidos.length > 0 && ativos.length === 0 && (
             <div style={{ fontSize: 13.5, color: "#7A7472" }}>Nenhuma solicitação em andamento.</div>

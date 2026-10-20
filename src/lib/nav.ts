@@ -10,7 +10,8 @@ export type ScreenId =
   | "empreendimentos"
   | "usuarios"
   | "documentos"
-  | "relatorios";
+  | "relatorios"
+  | "ajuda";
 
 export const SCREENS: Array<{
   id: ScreenId;
@@ -55,7 +56,8 @@ export const SCREENS: Array<{
   // acompanhamento de execução (irregularidades e conclusão).
   { id: "obras", label: "Obras em andamento", path: "/obras", roles: ["ADMIN_CAPE", "CAPE_ANALISTA"], mostrarContador: true },
   { id: "relatorios", label: "Relatórios", path: "/relatorios", roles: ["ADMIN_CAPE", "CAPE_ANALISTA", "SINDICO"] },
-  // Menu do RT, nesta ordem: Meus requerimentos, Normas para aprovação, Nova solicitação.
+  // Menu do RT, nesta ordem: Meus requerimentos, Normas para aprovação, Nova solicitação,
+  // Como usar a plataforma.
   // homeForRole usa o primeiro item da lista filtrada, então "requerimentos" é também a
   // tela de entrada. Só o RT abre solicitação; o proprietário acompanha em /acompanhar
   // (público, protocolo + senha) — contas antigas de proprietário veem tudo em leitura.
@@ -71,6 +73,8 @@ export const SCREENS: Array<{
     labelPorPapel: { PROPRIETARIO: "Normas para aprovação", RESPONSAVEL_TECNICO: "Normas para aprovação" },
   },
   { id: "nova", label: "Nova solicitação", path: "/nova", roles: ["RESPONSAVEL_TECNICO"], destaque: true },
+  // Instruções de uso e vídeo tutorial, para o RT entender o fluxo antes de protocolar.
+  { id: "ajuda", label: "Como usar a plataforma", path: "/ajuda", roles: ["RESPONSAVEL_TECNICO"] },
   // Check-lists não tem entrada própria no menu: cada empreendimento segue sua própria
   // norma, então o check-list é aberto a partir do card do empreendimento, na tela
   // Empreendimentos — não faz sentido navegar até ele sem já estar olhando um empreendimento.
