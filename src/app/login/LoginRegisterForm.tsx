@@ -11,11 +11,11 @@ import {
 } from "@/lib/actions/auth-actions";
 import { PublicShell as Shell } from "@/components/PublicShell";
 
+// Largura e tamanho da fonte dos campos vêm de .form-publica (globals.css), que muda no celular.
 const inputStyle: React.CSSProperties = {
   border: "1px solid #DDD8CE",
   borderRadius: 4,
   padding: "11px 12px",
-  fontSize: 13.5,
 };
 const labelTextStyle: React.CSSProperties = {
   fontSize: 11,
@@ -157,7 +157,7 @@ export function LoginRegisterForm({ senhaRedefinida = false }: { senhaRedefinida
         </div>
 
         {aba === "login" && (
-          <form onSubmit={enviarSemLimpar(loginFormAction)} style={{ padding: 24, display: "flex", flexDirection: "column", gap: 14 }}>
+          <form onSubmit={enviarSemLimpar(loginFormAction)} className="form-publica" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             {senhaRedefinida && (
               <div role="status" style={{ background: "#F6FAF7", border: "1px solid #C6DAC9", borderRadius: 4, padding: "10px 12px", fontSize: 12.5, color: "#24603A", lineHeight: 1.5 }}>
                 Senha redefinida. Entre com a nova senha.
@@ -206,14 +206,14 @@ export function LoginRegisterForm({ senhaRedefinida = false }: { senhaRedefinida
         )}
 
         {aba === "cadastro" && (
-          <form ref={formCadastro} onSubmit={enviarSemLimpar(registerFormAction)} style={{ padding: 24, display: "flex", flexDirection: "column", gap: 16 }}>
+          <form ref={formCadastro} onSubmit={enviarSemLimpar(registerFormAction)} className="form-publica" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <div style={{ fontSize: 12.5, lineHeight: 1.5, color: "#4A5563" }}>
               Cadastro de <strong>responsáveis técnicos</strong>, que abrem e acompanham as solicitações de obra. O
               proprietário não precisa de conta: acompanha a aprovação com o protocolo e a senha que o RT repassa.
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-              <label style={{ display: "flex", flexDirection: "column", gap: 6, gridColumn: "1/-1" }}>
+            <div className="cadastro-grid">
+              <label className="cadastro-largo" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 <span style={labelTextStyle}>Nome completo</span>
                 <input name="nome" required placeholder="Como consta no documento" style={destaque("nome")} />
               </label>
@@ -225,26 +225,18 @@ export function LoginRegisterForm({ senhaRedefinida = false }: { senhaRedefinida
                 <span style={labelTextStyle}>Telefone</span>
                 <input name="telefone" required placeholder="(11) 90000-0000" style={destaque("telefone", { ...inputStyle, fontFamily: "var(--font-mono)" })} />
               </label>
-              <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <label className="cadastro-largo" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 <span style={labelTextStyle}>E-mail</span>
-                <input name="email" required type="email" style={destaque("email")} />
+                <input name="email" required type="email" autoComplete="email" style={destaque("email")} />
               </label>
-              <div style={{ display: "grid", gridTemplateColumns: "110px minmax(0,1fr) 90px", gap: 10, gridColumn: "1/-1" }}>
+              {/* Na ordem em que o registro se escreve: CREA-SP 5069874/D. */}
+              <div className="cadastro-registro">
                 <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                   <span style={labelTextStyle}>Conselho</span>
-                  <select name="conselho" required defaultValue="CREA" style={destaque("conselho", { ...inputStyle, border: "1px solid #B4711A" })}>
+                  <select name="conselho" required defaultValue="CREA" style={destaque("conselho", { ...inputStyle, border: "1px solid #B4711A", background: "#fff" })}>
                     <option value="CREA">CREA</option>
                     <option value="CAU">CAU</option>
                   </select>
-                </label>
-                <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  <span style={labelTextStyle}>Número do registro</span>
-                  <input
-                    name="registroNumero"
-                    required
-                    placeholder="5069874/D"
-                    style={destaque("registroNumero", { ...inputStyle, border: "1px solid #B4711A", fontFamily: "var(--font-mono)" })}
-                  />
                 </label>
                 <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                   <span style={labelTextStyle}>UF emissora</span>
@@ -254,6 +246,15 @@ export function LoginRegisterForm({ senhaRedefinida = false }: { senhaRedefinida
                     maxLength={2}
                     placeholder="SP"
                     style={destaque("registroUf", { ...inputStyle, border: "1px solid #B4711A", fontFamily: "var(--font-mono)", textTransform: "uppercase" })}
+                  />
+                </label>
+                <label className="cadastro-registro-numero" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <span style={labelTextStyle}>Número do registro</span>
+                  <input
+                    name="registroNumero"
+                    required
+                    placeholder="5069874/D"
+                    style={destaque("registroNumero", { ...inputStyle, border: "1px solid #B4711A", fontFamily: "var(--font-mono)" })}
                   />
                 </label>
               </div>

@@ -198,6 +198,54 @@ textarea {
 .nav-badge-alert {
   animation: nav-badge-pulse 2.2s ease-in-out infinite;
 }
+/* Login e cadastro (telas públicas). No celular: uma coluna e campos com fonte de 16px —
+   abaixo disso o iPhone dá zoom na página ao tocar no campo. */
+.form-publica {
+  padding: 24px;
+}
+.form-publica input:not([type="checkbox"]),
+.form-publica select {
+  width: 100%;
+  min-width: 0;
+  font-size: 13.5px;
+}
+.cadastro-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.cadastro-grid > * {
+  min-width: 0;
+}
+.cadastro-largo {
+  grid-column: 1 / -1;
+}
+.cadastro-registro {
+  display: grid;
+  grid-template-columns: 110px 90px minmax(0, 1fr);
+  gap: 10px;
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 560px) {
+  .form-publica {
+    padding: 20px 16px;
+  }
+  .form-publica input:not([type="checkbox"]),
+  .form-publica select {
+    font-size: 16px;
+  }
+  .cadastro-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .cadastro-registro {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .cadastro-registro-numero {
+    grid-column: 1 / -1;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .nav-badge-alert {
     animation: none;
