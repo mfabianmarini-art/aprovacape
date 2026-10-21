@@ -27,6 +27,9 @@ function lerDestino(payload: string | null): DestinoUpload {
     case "tecnico":
     case "planta":
       return { destino: d.destino, empreendimentoId: id("empreendimentoId") };
+    case "tutorial":
+      if (d.tipo !== "video" && d.tipo !== "legenda") throw new Error("Destino inválido.");
+      return { destino: "tutorial", tipo: d.tipo };
   }
   throw new Error("Destino inválido.");
 }
@@ -45,6 +48,7 @@ export async function autorizarUpload(pathname: string, payload: string | null) 
     case "devolutiva":
     case "evidencia":
     case "planta":
+    case "tutorial":
       if (!CAPE.includes(role)) throw new Error("Sem permissão.");
       break;
     case "vinculo":

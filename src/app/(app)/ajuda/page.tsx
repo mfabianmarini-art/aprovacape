@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { labelDaTela } from "@/lib/nav";
 import { DOC_LABEL, DOC_OPCIONAIS, DOC_ORDER, formatosAceitos } from "@/lib/status";
 import { embedDoVideo } from "@/lib/video-tutorial";
+import { tutorialAtual } from "@/lib/tutorial";
+import { TutorialGestao } from "./TutorialGestao";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { ScreenBody } from "@/components/ScreenBody";
 
@@ -178,17 +180,25 @@ const PERGUNTAS: { p: string; r: React.ReactNode }[] = [
 ];
 
 export default async function AjudaPage() {
-  const session = await requireRole("RESPONSAVEL_TECNICO");
-  const [user, empreendimentos] = await Promise.all([
+  // A equipe CAPE também abre a página: vê o que o RT vê e publica o vídeo tutorial.
+  const session = await requireRole("RESPONSAVEL_TECNICO", "ADMIN_CAPE", "CAPE_ANALISTA");
+  const ehCape = session.user.role !== "RESPONSAVEL_TECNICO";
+  const [user, empreendimentos, tutorial] = await Promise.all([
     getUserDisplay(session.user.id, session.user.role),
     // Regras dos empreendimentos onde o RT tem lote: prazo e reenvios variam de um para outro.
+    // A equipe CAPE vê as de todos.
     prisma.empreendimento.findMany({
-      where: { lotes: { some: { rtId: session.user.id } } },
+      where: ehCape ? {} : { lotes: { some: { rtId: session.user.id } } },
       orderBy: { nome: "asc" },
       select: { id: true, nome: true, prazoDias: true, reenviosSemTaxa: true, prazoComplementoDias: true },
     }),
+    tutorialAtual(),
   ]);
-  const video = embedDoVideo(process.env.VIDEO_TUTORIAL_URL);
+  // O vídeo guardado na plataforma tem prioridade; o link externo (YouTube/Vimeo, variável
+  // VIDEO_TUTORIAL_URL) fica como alternativa.
+  const externo = tutorial.video ? null : embedDoVideo(process.env.VIDEO_TUTORIAL_URL);
+  // Muda a cada troca: o navegador não reaproveita o vídeo ou a legenda anteriores.
+  const versao = (a: { id: string } | null) => (a ? `?v=${a.id}` : "");
 
   return (
     <>
@@ -200,9 +210,22 @@ export default async function AjudaPage() {
               Vídeo tutorial
             </div>
             <div style={{ position: "relative", width: "100%", aspectRatio: "16 / 9", background: "#231F20", borderRadius: 4, overflow: "hidden" }}>
-              {video ? (
+              {tutorial.video ? (
+                <video
+                  controls
+                  preload="metadata"
+                  playsInline
+                  src={`/api/tutorial/video${versao(tutorial.video)}`}
+                  style={{ position: "absolute", inset: 0, width: "100%", height: "100%", background: "#231F20" }}
+                >
+                  {tutorial.legenda && (
+                    <track kind="captions" srcLang="pt-BR" label="Português" src={`/api/tutorial/legenda${versao(tutorial.legenda)}`} default />
+                  )}
+                  Seu navegador não reproduz este vídeo.
+                </video>
+              ) : externo ? (
                 <iframe
-                  src={video}
+                  src={externo}
                   title="Vídeo tutorial da plataforma CAPE Aprova"
                   allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
                   allowFullScreen
@@ -221,6 +244,7 @@ export default async function AjudaPage() {
                 </div>
               )}
             </div>
+            {ehCape && <TutorialGestao video={tutorial.video} legenda={tutorial.legenda} />}
           </section>
 
           <section style={cartao}>

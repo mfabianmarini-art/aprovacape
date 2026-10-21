@@ -12,7 +12,8 @@ export type DestinoUpload =
   | { destino: "evidencia"; solicitacaoId: string }
   | { destino: "vinculo"; usuarioId: string }
   | { destino: "tecnico"; empreendimentoId: string }
-  | { destino: "planta"; empreendimentoId: string };
+  | { destino: "planta"; empreendimentoId: string }
+  | { destino: "tutorial"; tipo: "video" | "legenda" };
 
 const MB = 1024 * 1024;
 const IMAGENS = [".png", ".jpg", ".jpeg", ".webp"] as const;
@@ -34,6 +35,10 @@ export function regraDoDestino(d: DestinoUpload): { pasta: string; extensoes: re
       return { pasta: `documentos/tecnicos/${d.empreendimentoId}/`, extensoes: [".pdf", ...WORD, ...IMAGENS], maxBytes: 20 * MB };
     case "planta":
       return { pasta: `plantas/${d.empreendimentoId}/`, extensoes: IMAGENS, maxBytes: 10 * MB };
+    case "tutorial":
+      return d.tipo === "video"
+        ? { pasta: "tutorial/", extensoes: [".mp4"], maxBytes: 300 * MB }
+        : { pasta: "tutorial/", extensoes: [".srt", ".vtt"], maxBytes: 1 * MB };
   }
 }
 

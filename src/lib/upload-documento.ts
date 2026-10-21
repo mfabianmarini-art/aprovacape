@@ -18,6 +18,8 @@ const TIPO_POR_EXTENSAO: Record<string, string> = {
   ".webp": "image/webp",
   ".doc": "application/msword",
   ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  ".mp4": "video/mp4",
+  ".vtt": "text/vtt; charset=utf-8",
 };
 
 export function contentTypeDe(nomeArquivo: string) {
@@ -68,6 +70,12 @@ const ASSINATURAS: Record<string, (b: Uint8Array) => boolean> = {
   ".docx": ehZip, // .docx é um pacote zip
   ".doc": (b) => b[0] === 0xd0 && b[1] === 0xcf && b[2] === 0x11 && b[3] === 0xe0, // OLE2
   ".dwg": (b) => /^AC1\d{3}$/.test(new TextDecoder().decode(b.slice(0, 6))),
+  // MP4: a caixa "ftyp" vem logo depois dos 4 bytes de tamanho.
+  ".mp4": (b) => new TextDecoder().decode(b.slice(4, 8)) === "ftyp",
+  // Legendas são texto (o TextDecoder já descarta o BOM): VTT abre com "WEBVTT"; SRT, com
+  // o número do primeiro bloco e o tempo dele.
+  ".vtt": (b) => new TextDecoder().decode(b).startsWith("WEBVTT"),
+  ".srt": (b) => /^\d+\r?\n\d\d:\d\d/.test(new TextDecoder().decode(b)),
 };
 
 export function conteudoConfere(nome: string, inicio: Uint8Array) {

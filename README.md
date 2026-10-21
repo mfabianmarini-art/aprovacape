@@ -24,7 +24,7 @@ Projeto vinculado em `mfabianmarini-arts-projects/aprovacape`, com GitHub conect
 | `APP_URL` | endereço dos links nos e-mails (ex.: `https://aprova.cape.eng.br`); sem ela vale o domínio de produção da Vercel | recomendada |
 | `CRON_SECRET` | protege a manutenção diária (`/api/cron/manutencao`); a Vercel o envia sozinha ao disparar o cron. Sem ele a rotina não roda | sim |
 | `ALERTA_EMAIL` | e-mail(s), separados por vírgula, que recebem alerta de erro no servidor (no máximo 1 por rota por hora) | recomendada |
-| `VIDEO_TUTORIAL_URL` | link do vídeo tutorial (YouTube ou Vimeo, pode ser "não listado") exibido em **Como usar a plataforma** (`/ajuda`, menu do RT); sem ela, a página mostra "Vídeo tutorial em breve". Depois de alterar, faça um *Redeploy* | opcional |
+| `VIDEO_TUTORIAL_URL` | alternativa ao vídeo guardado na plataforma: link do YouTube ou Vimeo (pode ser "não listado") exibido em **Como usar a plataforma** (`/ajuda`) só enquanto nenhum vídeo foi enviado pela equipe CAPE em **Guia do RT** (o vídeo enviado ali, com legenda SRT/VTT opcional, tem prioridade). Sem nenhum dos dois, a página mostra "Vídeo tutorial em breve". Depois de alterar, faça um *Redeploy* | opcional |
 
 ### Monitoramento
 

@@ -73,8 +73,6 @@ export const SCREENS: Array<{
     labelPorPapel: { PROPRIETARIO: "Normas para aprovação", RESPONSAVEL_TECNICO: "Normas para aprovação" },
   },
   { id: "nova", label: "Nova solicitação", path: "/nova", roles: ["RESPONSAVEL_TECNICO"], destaque: true },
-  // Instruções de uso e vídeo tutorial, para o RT entender o fluxo antes de protocolar.
-  { id: "ajuda", label: "Como usar a plataforma", path: "/ajuda", roles: ["RESPONSAVEL_TECNICO"] },
   // Check-lists não tem entrada própria no menu: cada empreendimento segue sua própria
   // norma, então o check-list é aberto a partir do card do empreendimento, na tela
   // Empreendimentos — não faz sentido navegar até ele sem já estar olhando um empreendimento.
@@ -86,6 +84,16 @@ export const SCREENS: Array<{
   // Só a equipe CAPE, que atende todos os empreendimentos. Síndico, proprietário e RT
   // pertencem a um empreendimento e são geridos dentro dele, na tela Empreendimentos.
   { id: "usuarios", label: "Cadastrar Usuário", path: "/usuarios", roles: ["ADMIN_CAPE", "CAPE_ANALISTA"] },
+  // Instruções de uso e vídeo tutorial, para o RT entender o fluxo antes de protocolar —
+  // último item do RT. A equipe CAPE vê a mesma página (último item também) e é por ela
+  // que publica o vídeo.
+  {
+    id: "ajuda",
+    label: "Como usar a plataforma",
+    path: "/ajuda",
+    roles: ["RESPONSAVEL_TECNICO", "ADMIN_CAPE", "CAPE_ANALISTA"],
+    labelPorPapel: { ADMIN_CAPE: "Guia do RT", CAPE_ANALISTA: "Guia do RT" },
+  },
 ];
 
 export function screensForRole(role: Role) {

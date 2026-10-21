@@ -520,6 +520,7 @@ enum ArquivoCategoria {
   DOCUMENTO_TECNICO  // documentos técnicos do empreendimento
   PLANTA             // planta do loteamento
   RECUPERADO         // arquivo anterior ao inventário, adotado sem metadados
+  TUTORIAL           // vídeo tutorial e legenda da página Como usar a plataforma
 }
 
 // Inventário de tudo o que está no Blob. Por contrato, a documentação vigente na liberação
