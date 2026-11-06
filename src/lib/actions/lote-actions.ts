@@ -73,7 +73,8 @@ export async function deleteLoteAction(loteId: string) {
   await requireRole("ADMIN_CAPE", "CAPE_ANALISTA");
   const lote = await prisma.lote.findUniqueOrThrow({ where: { id: loteId } });
   const [solicitacoes, vinculosPendentes] = await Promise.all([
-    prisma.solicitacao.count({ where: { loteId } }),
+    // Lote adicional de um projeto também conta: a solicitação o referencia.
+    prisma.solicitacao.count({ where: { OR: [{ loteId }, { lotesAdicionais: { some: { loteId } } }] } }),
     prisma.user.count({ where: { vinculoLoteId: loteId } }),
   ]);
   // Não remove um lote já com solicitações, vínculo pendente ou proprietário/RT vinculado —

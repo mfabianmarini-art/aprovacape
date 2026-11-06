@@ -12,7 +12,14 @@ export async function getEmpreendimentoConfig(empreendimentoId: string) {
           lotes: {
             orderBy: { numero: "asc" },
             include: {
-              solicitacoes: { orderBy: { createdAt: "desc" }, take: 1 },
+              solicitacoes: { orderBy: { createdAt: "desc" }, take: 1, select: { status: true, createdAt: true } },
+              // Lote adicional de um projeto ganha a cor do projeto, como no resumo.
+              comoLoteAdicional: {
+                where: { status: { not: "RECUSADO" } },
+                orderBy: { solicitacao: { createdAt: "desc" } },
+                take: 1,
+                select: { solicitacao: { select: { status: true, createdAt: true } } },
+              },
               proprietario: { select: { name: true, cpf: true } },
               rt: { select: { name: true } },
             },
@@ -29,7 +36,9 @@ export async function getEmpreendimentoConfig(empreendimentoId: string) {
     nome: q.nome,
     total: q.totalLotes,
     lotes: q.lotes.map((l) => {
-      const atual = l.solicitacoes[0];
+      const atual = [l.solicitacoes[0], l.comoLoteAdicional[0]?.solicitacao]
+        .filter((s) => s !== undefined)
+        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0];
       const cor = atual ? STATUS_INFO[atual.status].bg : LIVRE_INFO.bg;
       return {
         id: l.id,

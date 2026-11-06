@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { cookieAcompanhamento, tokenConfere } from "@/lib/acompanhamento";
 import { etapasDaSolicitacao } from "@/lib/etapas";
-import { STATUS_INFO, TIPO_LABEL, formatDate, formatDateTime } from "@/lib/status";
+import { STATUS_INFO, TIPO_LABEL, formatDate, formatDateTime, lotesAdicionaisTexto } from "@/lib/status";
 import { sairAcompanhamentoAction } from "@/lib/actions/acompanhamento-actions";
 import { PublicShell } from "@/components/PublicShell";
 import { EtapasStepper } from "@/components/EtapasStepper";
@@ -42,6 +42,7 @@ export default async function AcompanhamentoProtocoloPage({ params }: { params: 
       acompanhamentoSenhaCifrada: true,
       responsavelTecnicoNome: true,
       lote: { select: { numero: true, quadra: { select: { nome: true } }, empreendimento: { select: { nome: true, cidade: true, uf: true } } } },
+      lotesAdicionais: { orderBy: { createdAt: "asc" }, select: { status: true, lote: { select: { numero: true, quadra: { select: { nome: true } } } } } },
       historico: {
         orderBy: { createdAt: "desc" },
         select: { id: true, texto: true, createdAt: true, autor: { select: { role: true, name: true } } },
@@ -66,6 +67,9 @@ export default async function AcompanhamentoProtocoloPage({ params }: { params: 
         <div style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 600, lineHeight: 1.15 }}>
           {sol.lote.empreendimento.nome} · {sol.lote.quadra.nome} L{sol.lote.numero} — {TIPO_LABEL[sol.tipo]}
         </div>
+        {sol.lotesAdicionais.length > 0 && (
+          <div style={{ fontSize: 13, color: "#4A5563" }}>Também abrange: {lotesAdicionaisTexto(sol.lotesAdicionais)}</div>
+        )}
         <div style={{ display: "flex", gap: 22, flexWrap: "wrap", fontSize: 12.5, color: "#4A5563" }}>
           <span>Protocolado em {formatDate(sol.createdAt)}</span>
           <span>Área de intervenção: {sol.areaIntervencao.toLocaleString("pt-BR")} m²</span>

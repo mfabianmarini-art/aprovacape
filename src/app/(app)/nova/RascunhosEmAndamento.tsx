@@ -28,7 +28,8 @@ export function RascunhosEmAndamento({ rascunhos }: { rascunhos: Rascunhos }) {
           >
             <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
               <div style={{ fontSize: 13.5, fontWeight: 600 }}>
-                {r.lote.quadra.nome} L{r.lote.numero} · {TIPO_LABEL[r.tipo]}
+                {r.lote.quadra.nome} L{r.lote.numero}
+                {r._count.lotesAdicionais > 0 && ` + ${r._count.lotesAdicionais} lote(s)`} · {TIPO_LABEL[r.tipo]}
               </div>
               <div style={{ fontSize: 11.5, color: "#7A7472" }}>
                 {r.lote.empreendimento.nome} · iniciada em {formatDate(r.createdAt)} ·{" "}

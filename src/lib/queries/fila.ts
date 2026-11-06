@@ -12,6 +12,10 @@ export async function getFila() {
   return prisma.solicitacao.findMany({
     where: { status: { notIn: FORA_DA_FILA } },
     orderBy: { createdAt: "desc" },
-    include: { lote: { include: { quadra: true, empreendimento: true } } },
+    include: {
+      lote: { include: { quadra: true, empreendimento: true } },
+      // Projeto em mais de um lote: a fila sinaliza os que ainda esperam conferência.
+      lotesAdicionais: { select: { status: true } },
+    },
   });
 }

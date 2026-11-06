@@ -1,4 +1,4 @@
-import type { SolicitacaoStatus, DocumentoTipo, SolicitacaoTipo, DocumentoTecnicoCategoria, IrregularidadeTipo } from "@/generated/prisma/enums";
+import type { SolicitacaoStatus, DocumentoTipo, SolicitacaoTipo, DocumentoTecnicoCategoria, IrregularidadeTipo, VinculoStatus } from "@/generated/prisma/enums";
 
 export const STATUS_INFO: Record<SolicitacaoStatus, { label: string; bg: string; fg: string }> = {
   RASCUNHO: { label: "Rascunho", bg: "#E7E5DF", fg: "#5A6270" },
@@ -85,6 +85,20 @@ export const TIPO_LABEL: Record<SolicitacaoTipo, string> = {
   MURO: "Muro / fechamento",
   PAISAGISMO: "Paisagismo",
 };
+
+// Lotes além do principal num projeto que abrange mais de um, como o RT e o proprietário
+// os leem: "Q2 L05 (aguardando conferência da CAPE), Q2 L06".
+const LOTE_ADICIONAL_LABEL: Record<VinculoStatus, string> = {
+  PENDENTE: "aguardando conferência da CAPE",
+  APROVADO: "",
+  RECUSADO: "vínculo recusado pela CAPE",
+};
+
+export function lotesAdicionaisTexto(lotes: { status: VinculoStatus; lote: { numero: string; quadra: { nome: string } } }[]) {
+  return lotes
+    .map((a) => `${a.lote.quadra.nome} L${a.lote.numero}${LOTE_ADICIONAL_LABEL[a.status] ? ` (${LOTE_ADICIONAL_LABEL[a.status]})` : ""}`)
+    .join(", ");
+}
 
 export const CATEGORIA_DOC_TECNICO_LABEL: Record<DocumentoTecnicoCategoria, string> = {
   MANUAL_PROPRIETARIO: "Manual do proprietário",

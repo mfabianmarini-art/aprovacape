@@ -48,6 +48,9 @@ enum EventoTipo {
   VINCULO_SUBSTITUIDO
   // Proprietário da matrícula corrigido no cadastro do lote pela CAPE.
   TITULAR_ALTERADO
+  // Decisão da CAPE sobre um lote adicional do projeto (SolicitacaoLoteAdicional).
+  LOTE_ADICIONAL_APROVADO
+  LOTE_ADICIONAL_RECUSADO
 }
 
 enum IrregularidadeTipo {
@@ -174,6 +177,7 @@ model User {
   empreendimentosSindico Empreendimento[] @relation("EmpreendimentoSindico")
   documentosTecnicosEnviados DocumentoTecnico[] @relation("DocumentoTecnicoEnviadoPor")
   lotesTitularAtualizados    Lote[]             @relation("LoteTitularAtualizadoPor")
+  lotesAdicionaisRevisados   SolicitacaoLoteAdicional[] @relation("LoteAdicionalRevisadoPor")
   devolutivasTecnicas        DevolutivaTecnica[] @relation("DevolutivaTecnicaAutor")
   redefinicoesSenha          RedefinicaoSenha[]
   arquivosEnviados           Arquivo[]          @relation("ArquivoEnviadoPor")
@@ -255,6 +259,7 @@ model Lote {
 
   vinculosPendentes User[]        @relation("VinculoLote")
   solicitacoes      Solicitacao[]
+  comoLoteAdicional SolicitacaoLoteAdicional[]
 
   @@unique([empreendimentoId, quadraId, numero])
   @@index([rtId])
@@ -360,11 +365,35 @@ model Solicitacao {
   historico       HistoricoEvento[]
   irregularidades Irregularidade[]
   devolutivas     DevolutivaTecnica[]
+  lotesAdicionais SolicitacaoLoteAdicional[]
 
   // Consultas mais frequentes: solicitações de um lote, e filas/contagens por status.
   @@index([loteId])
   @@index([status])
   arquivos        Arquivo[]
+}
+
+// Projeto que abrange mais de um lote do mesmo proprietário. O lote principal é
+// Solicitacao.loteId, que precisa já estar vinculado ao RT para a solicitação ser aberta;
+// estes são os demais. Lote que ainda não é do RT entra PENDENTE e a CAPE, na análise da
+// solicitação, confere a titularidade e aprova (o RT passa a ser o do lote) ou recusa.
+// Lote que já era do RT entra APROVADO, sem revisor.
+model SolicitacaoLoteAdicional {
+  id            String        @id @default(cuid())
+  solicitacaoId String
+  solicitacao   Solicitacao   @relation(fields: [solicitacaoId], references: [id], onDelete: Cascade)
+  loteId        String
+  lote          Lote          @relation(fields: [loteId], references: [id])
+  status        VinculoStatus @default(PENDENTE)
+  revisadoPorId String?
+  revisadoPor   User?         @relation("LoteAdicionalRevisadoPor", fields: [revisadoPorId], references: [id], onDelete: SetNull)
+  revisadoEm    DateTime?
+  // Vai no histórico da solicitação, que o RT e o proprietário acompanham.
+  motivoRecusa  String?
+  createdAt     DateTime      @default(now())
+
+  @@unique([solicitacaoId, loteId])
+  @@index([loteId])
 }
 
 // O que a CAPE manda ao RT junto com um parecer do check-list: comentários gerais e/ou o

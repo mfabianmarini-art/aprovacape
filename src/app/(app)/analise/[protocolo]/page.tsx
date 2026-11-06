@@ -22,6 +22,7 @@ import {
 import { ObservacaoField } from "@/components/ObservacaoField";
 import { EmitirParecerForm } from "./EmitirParecerForm";
 import { AcessoProprietario } from "./AcessoProprietario";
+import { LotesAdicionais } from "./LotesAdicionais";
 
 const EDITAVEL = new Set(["ENVIADA", "ANALISE", "COMPLEMENTO"]);
 
@@ -63,6 +64,8 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
   const reprovados = sol.resultados.filter((r) => r.status === "REPROVADO").length;
   const naoSeAplica = sol.resultados.filter((r) => r.status === "NAO_SE_APLICA").length;
   const avaliados = aprovados + reprovados + naoSeAplica;
+  const lotesPendentes = sol.lotesAdicionais.filter((a) => a.status === "PENDENTE").length;
+  const lotesRecusados = sol.lotesAdicionais.filter((a) => a.status === "RECUSADO").map((a) => `${a.lote.quadra.nome} L${a.lote.numero}`);
 
   let veredito: string;
   let vereditoCor: string;
@@ -104,8 +107,14 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
     emitirBg = "#8C2B22";
     emitirFg = "#FFFFFF";
     podeEmitir = true;
+  } else if (lotesPendentes > 0) {
+    veredito = `Check-list aprovado, mas ${lotesPendentes} lote(s) adicional(is) ainda sem decisão de vínculo. Aprove ou recuse cada um, no topo desta página, antes de aprovar o projeto.`;
+    vereditoCor = "#8A5210";
+    emitirLabel = "Aprovar projeto";
+    emitirBg = "#EDE9E1";
+    emitirFg = "#8B939C";
   } else {
-    veredito = `Todos os itens aprovados${naoSeAplica ? ` (${naoSeAplica} não se aplica${naoSeAplica > 1 ? "m" : ""})` : ""}. O parecer não substitui a aprovação da Prefeitura nem o alvará de execução.`;
+    veredito = `Todos os itens aprovados${naoSeAplica ? ` (${naoSeAplica} não se aplica${naoSeAplica > 1 ? "m" : ""})` : ""}. ${lotesRecusados.length ? ` A aprovação não cobre ${lotesRecusados.join(", ")}, cujo vínculo foi recusado.` : ""} O parecer não substitui a aprovação da Prefeitura nem o alvará de execução.`;
     vereditoCor = "#24603A";
     emitirLabel = "Aprovar projeto";
     emitirBg = "#24603A";
@@ -116,6 +125,9 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
   const selCampos: [string, string][] = [
     ["Empreendimento", sol.lote.empreendimento.nome],
     ["Lote", `${sol.lote.quadra.nome} L${sol.lote.numero}`],
+    ...(sol.lotesAdicionais.length
+      ? [["Lotes adicionais", sol.lotesAdicionais.map((a) => `${a.lote.quadra.nome} L${a.lote.numero}`).join(", ")] as [string, string]]
+      : []),
     ["Proprietário", sol.lote.proprietario?.name ?? "—"],
     ["RT do projeto", `${sol.responsavelTecnicoNome} · ${sol.responsavelTecnicoRegistro}`],
     ["RT da execução", `${sol.rtExecucaoNome} · ${sol.rtExecucaoRegistro}`],
@@ -129,6 +141,7 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
     <>
       <ScreenHeader crumb={`CAPE · ${sol.protocolo}`} title="Análise de projeto" {...user} />
       <ScreenBody>
+        {sol.lotesAdicionais.length > 0 && <LotesAdicionais sol={sol} />}
         {podeAcompanharObra && (
           <section style={{ background: "#fff", border: "1px solid #DDD8CE", borderTop: `3px solid ${irregularidadesAbertas > 0 ? "#8C2B22" : "#3B3486"}`, borderRadius: 4, padding: 18, display: "flex", flexDirection: "column", gap: 13 }}>
             <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>

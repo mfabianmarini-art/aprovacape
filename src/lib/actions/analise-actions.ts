@@ -13,6 +13,7 @@ import { emitirAcessoProprietario } from "@/lib/acesso-proprietario";
 import { notificarEtapa } from "@/lib/notificacoes";
 import { checklistDaSolicitacao } from "@/lib/queries/checklist";
 import { partesDoItem } from "@/lib/checklist-texto";
+import { titularidadeEntreLotes } from "@/lib/conferencia-vinculo";
 import { excluirVersoesDaAprovacao, marcarSubstituido, registrarArquivo } from "@/lib/arquivos";
 import type { DocumentoTipo } from "@/generated/prisma/enums";
 
@@ -202,6 +203,12 @@ export async function emitirParecerAction(solicitacaoId: string, _prev: ParecerS
   const naoSeAplica = sol.resultados.filter((r) => r.status === "NAO_SE_APLICA");
   if (aprovados.length + reprovados.length + naoSeAplica.length < totalItens) {
     return recusar("Decida todos os itens do check-list antes de emitir o parecer.");
+  }
+  // Aprovar o projeto sem decidir os lotes adicionais deixaria em aberto quais lotes a
+  // aprovação cobre. Devolver com pendências não depende disso.
+  if (reprovados.length === 0) {
+    const lotesPendentes = await prisma.solicitacaoLoteAdicional.count({ where: { solicitacaoId, status: "PENDENTE" } });
+    if (lotesPendentes > 0) return recusar("Aprove ou recuse o vínculo dos lotes adicionais antes de aprovar o projeto.");
   }
 
   // Devolutiva opcional ao RT: comentários gerais e/ou o DWG com os apontamentos. Validada
@@ -556,4 +563,102 @@ export async function reenviarAcessoProprietarioAction(
         ? "O envio de e-mail não está configurado (RESEND_API_KEY / EMAIL_REMETENTE)."
         : "O Resend não aceitou o envio agora. Veja o motivo nos logs da Vercel e tente de novo.",
   };
+}
+
+// Lote adicional do projeto ainda não vinculado ao RT. Aprovar faz dele um lote do RT,
+// como a aprovação de um pedido de vínculo comum; só que a prova é a solicitação em si
+// (matrícula anexada) e a conferência é contra o proprietário do lote principal.
+async function loadLoteAdicional(id: string) {
+  const conta = { select: { id: true, name: true, cpf: true } } as const;
+  return prisma.solicitacaoLoteAdicional.findUniqueOrThrow({
+    where: { id },
+    include: {
+      lote: { include: { quadra: { select: { nome: true } }, rt: conta, proprietario: conta } },
+      solicitacao: { include: { lote: { include: { proprietario: conta, rt: conta } } } },
+    },
+  });
+}
+
+export async function aprovarLoteAdicionalAction(id: string) {
+  const session = await requireRole("ADMIN_CAPE", "CAPE_ANALISTA");
+  const adicional = await loadLoteAdicional(id);
+  const { lote, solicitacao: sol } = adicional;
+  if (adicional.status !== "PENDENTE" || sol.status === "RASCUNHO") return;
+  // Quem age pela solicitação é o RT do lote principal; sem ele não há a quem vincular.
+  const rt = sol.lote.rt;
+  if (!rt) return;
+  // Mesma trava da tela: lotes de proprietários diferentes não entram no mesmo projeto.
+  if (titularidadeEntreLotes(sol.lote, lote).situacao === "divergente") return;
+
+  const rotulo = `${lote.quadra.nome} L${lote.numero}`;
+  // O lote guarda um único RT: aprovar sobre lote de outro profissional o substitui, e a
+  // troca fica no histórico das solicitações daquele lote, como no vínculo comum.
+  const substitui = lote.rt && lote.rt.id !== rt.id ? lote.rt : null;
+  const solicitacoesDoLote = substitui
+    ? await prisma.solicitacao.findMany({ where: { loteId: lote.id, status: { not: "RASCUNHO" } }, select: { id: true } })
+    : [];
+
+  const ok = await umaVez(() =>
+    prisma.$transaction([
+      prisma.solicitacaoLoteAdicional.update({
+        where: { id, status: "PENDENTE" },
+        data: { status: "APROVADO", revisadoPorId: session.user.id, revisadoEm: new Date(), motivoRecusa: null },
+      }),
+      prisma.lote.update({ where: { id: lote.id }, data: { rtId: rt.id } }),
+      prisma.historicoEvento.create({
+        data: {
+          solicitacaoId: sol.id,
+          tipo: "LOTE_ADICIONAL_APROVADO",
+          texto: `Titularidade conferida: ${rotulo} vinculado ao responsável técnico ${rt.name} e incluído neste projeto.`,
+          cor: "#24603A",
+          autorId: session.user.id,
+        },
+      }),
+      ...solicitacoesDoLote.map((s) =>
+        prisma.historicoEvento.create({
+          data: {
+            solicitacaoId: s.id,
+            tipo: "VINCULO_SUBSTITUIDO",
+            texto: `Responsável técnico do lote alterado pela CAPE: de ${substitui!.name} para ${rt.name} (projeto ${sol.protocolo}). As ações desta solicitação passam para o novo responsável.`,
+            cor: "#B4711A",
+            autorId: session.user.id,
+          },
+        }),
+      ),
+    ]),
+  );
+  if (!ok) return;
+
+  revalidateAll(sol.protocolo);
+  revalidatePath("/empreendimentos");
+  revalidatePath("/nova");
+}
+
+export async function recusarLoteAdicionalAction(id: string, formData: FormData) {
+  const session = await requireRole("ADMIN_CAPE", "CAPE_ANALISTA");
+  const motivo = normalizarObservacao(String(formData.get("motivo") ?? ""));
+  const adicional = await loadLoteAdicional(id);
+  const { lote, solicitacao: sol } = adicional;
+  if (adicional.status !== "PENDENTE" || sol.status === "RASCUNHO") return;
+
+  const ok = await umaVez(() =>
+    prisma.$transaction([
+      prisma.solicitacaoLoteAdicional.update({
+        where: { id, status: "PENDENTE" },
+        data: { status: "RECUSADO", revisadoPorId: session.user.id, revisadoEm: new Date(), motivoRecusa: motivo },
+      }),
+      prisma.historicoEvento.create({
+        data: {
+          solicitacaoId: sol.id,
+          tipo: "LOTE_ADICIONAL_RECUSADO",
+          texto: `Vínculo de ${lote.quadra.nome} L${lote.numero} recusado pela CAPE: o lote não faz parte desta aprovação.${motivo ? `\nMotivo: ${motivo}` : ""}`,
+          cor: "#8C2B22",
+          autorId: session.user.id,
+        },
+      }),
+    ]),
+  );
+  if (!ok) return;
+
+  revalidateAll(sol.protocolo);
 }

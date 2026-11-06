@@ -209,8 +209,8 @@ export function ResumoMapa({ data, podeAnalisar }: { data: Data; podeAnalisar: b
                         key={l.id}
                         onClick={() => selecionarLote(ativo ? null : l.id)}
                         title={`${l.quadra.nome} L${l.numero} · ${l.statusInfo.label}${
-                          irregular ? ` · ${l.irregularidadesAbertas} irregularidade(s) em aberto` : ""
-                        }`}
+                          l.statusAtual?.lotesAdicionais.length ? ` · ${l.statusAtual.protocolo}, projeto em ${l.statusAtual.lotesAdicionais.length + 1} lotes` : ""
+                        }${irregular ? ` · ${l.irregularidadesAbertas} irregularidade(s) em aberto` : ""}`}
                         style={{
                           position: "absolute",
                           left: `${l.posX}%`,
@@ -476,6 +476,14 @@ export function ResumoMapa({ data, podeAnalisar }: { data: Data; podeAnalisar: b
                           <span style={{ fontSize: 11.5, color: "#7A7472" }}>
                             {TIPO_LABEL[s.tipo]} · aberta em {formatDate(s.createdAt)} · {s.historico.length} movimentação(ões)
                           </span>
+                          {s.lotesAdicionais.length > 0 && (
+                            <span style={{ fontSize: 11.5, color: "#4A5563" }}>
+                              Projeto em {s.lotesAdicionais.length + 1} lotes: {s.lote.quadra.nome} L{s.lote.numero} (principal),{" "}
+                              {s.lotesAdicionais
+                                .map((a) => `${a.lote.quadra.nome} L${a.lote.numero}${a.status === "PENDENTE" ? " (vínculo em conferência)" : ""}`)
+                                .join(", ")}
+                            </span>
+                          )}
                         </span>
                         <span style={{ color: "#7A7472", fontSize: 11 }}>{aberto ? "▾" : "▸"}</span>
                       </button>

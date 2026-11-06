@@ -117,7 +117,15 @@ export function FilaTable({ fila }: { fila: Fila }) {
                   <div style={{ display: "flex", flexDirection: "column", gap: 3, paddingRight: 16 }}>
                     <div style={{ fontSize: 13.5, fontWeight: 600 }}>
                       {s.lote.quadra.nome} L{s.lote.numero}
+                      {s.lotesAdicionais.length > 0 && (
+                        <span style={{ fontSize: 11.5, fontWeight: 400, color: "#4A5563" }}> + {s.lotesAdicionais.length} lote(s)</span>
+                      )}
                     </div>
+                    {s.lotesAdicionais.some((a) => a.status === "PENDENTE") && (
+                      <span style={{ alignSelf: "flex-start", fontSize: 10.5, fontWeight: 600, letterSpacing: ".06em", textTransform: "uppercase", color: "#8A5210", background: "#FBF5EA", border: "1px solid #EAD9BC", borderRadius: 3, padding: "2px 6px" }}>
+                        {s.lotesAdicionais.filter((a) => a.status === "PENDENTE").length} lote(s) a vincular
+                      </span>
+                    )}
                     <div style={{ fontSize: 11.5, color: "#7A7472" }}>
                       {s.descricao.length > 40 ? s.descricao.slice(0, 40) + "…" : s.descricao} · RT {s.responsavelTecnicoNome}
                     </div>

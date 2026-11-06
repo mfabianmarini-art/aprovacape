@@ -3,9 +3,35 @@ import { diasUteisRestantes, prazoAnaliseTexto } from "@/lib/prazo";
 import { SELECT_VERSOES_ANTERIORES } from "@/components/VersoesAnteriores";
 import { STATUS_INFO, LIVRE_INFO } from "@/lib/status";
 import type { SolicitacaoStatus } from "@/generated/prisma/enums";
+import type { Prisma } from "@/generated/prisma/client";
 
 const ATIVOS: SolicitacaoStatus[] = ["ENVIADA", "ANALISE", "COMPLEMENTO"];
 const APROVADOS: SolicitacaoStatus[] = ["APROVADA", "RESSALVAS"];
+
+// Campos rasos: o resumo carrega todos os lotes de uma vez, então cada relação aninhada
+// aqui se multiplica pelo loteamento inteiro.
+const INCLUDE_SOLICITACAO = {
+  historico: {
+    orderBy: { createdAt: "desc" },
+    include: { autor: { select: { name: true, role: true } } },
+  },
+  criadoPor: { select: { name: true, role: true } },
+  documentos: { select: { id: true, tipo: true, nomeArquivo: true, validado: true } },
+  // Só as versões substituídas — poucas, e por contrato disponíveis ao condomínio.
+  arquivos: SELECT_VERSOES_ANTERIORES,
+  irregularidades: {
+    orderBy: { createdAt: "desc" },
+    select: { id: true, tipo: true, createdAt: true, regularizadaEm: true },
+  },
+  // Projeto em mais de um lote: todos os lotes que ele cobre, para o painel listar.
+  // Recusado pela CAPE não faz parte da aprovação.
+  lote: { select: { id: true, numero: true, quadra: { select: { nome: true } } } },
+  lotesAdicionais: {
+    where: { status: { not: "RECUSADO" } },
+    orderBy: { createdAt: "asc" },
+    select: { status: true, lote: { select: { id: true, numero: true, quadra: { select: { nome: true } } } } },
+  },
+} satisfies Prisma.SolicitacaoInclude;
 
 function diasDesde(d: Date) {
   return Math.floor((Date.now() - d.getTime()) / 86_400_000);
@@ -22,24 +48,12 @@ export async function getResumoData(empreendimentoId: string) {
           quadra: true,
           proprietario: true,
           rt: true,
-          solicitacoes: {
-            orderBy: { createdAt: "desc" },
-            include: {
-              historico: {
-                orderBy: { createdAt: "desc" },
-                include: { autor: { select: { name: true, role: true } } },
-              },
-              // Campos rasos: o resumo carrega todos os lotes de uma vez, então cada
-              // relação aninhada aqui se multiplica pelo loteamento inteiro.
-              criadoPor: { select: { name: true, role: true } },
-              documentos: { select: { id: true, tipo: true, nomeArquivo: true, validado: true } },
-              // Só as versões substituídas — poucas, e por contrato disponíveis ao condomínio.
-              arquivos: SELECT_VERSOES_ANTERIORES,
-              irregularidades: {
-                orderBy: { createdAt: "desc" },
-                select: { id: true, tipo: true, createdAt: true, regularizadaEm: true },
-              },
-            },
+          solicitacoes: { orderBy: { createdAt: "desc" }, include: INCLUDE_SOLICITACAO },
+          // O lote também é colorido pelo projeto de que é lote adicional, senão aparece
+          // livre na planta com a obra aprovada.
+          comoLoteAdicional: {
+            where: { status: { not: "RECUSADO" } },
+            include: { solicitacao: { include: INCLUDE_SOLICITACAO } },
           },
         },
       },
@@ -47,29 +61,35 @@ export async function getResumoData(empreendimentoId: string) {
   });
   if (!emp) return null;
 
-  const lotesComStatus = emp.lotes.map((l) => {
-    const atual = l.solicitacoes[0];
+  const lotesComStatus = emp.lotes.map(({ comoLoteAdicional, ...l }) => {
+    const solicitacoes = [...l.solicitacoes, ...comoLoteAdicional.map((a) => a.solicitacao)].sort(
+      (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
+    );
+    const atual = solicitacoes[0];
     const statusInfo = atual ? STATUS_INFO[atual.status] : LIVRE_INFO;
-    const historico = l.solicitacoes
+    const historico = solicitacoes
       .flatMap((s) => s.historico.map((h) => ({ ...h, protocolo: s.protocolo })))
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
     // Irregularidade pertence ao lote, não ao protocolo da vez: uma obra apontada
     // continua apontada enquanto ninguém regularizar, mesmo com outro protocolo aberto.
-    const irregularidadesAbertas = l.solicitacoes.reduce(
+    const irregularidadesAbertas = solicitacoes.reduce(
       (n, s) => n + s.irregularidades.filter((i) => !i.regularizadaEm).length,
       0,
     );
-    return { ...l, statusAtual: atual ?? null, statusInfo, historico, irregularidadesAbertas };
+    return { ...l, solicitacoes, statusAtual: atual ?? null, statusInfo, historico, irregularidadesAbertas };
   });
 
+  // Os indicadores contam protocolos: um projeto em três lotes é uma solicitação, não três.
+  const porProtocolo = (lotes: typeof lotesComStatus) => [...new Map(lotes.map((l) => [l.statusAtual!.id, l])).values()];
+
   const totalLotes = emp.quadras.reduce((a, q) => a + q.totalLotes, 0);
-  const ativos = lotesComStatus.filter((l) => l.statusAtual && ATIVOS.includes(l.statusAtual.status));
-  const complemento = lotesComStatus.filter((l) => l.statusAtual?.status === "COMPLEMENTO");
-  const aprovados = lotesComStatus.filter((l) => l.statusAtual && APROVADOS.includes(l.statusAtual.status));
-  const execucao = lotesComStatus.filter((l) => l.statusAtual?.status === "EXECUCAO");
+  const ativos = porProtocolo(lotesComStatus.filter((l) => l.statusAtual && ATIVOS.includes(l.statusAtual.status)));
+  const complemento = porProtocolo(lotesComStatus.filter((l) => l.statusAtual?.status === "COMPLEMENTO"));
+  const aprovados = porProtocolo(lotesComStatus.filter((l) => l.statusAtual && APROVADOS.includes(l.statusAtual.status)));
+  const execucao = porProtocolo(lotesComStatus.filter((l) => l.statusAtual?.status === "EXECUCAO"));
   const comIrregularidade = lotesComStatus.filter((l) => l.irregularidadesAbertas > 0);
 
-  const emRisco = lotesComStatus.filter((l) => {
+  const emRisco = porProtocolo(lotesComStatus.filter((l) => {
     const s = l.statusAtual;
     if (!s) return false;
     if (s.status === "ANALISE" || s.status === "ENVIADA") {
@@ -78,7 +98,7 @@ export async function getResumoData(empreendimentoId: string) {
     }
     if (s.status === "COMPLEMENTO") return diasDesde(s.updatedAt) > emp.prazoComplementoDias - 60;
     return false;
-  });
+  }));
 
   const indicadores = [
     { valor: String(totalLotes), rotulo: "Lotes cadastrados", cor: "#231F20" },
@@ -116,10 +136,11 @@ export async function getResumoData(empreendimentoId: string) {
     .slice(0, 4)
     .map((l) => {
       const s = l.statusAtual!;
+      const lotes = `${s.lote.quadra.nome} L${s.lote.numero}${s.lotesAdicionais.length ? ` + ${s.lotesAdicionais.length} lote(s)` : ""}`;
       const texto =
         s.status !== "COMPLEMENTO"
-          ? `${s.protocolo} · ${l.quadra.nome} L${l.numero} — prazo de ${prazoAnaliseTexto(s)}.`
-          : `${s.protocolo} · ${l.quadra.nome} L${l.numero} — complementação pendente há ${diasDesde(s.updatedAt)} dias (limite ${emp.prazoComplementoDias} dias).`;
+          ? `${s.protocolo} · ${lotes} — prazo de ${prazoAnaliseTexto(s)}.`
+          : `${s.protocolo} · ${lotes} — complementação pendente há ${diasDesde(s.updatedAt)} dias (limite ${emp.prazoComplementoDias} dias).`;
       return { texto, cor: s.status !== "COMPLEMENTO" ? "#8C2B22" : "#8A5210" };
     });
 

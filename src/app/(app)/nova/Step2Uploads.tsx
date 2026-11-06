@@ -7,6 +7,8 @@ import type { DocumentoTipo } from "@/generated/prisma/enums";
 type Rascunho = {
   id: string;
   documentos: { tipo: DocumentoTipo; nomeArquivo: string }[];
+  lote: { numero: string; quadra: { nome: string } };
+  lotesAdicionais: { lote: { numero: string; quadra: { nome: string } } }[];
 };
 
 const DICAS: Record<DocumentoTipo, string> = {
@@ -101,6 +103,16 @@ export function Step2Uploads({ rascunho }: { rascunho: Rascunho }) {
         Dica: exporte os PDFs direto do programa de projeto (opção &quot;PDF otimizado&quot; ou &quot;tamanho mínimo&quot;) e digitalize
         documentos em papel entre 150 e 300 dpi. Arquivos menores sobem mais rápido e abrem mais rápido na análise.
       </div>
+      {rascunho.lotesAdicionais.length > 0 && (
+        <div style={{ fontSize: 12, color: "#8A5210", background: "#FBF5EA", border: "1px solid #EAD9BC", borderRadius: 4, padding: "9px 12px", lineHeight: 1.5 }}>
+          Projeto de {rascunho.lotesAdicionais.length + 1} lotes:{" "}
+          <strong>
+            {[rascunho.lote, ...rascunho.lotesAdicionais.map((a) => a.lote)].map((l) => `${l.quadra.nome} L${l.numero}`).join(", ")}
+          </strong>
+          . Junte num único PDF a matrícula de todos os lotes, e o mesmo com a capa do IPTU — é por elas que a CAPE confere
+          que os lotes são do mesmo proprietário.
+        </div>
+      )}
       <div style={{ fontSize: 11, letterSpacing: ".13em", textTransform: "uppercase", color: "#7A7472" }}>Documentos obrigatórios</div>
       {DOC_ORDER.map((tipo) => (
         <UploadRow key={tipo} solicitacaoId={rascunho.id} tipo={tipo} existente={rascunho.documentos.find((d) => d.tipo === tipo)} />

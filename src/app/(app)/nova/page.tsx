@@ -1,6 +1,6 @@
 import { requireRole } from "@/lib/require-role";
 import { getUserDisplay } from "@/lib/user-display";
-import { emailsSugeridosPorLote, getMeusLotes, getMeusRascunhos, getPerfilRT, getRascunho } from "@/lib/queries/nova";
+import { emailsSugeridosPorLote, getLotesParaProjetoConjunto, getMeusLotes, getMeusRascunhos, getPerfilRT, getRascunho } from "@/lib/queries/nova";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { ScreenBody } from "@/components/ScreenBody";
 import { Step1Form } from "./Step1Form";
@@ -23,9 +23,10 @@ export default async function NovaPage({
     getPerfilRT(session.user.id),
   ]);
 
-  const [rascunho, emailsSugeridos] = await Promise.all([
+  const [rascunho, emailsSugeridos, quadras] = await Promise.all([
     rascunhoId ? getRascunho(rascunhoId) : null,
     emailsSugeridosPorLote(session.user.id, lotes.map((l) => l.id)),
+    getLotesParaProjetoConjunto([...new Set(lotes.map((l) => l.empreendimentoId))]),
   ]);
   const rascunhoValido = rascunho && rascunho.status === "RASCUNHO" && rascunho.lote.rtId === session.user.id ? rascunho : null;
 
@@ -78,7 +79,7 @@ export default async function NovaPage({
               })}
             </div>
 
-            {passo === 1 && <Step1Form lotes={lotes} emailsSugeridos={emailsSugeridos} />}
+            {passo === 1 && <Step1Form lotes={lotes} emailsSugeridos={emailsSugeridos} quadras={quadras} />}
             {passo === 2 && rascunhoValido && <Step2Uploads rascunho={rascunhoValido} />}
             {passo === 3 && rascunhoValido && (
               <Step3Send

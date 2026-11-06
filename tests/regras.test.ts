@@ -117,3 +117,16 @@ test("vídeo tutorial: links do YouTube e do Vimeo viram o player embutido", asy
   assert.equal(embedDoVideo("https://exemplo.com/video.mp4"), null, "outros endereços não são embutidos");
   assert.equal(embedDoVideo("javascript:alert(1)"), null);
 });
+
+test("lote adicional: mesmo proprietário do lote principal", async () => {
+  const { titularidadeEntreLotes } = await import("@/lib/conferencia-vinculo");
+  const lote = (titularCpf: string | null, contaCpf?: string) => ({
+    titularNome: titularCpf ? "Ana" : null,
+    titularCpf,
+    proprietario: contaCpf ? { name: "Ana", cpf: contaCpf } : null,
+  });
+  assert.equal(titularidadeEntreLotes(lote("52998224725"), lote("52998224725")).situacao, "confere");
+  assert.equal(titularidadeEntreLotes(lote("52998224725"), lote(null, "529.982.247-25")).situacao, "confere", "CPF da conta vale como referência, com ou sem máscara");
+  assert.equal(titularidadeEntreLotes(lote("52998224725"), lote("11144477735")).situacao, "divergente");
+  assert.equal(titularidadeEntreLotes(lote("52998224725"), lote(null)).situacao, "sem-referencia", "lote sem dono registrado: confere pela matrícula");
+});

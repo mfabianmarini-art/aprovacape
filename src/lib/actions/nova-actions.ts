@@ -25,6 +25,8 @@ const rascunhoSchema = z.object({
   proprietarioEmail: z.string().trim().toLowerCase().email("Informe um e-mail válido do proprietário"),
 });
 
+const MAX_LOTES_ADICIONAIS = 10;
+
 export async function criarRascunhoAction(_prev: unknown, formData: FormData) {
   const session = await requireRole(RT);
   const parsed = rascunhoSchema.safeParse(Object.fromEntries(formData.entries()));
@@ -32,6 +34,20 @@ export async function criarRascunhoAction(_prev: unknown, formData: FormData) {
 
   const lote = await prisma.lote.findUniqueOrThrow({ where: { id: parsed.data.loteId }, include: { empreendimento: { select: { prazoDias: true } } } });
   if (lote.rtId !== session.user.id) return { error: "Este lote não está vinculado à sua conta." };
+
+  // Projeto que abrange mais de um lote: o principal (acima) já é do RT; os demais podem
+  // ainda não ser, e a CAPE confere a titularidade na análise.
+  let adicionais: { id: string; rtId: string | null }[] = [];
+  if (formData.get("maisDeUmLote") === "on") {
+    const ids = [...new Set(formData.getAll("lotesAdicionais").map(String))].filter((id) => id && id !== lote.id);
+    if (ids.length === 0) return { error: "Indique os outros lotes que o projeto abrange." };
+    if (ids.length > MAX_LOTES_ADICIONAIS) return { error: `Indique no máximo ${MAX_LOTES_ADICIONAIS} lotes adicionais.` };
+    adicionais = await prisma.lote.findMany({
+      where: { id: { in: ids }, empreendimentoId: lote.empreendimentoId },
+      select: { id: true, rtId: true },
+    });
+    if (adicionais.length !== ids.length) return { error: "Os lotes adicionais precisam ser do mesmo empreendimento do lote principal." };
+  }
 
   const sol = await prisma.solicitacao.create({
     data: {
@@ -47,6 +63,9 @@ export async function criarRascunhoAction(_prev: unknown, formData: FormData) {
       responsavelTecnicoNome: "",
       responsavelTecnicoRegistro: "",
       responsavelTecnicoEmail: "",
+      lotesAdicionais: {
+        create: adicionais.map((a) => ({ loteId: a.id, status: a.rtId === session.user.id ? "APROVADO" : "PENDENTE" })),
+      },
     },
   });
 

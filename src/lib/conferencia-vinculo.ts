@@ -44,3 +44,17 @@ export function divergenciaDeTitular(
 
   return { esperadoNome: ref.nome, esperadoCpf: ref.cpf, informadoNome, informadoCpf };
 }
+
+// Lote adicional de um projeto: tem de ser do mesmo proprietário do lote principal.
+// "divergente" trava a aprovação; "sem-referencia" (um dos lotes sem dono registrado)
+// deixa a conferência para a matrícula anexada à solicitação.
+export type TitularidadeEntreLotes =
+  | { situacao: "confere" | "divergente"; principal: { nome: string; cpf: string }; adicional: { nome: string; cpf: string } }
+  | { situacao: "sem-referencia"; principal: { nome: string; cpf: string } | null; adicional: { nome: string; cpf: string } | null };
+
+export function titularidadeEntreLotes(principal: LoteParaConferencia, adicional: LoteParaConferencia): TitularidadeEntreLotes {
+  const p = referenciaDoLote(principal);
+  const a = referenciaDoLote(adicional);
+  if (!p || !a) return { situacao: "sem-referencia", principal: p, adicional: a };
+  return { situacao: mesmoCpf(p.cpf, a.cpf) ? "confere" : "divergente", principal: p, adicional: a };
+}

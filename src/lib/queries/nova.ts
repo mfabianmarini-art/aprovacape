@@ -18,7 +18,27 @@ export async function getMeusRascunhos(userId: string) {
       lote: { rtId: userId },
     },
     orderBy: { createdAt: "desc" },
-    include: { documentos: { select: { tipo: true } }, lote: { include: { quadra: true, empreendimento: true } } },
+    include: {
+      documentos: { select: { tipo: true } },
+      lote: { include: { quadra: true, empreendimento: true } },
+      _count: { select: { lotesAdicionais: true } },
+    },
+  });
+}
+
+// Quadras e lotes dos empreendimentos em que o RT tem lote, para indicar os demais lotes
+// de um projeto que abrange mais de um. Qualquer lote serve: os que ainda não são do RT
+// a CAPE confere na análise.
+export async function getLotesParaProjetoConjunto(empreendimentoIds: string[]) {
+  return prisma.quadra.findMany({
+    where: { empreendimentoId: { in: empreendimentoIds } },
+    select: {
+      id: true,
+      nome: true,
+      empreendimentoId: true,
+      lotes: { select: { id: true, numero: true, rtId: true }, orderBy: { numero: "asc" } },
+    },
+    orderBy: { nome: "asc" },
   });
 }
 
@@ -43,7 +63,11 @@ export async function emailsSugeridosPorLote(userId: string, loteIds: string[]) 
 export async function getRascunho(id: string) {
   return prisma.solicitacao.findUnique({
     where: { id },
-    include: { documentos: true, lote: { include: { quadra: true, empreendimento: true } } },
+    include: {
+      documentos: true,
+      lote: { include: { quadra: true, empreendimento: true } },
+      lotesAdicionais: { include: { lote: { include: { quadra: true } } }, orderBy: { createdAt: "asc" } },
+    },
   });
 }
 

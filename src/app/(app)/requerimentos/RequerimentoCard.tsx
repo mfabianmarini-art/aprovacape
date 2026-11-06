@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { STATUS_INFO, DOC_LABEL, DOC_ORDER, IRREGULARIDADE_LABEL, TIPO_LABEL, formatDate, formatDateTime } from "@/lib/status";
+import { STATUS_INFO, DOC_LABEL, DOC_ORDER, IRREGULARIDADE_LABEL, TIPO_LABEL, formatDate, formatDateTime, lotesAdicionaisTexto } from "@/lib/status";
 import { etapasDaSolicitacao } from "@/lib/etapas";
 import { prazoAnaliseTexto } from "@/lib/prazo";
 import { proximaAcaoDoRT } from "@/lib/proxima-acao";
@@ -115,6 +115,9 @@ export function RequerimentoCard({
           <span style={{ fontFamily: "var(--font-display)", fontSize: 18, fontWeight: 600, lineHeight: 1.1 }}>
             {s.lote.quadra.nome} L{s.lote.numero} — {TIPO_LABEL[s.tipo]}
           </span>
+          {s.lotesAdicionais.length > 0 && (
+            <span style={{ fontSize: 12, color: "#4A5563" }}>Também abrange: {lotesAdicionaisTexto(s.lotesAdicionais)}</span>
+          )}
           {acao && (
             <span style={{ display: "inline-flex", alignItems: "center", gap: 7, alignSelf: "flex-start", background: "#E01B22", color: "#fff", borderRadius: 3, padding: "4px 10px", fontSize: 12, fontWeight: 700 }}>
               Sua vez: {acao}

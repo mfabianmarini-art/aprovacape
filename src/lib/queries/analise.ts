@@ -16,6 +16,19 @@ export async function getAnalise(protocolo: string) {
       },
       devolutivas: { orderBy: { createdAt: "desc" }, include: { autor: { select: { name: true } } } },
       arquivos: SELECT_VERSOES_ANTERIORES,
+      lotesAdicionais: {
+        orderBy: { createdAt: "asc" },
+        include: {
+          lote: {
+            include: {
+              quadra: { select: { nome: true } },
+              proprietario: { select: { name: true, cpf: true } },
+              rt: { select: { id: true, name: true } },
+            },
+          },
+          revisadoPor: { select: { name: true } },
+        },
+      },
     },
   });
   if (!solicitacao) return null;

@@ -15,6 +15,7 @@ export async function getMeusRequerimentos(userId: string) {
     orderBy: { createdAt: "desc" },
     include: {
       lote: { include: { quadra: true, empreendimento: true } },
+      lotesAdicionais: { orderBy: { createdAt: "asc" }, select: { status: true, lote: { select: { numero: true, quadra: { select: { nome: true } } } } } },
       // Histórico completo: o card minimizado expande para mostrar tanto o andamento da
       // solicitação quanto o da análise, que vivem no mesmo stream de eventos.
       historico: { orderBy: { createdAt: "desc" }, include: { autor: { select: { name: true, role: true } } } },
