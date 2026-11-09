@@ -1,4 +1,4 @@
-import { DOC_ORDER, TIPO_LABEL, formatDate } from "@/lib/status";
+import { docsObrigatorios, TIPO_LABEL, formatDate } from "@/lib/status";
 import { cancelarRascunhoAction } from "@/lib/actions/nova-actions";
 import type { getMeusRascunhos } from "@/lib/queries/nova";
 
@@ -19,8 +19,9 @@ export function RascunhosEmAndamento({ rascunhos }: { rascunhos: Rascunhos }) {
       </div>
 
       {rascunhos.map((r) => {
-        const anexados = DOC_ORDER.filter((t) => r.documentos.some((d) => d.tipo === t)).length;
-        const completo = anexados === DOC_ORDER.length;
+        const obrigatorios = docsObrigatorios(r._count.lotesAdicionais);
+        const anexados = obrigatorios.filter((t) => r.documentos.some((d) => d.tipo === t)).length;
+        const completo = anexados === obrigatorios.length;
         return (
           <div
             key={r.id}
@@ -34,7 +35,7 @@ export function RascunhosEmAndamento({ rascunhos }: { rascunhos: Rascunhos }) {
               <div style={{ fontSize: 11.5, color: "#7A7472" }}>
                 {r.lote.empreendimento.nome} · iniciada em {formatDate(r.createdAt)} ·{" "}
                 <span style={{ fontFamily: "var(--font-mono)", color: completo ? "#24603A" : "#8A5210" }}>
-                  {anexados}/{DOC_ORDER.length} documentos
+                  {anexados}/{obrigatorios.length} documentos
                 </span>
               </div>
             </div>

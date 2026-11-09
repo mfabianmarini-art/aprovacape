@@ -2,7 +2,7 @@ import { requireRole } from "@/lib/require-role";
 import { getUserDisplay } from "@/lib/user-display";
 import { prisma } from "@/lib/prisma";
 import { labelDaTela } from "@/lib/nav";
-import { DOC_LABEL, DOC_OPCIONAIS, DOC_ORDER, formatosAceitos } from "@/lib/status";
+import { DOC_LABEL, DOC_OPCIONAIS, DOC_ORDER, DOC_PROJETO_CONJUNTO, formatosAceitos } from "@/lib/status";
 import { embedDoVideo } from "@/lib/video-tutorial";
 import { tutorialAtual } from "@/lib/tutorial";
 import { TutorialGestao } from "./TutorialGestao";
@@ -95,7 +95,7 @@ const PASSOS: { id: string; titulo: string; onde?: { href: string; rotulo: strin
           </li>
         </ol>
         <p style={texto}>
-          Cada mudança de etapa é avisada por e-mail a você e ao proprietário. Em Meus requerimentos, a barra de etapas mostra onde a
+          Cada mudança de etapa é avisada por e-mail a você. Em Meus requerimentos, a barra de etapas mostra onde a
           solicitação está e, quando a ação é sua, o card aparece em destaque com o aviso <strong>“Sua vez”</strong>.
         </p>
       </>
@@ -122,15 +122,15 @@ const PASSOS: { id: string; titulo: string; onde?: { href: string; rotulo: strin
   },
   {
     id: "alvara",
-    titulo: "Projeto aprovado: envie o alvará e a ART/RRT de execução",
+    titulo: "Projeto aprovado: envie o alvará, o projeto carimbado e a ART/RRT de execução",
     corpo: (
       <>
         <p style={texto}>
           A aprovação da CAPE <strong>não substitui a aprovação da Prefeitura</strong>. Com o projeto aprovado, obtenha o alvará de
-          execução e anexe, na própria solicitação, o <strong>alvará</strong> e a <strong>ART/RRT de execução atual e válida</strong>{" "}
-          (ambos em PDF).
+          execução e anexe, na própria solicitação, o <strong>alvará</strong>, o <strong>projeto carimbado pela Prefeitura</strong> e a{" "}
+          <strong>ART/RRT de execução atual e válida</strong> (todos em PDF).
         </p>
-        <p style={texto}>A CAPE confere os dois documentos. A obra só pode começar depois que forem aceitos — você recebe um e-mail.</p>
+        <p style={texto}>A CAPE confere os três documentos. A obra só pode começar depois que forem aceitos — você recebe um e-mail.</p>
       </>
     ),
   },
@@ -139,7 +139,7 @@ const PASSOS: { id: string; titulo: string; onde?: { href: string; rotulo: strin
     titulo: "Durante e depois da obra",
     corpo: (
       <ul style={ul}>
-        <li>A CAPE acompanha a execução. Se for constatada alguma irregularidade, você e o proprietário são avisados por e-mail, com o relatório e as fotos.</li>
+        <li>A CAPE acompanha a execução. Se for constatada alguma irregularidade, você é avisado por e-mail, com o relatório e as fotos.</li>
         <li>Assim que for liberado o TVO (Termo de Vistoria de Obra), apresente a matrícula atualizada do imóvel à CAPE.</li>
         <li>Concluída a obra, a solicitação é encerrada e vai para “Ver protocolos encerrados”, em Meus requerimentos.</li>
       </ul>
@@ -306,11 +306,11 @@ export default async function AjudaPage() {
 }
 
 function TabelaDocumentos() {
-  const linha = (t: (typeof DOC_ORDER)[number], obrigatorio: boolean) => (
+  const linha = (t: (typeof DOC_ORDER)[number], situacao: string) => (
     <tr key={t} style={{ borderTop: "1px solid #EDE9E1" }}>
       <td style={{ padding: "7px 10px 7px 0", fontSize: 13 }}>{DOC_LABEL[t].nome}</td>
       <td style={{ padding: "7px 10px", fontSize: 12, fontFamily: "var(--font-mono)", color: "#4A5563", whiteSpace: "nowrap" }}>{formatosAceitos(t)}</td>
-      <td style={{ padding: "7px 0", fontSize: 12, color: obrigatorio ? "#8C2B22" : "#7A7472" }}>{obrigatorio ? "obrigatório" : "opcional"}</td>
+      <td style={{ padding: "7px 0", fontSize: 12, color: situacao === "opcional" ? "#7A7472" : "#8C2B22" }}>{situacao}</td>
     </tr>
   );
   return (
@@ -326,8 +326,9 @@ function TabelaDocumentos() {
           </tr>
         </thead>
         <tbody>
-          {DOC_ORDER.map((t) => linha(t, true))}
-          {DOC_OPCIONAIS.map((t) => linha(t, false))}
+          {DOC_ORDER.map((t) => linha(t, "obrigatório"))}
+          {DOC_PROJETO_CONJUNTO.map((t) => linha(t, "obrigatório em projeto de mais de um lote"))}
+          {DOC_OPCIONAIS.map((t) => linha(t, "opcional"))}
         </tbody>
       </table>
     </div>

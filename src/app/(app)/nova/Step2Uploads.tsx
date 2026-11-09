@@ -1,7 +1,7 @@
 "use client";
 
 import { useEnvioDocumento } from "@/components/useEnvioDocumento";
-import { DOC_LABEL, DOC_OPCIONAIS, DOC_ORDER, DOC_REGRAS, formatosAceitos } from "@/lib/status";
+import { DOC_LABEL, DOC_OPCIONAIS, DOC_REGRAS, docsObrigatorios, formatosAceitos } from "@/lib/status";
 import type { DocumentoTipo } from "@/generated/prisma/enums";
 
 type Rascunho = {
@@ -22,6 +22,8 @@ const DICAS: Record<DocumentoTipo, string> = {
   CAPA_IPTU: "Capa do carnê ou guia do IPTU do lote",
   MATRICULA: "Matrícula atualizada do lote no cartório de registro de imóveis",
   LEVANTAMENTO_PLANIALTIMETRICO: "Levantamento planialtimétrico cadastral do lote",
+  PROJETO_APROVADO_PREFEITURA: "Projeto aprovado previamente na Prefeitura, abrangendo todos os lotes",
+  ART_UNIFICACAO: "Anotação de responsabilidade técnica da unificação dos lotes",
   OUTROS: "Qualquer documento adicional relevante para a análise",
 };
 
@@ -94,8 +96,9 @@ function UploadRow({
 }
 
 export function Step2Uploads({ rascunho }: { rascunho: Rascunho }) {
-  const enviados = DOC_ORDER.filter((t) => rascunho.documentos.find((d) => d.tipo === t)).length;
-  const pendentes = DOC_ORDER.length - enviados;
+  const obrigatorios = docsObrigatorios(rascunho.lotesAdicionais.length);
+  const enviados = obrigatorios.filter((t) => rascunho.documentos.find((d) => d.tipo === t)).length;
+  const pendentes = obrigatorios.length - enviados;
 
   return (
     <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 12 }}>
@@ -109,12 +112,12 @@ export function Step2Uploads({ rascunho }: { rascunho: Rascunho }) {
           <strong>
             {[rascunho.lote, ...rascunho.lotesAdicionais.map((a) => a.lote)].map((l) => `${l.quadra.nome} L${l.numero}`).join(", ")}
           </strong>
-          . Junte num único PDF a matrícula de todos os lotes, e o mesmo com a capa do IPTU — é por elas que a CAPE confere
-          que os lotes são do mesmo proprietário.
+          . A aprovação prévia na Prefeitura é obrigatória: anexe o projeto aprovado e a ART/RRT da unificação. Se anexar a
+          matrícula ou a capa do IPTU, junte as de todos os lotes num único PDF.
         </div>
       )}
       <div style={{ fontSize: 11, letterSpacing: ".13em", textTransform: "uppercase", color: "#7A7472" }}>Documentos obrigatórios</div>
-      {DOC_ORDER.map((tipo) => (
+      {obrigatorios.map((tipo) => (
         <UploadRow key={tipo} solicitacaoId={rascunho.id} tipo={tipo} existente={rascunho.documentos.find((d) => d.tipo === tipo)} />
       ))}
       <div style={{ fontSize: 11, letterSpacing: ".13em", textTransform: "uppercase", color: "#7A7472", marginTop: 6 }}>Documentos opcionais</div>

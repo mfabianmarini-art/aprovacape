@@ -7,7 +7,7 @@ import { getUserDisplay } from "@/lib/user-display";
 import { getAnalise } from "@/lib/queries/analise";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { ScreenBody } from "@/components/ScreenBody";
-import { DOC_LABEL, DOC_OPCIONAIS, DOC_ORDER, TIPO_LABEL, IRREGULARIDADE_LABEL, formatDate, formatDateTime } from "@/lib/status";
+import { DOC_LABEL, DOC_OPCIONAIS, docsObrigatorios, TIPO_LABEL, IRREGULARIDADE_LABEL, formatDate, formatDateTime } from "@/lib/status";
 import {
   toggleDocumentoAction,
   devolverDocumentacaoAction,
@@ -50,8 +50,10 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
   // Aqui a seção fica como registro do que foi apontado, com o ponteiro para lá.
   const podeAcompanharObra = sol.status === "EXECUCAO" || sol.status === "CONCLUIDA";
   const irregularidadesAbertas = sol.irregularidades.filter((i) => !i.regularizadaEm).length;
-  const nOk = DOC_ORDER.filter((t) => sol.documentos.find((d) => d.tipo === t)?.validado).length;
-  const allDocs = nOk === DOC_ORDER.length;
+  const obrigatorios = docsObrigatorios(sol.lotesAdicionais.length);
+  const nOk = obrigatorios.filter((t) => sol.documentos.find((d) => d.tipo === t)?.validado).length;
+  const allDocs = nOk === obrigatorios.length;
+  const alvaraCompleto = !!sol.alvaraCaminho && !!sol.alvaraProjetoCaminho && !!sol.alvaraArtCaminho;
   // Com tudo validado não há o que complementar: a devolução aqui é da conferência
   // documental, e o caminho passa a ser o check-list.
   const devolverBloqueado = aguardandoProprietario || allDocs;
@@ -226,20 +228,27 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
               Alvará de execução em conferência
             </div>
             <div style={{ fontSize: 12.5, color: "#4A5563", lineHeight: 1.5 }}>
-              O responsável técnico anexou o alvará da Prefeitura e a ART/RRT de execução
-              {sol.alvaraEnviadoEm ? ` em ${formatDateTime(sol.alvaraEnviadoEm)}` : ""}. Confira os dois — a ART deve estar
+              O responsável técnico anexou o alvará da Prefeitura, o projeto carimbado e a ART/RRT de execução
+              {sol.alvaraEnviadoEm ? ` em ${formatDateTime(sol.alvaraEnviadoEm)}` : ""}. Confira os três — a ART deve estar
               válida e corresponder a esta obra. A obra só é liberada depois que a CAPE aceitar.
             </div>
             <div style={{ display: "flex", gap: 18, flexWrap: "wrap" }}>
               <a href={`/api/alvara/${sol.id}`} target="_blank" rel="noreferrer" style={{ fontSize: 13, fontWeight: 600, color: "#4B3A7A" }}>
                 Alvará: {sol.alvaraNome ?? "abrir"}
               </a>
+              {sol.alvaraProjetoCaminho ? (
+                <a href={`/api/alvara/${sol.id}?arquivo=projeto`} target="_blank" rel="noreferrer" style={{ fontSize: 13, fontWeight: 600, color: "#4B3A7A" }}>
+                  Projeto carimbado: {sol.alvaraProjetoNome ?? "abrir"}
+                </a>
+              ) : (
+                <span style={{ fontSize: 12.5, color: "#8C2B22" }}>Projeto carimbado não enviado (envio anterior à exigência). Recuse para o RT enviar de novo.</span>
+              )}
               {sol.alvaraArtCaminho ? (
                 <a href={`/api/alvara/${sol.id}?arquivo=art`} target="_blank" rel="noreferrer" style={{ fontSize: 13, fontWeight: 600, color: "#4B3A7A" }}>
                   ART/RRT de execução: {sol.alvaraArtNome ?? "abrir"}
                 </a>
               ) : (
-                <span style={{ fontSize: 12.5, color: "#8C2B22" }}>ART/RRT de execução não enviada (envio anterior à exigência).</span>
+                <span style={{ fontSize: 12.5, color: "#8C2B22" }}>ART/RRT de execução não enviada (envio anterior à exigência). Recuse para o RT enviar de novo.</span>
               )}
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) auto", gap: 12, alignItems: "end" }}>
@@ -262,10 +271,21 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
                   Recusar alvará
                 </button>
               </form>
-              <form action={aceitarAlvaraAction.bind(null, sol.id)}>
+              <form action={alvaraCompleto ? aceitarAlvaraAction.bind(null, sol.id) : undefined}>
                 <button
                   type="submit"
-                  style={{ border: "1px solid #3B3486", background: "#3B3486", color: "#fff", borderRadius: 4, padding: "9px 16px", fontSize: 12.5, fontWeight: 600, cursor: "pointer" }}
+                  disabled={!alvaraCompleto}
+                  title={alvaraCompleto ? undefined : "Faltam documentos exigidos para liberar a obra."}
+                  style={{
+                    border: `1px solid ${alvaraCompleto ? "#3B3486" : "#DDD8CE"}`,
+                    background: alvaraCompleto ? "#3B3486" : "#fff",
+                    color: alvaraCompleto ? "#fff" : "#B0AAA0",
+                    borderRadius: 4,
+                    padding: "9px 16px",
+                    fontSize: 12.5,
+                    fontWeight: 600,
+                    cursor: alvaraCompleto ? "pointer" : "not-allowed",
+                  }}
                 >
                   Aceitar e liberar início da obra
                 </button>
@@ -307,11 +327,11 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
                   </div>
                 </div>
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "#4A5563" }}>
-                  {nOk} / {DOC_ORDER.length} validados
+                  {nOk} / {obrigatorios.length} validados
                 </div>
               </div>
               <div style={{ display: "flex", flexDirection: "column" }}>
-                {DOC_ORDER.map((tipo) => {
+                {obrigatorios.map((tipo) => {
                   const doc = sol.documentos.find((d) => d.tipo === tipo);
                   const ok = !!doc?.validado;
                   const action = podeEditar && doc ? toggleDocumentoAction.bind(null, sol.id, tipo) : null;
@@ -438,7 +458,7 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
                     ? "Devolvida. O botão volta a ficar disponível quando o proprietário reenviar a documentação."
                     : allDocs
                       ? "Documentação completa e pertinente. Check-list liberado."
-                      : "Marque cada documento conferido. Se algum for impertinente ou ilegível, devolva a solicitação — o proprietário e o RT são notificados com a lista do que falta."}
+                      : "Marque cada documento conferido. Se algum for impertinente ou ilegível, devolva a solicitação — o RT é notificado com a lista do que falta."}
                 </div>
                 {podeEditar && (
                   <form action={devolverBloqueado ? undefined : devolverDocumentacaoAction.bind(null, sol.id)}>

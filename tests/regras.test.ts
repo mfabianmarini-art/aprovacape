@@ -118,6 +118,18 @@ test("vídeo tutorial: links do YouTube e do Vimeo viram o player embutido", asy
   assert.equal(embedDoVideo("javascript:alert(1)"), null);
 });
 
+test("documentos obrigatórios: projeto em mais de um lote exige os da unificação", async () => {
+  const { docsObrigatorios, DOC_OPCIONAIS, DOC_PROJETO_CONJUNTO } = await import("@/lib/status");
+  for (const t of DOC_PROJETO_CONJUNTO) {
+    assert.ok(!docsObrigatorios(0).includes(t), `${t} não vale para um lote só`);
+    assert.ok(docsObrigatorios(2).includes(t), `${t} vale para vários lotes`);
+  }
+  for (const t of ["MATRICULA", "ART_RRT_EXECUCAO", "CAPA_IPTU", "PROJETO_PAISAGISTICO"] as const) {
+    assert.ok(DOC_OPCIONAIS.includes(t));
+    assert.ok(!docsObrigatorios(2).includes(t), `${t} é opcional`);
+  }
+});
+
 test("lote adicional: mesmo proprietário do lote principal", async () => {
   const { titularidadeEntreLotes } = await import("@/lib/conferencia-vinculo");
   const lote = (titularCpf: string | null, contaCpf?: string) => ({

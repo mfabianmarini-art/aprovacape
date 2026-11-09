@@ -1,7 +1,7 @@
 "use client";
 
 import { useEnvioDocumento } from "@/components/useEnvioDocumento";
-import { DOC_LABEL, DOC_ORDER, DOC_REGRAS, formatosAceitos } from "@/lib/status";
+import { DOC_LABEL, DOC_OPCIONAIS, DOC_REGRAS, formatosAceitos } from "@/lib/status";
 import type { DocumentoTipo } from "@/generated/prisma/enums";
 
 type Documento = {
@@ -18,12 +18,14 @@ function Linha({
   doc,
   liberado,
   trocado,
+  opcional = false,
 }: {
   solicitacaoId: string;
   tipo: DocumentoTipo;
   doc?: Documento;
   liberado: boolean;
   trocado: boolean;
+  opcional?: boolean;
 }) {
   const { enviar, enviando, rotuloEnvio, erro } = useEnvioDocumento(solicitacaoId, tipo);
 
@@ -43,6 +45,7 @@ function Linha({
       <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
         <div style={{ fontSize: 12.5, fontWeight: 600, color: liberado ? "#231F20" : "#7A828C" }}>
           {DOC_LABEL[tipo].nome}
+          {opcional && <span style={{ fontSize: 11, fontWeight: 400, color: "#8B939C" }}> · opcional</span>}
           {liberado && (
             <span style={{ fontSize: 11, fontWeight: 400, color: "#7A7472", fontFamily: "var(--font-mono)" }}>
               {" "}
@@ -101,11 +104,13 @@ function Linha({
 export function SubstituirDocumentos({
   solicitacaoId,
   documentos,
+  obrigatorios,
   devolvidaNoChecklist,
   trocadosIds = [],
 }: {
   solicitacaoId: string;
   documentos: Documento[];
+  obrigatorios: DocumentoTipo[];
   devolvidaNoChecklist: boolean;
   // Documentos enviados depois da devolução (já substituídos nesta rodada).
   trocadosIds?: string[];
@@ -114,7 +119,7 @@ export function SubstituirDocumentos({
   // o que a CAPE já validou fica como está. Devolução no check-list é o projeto que
   // precisa mudar, e aí qualquer prancha pode ser reenviada.
   const liberado = (doc?: Documento) => devolvidaNoChecklist || !doc || !doc.validado;
-  const alvos = DOC_ORDER.filter((t) => liberado(documentos.find((d) => d.tipo === t)));
+  const alvos = obrigatorios.filter((t) => liberado(documentos.find((d) => d.tipo === t)));
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -123,10 +128,18 @@ export function SubstituirDocumentos({
           ? "Envie as pranchas e documentos corrigidos. Os que não mudaram podem ficar como estão."
           : `Substitua ${alvos.length === 1 ? "o documento apontado" : `os ${alvos.length} documentos apontados`}. Os já validados pela CAPE ficam como estão.`}
       </div>
-      {DOC_ORDER.map((tipo) => {
+      {[...obrigatorios, ...DOC_OPCIONAIS].map((tipo) => {
         const doc = documentos.find((d) => d.tipo === tipo);
         return (
-          <Linha key={tipo} solicitacaoId={solicitacaoId} tipo={tipo} doc={doc} liberado={liberado(doc)} trocado={!!doc && trocadosIds.includes(doc.id)} />
+          <Linha
+            key={tipo}
+            solicitacaoId={solicitacaoId}
+            tipo={tipo}
+            doc={doc}
+            liberado={liberado(doc)}
+            trocado={!!doc && trocadosIds.includes(doc.id)}
+            opcional={DOC_OPCIONAIS.includes(tipo)}
+          />
         );
       })}
     </div>

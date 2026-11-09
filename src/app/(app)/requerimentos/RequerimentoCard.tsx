@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { STATUS_INFO, DOC_LABEL, DOC_ORDER, IRREGULARIDADE_LABEL, TIPO_LABEL, formatDate, formatDateTime, lotesAdicionaisTexto } from "@/lib/status";
+import { STATUS_INFO, DOC_LABEL, docsObrigatorios, IRREGULARIDADE_LABEL, TIPO_LABEL, formatDate, formatDateTime, lotesAdicionaisTexto } from "@/lib/status";
 import { etapasDaSolicitacao } from "@/lib/etapas";
 import { prazoAnaliseTexto } from "@/lib/prazo";
 import { proximaAcaoDoRT } from "@/lib/proxima-acao";
@@ -26,13 +26,13 @@ export type SomenteLeitura = "proprietario" | "outro-rt";
 const AGUARDANDO: Record<string, string> = {
   ENVIADA: "A CAPE está conferindo a documentação enviada.",
   ANALISE: "Documentação validada. O projeto está em análise técnica pela CAPE.",
-  ALVARA_CONFERENCIA: "A CAPE está conferindo o alvará e a ART/RRT de execução. A obra pode começar assim que forem aceitos.",
+  ALVARA_CONFERENCIA: "A CAPE está conferindo o alvará, o projeto carimbado e a ART/RRT de execução. A obra pode começar assim que forem aceitos.",
   REPROVADA: "Solicitação reprovada. Uma nova análise exige nova solicitação e nova taxa.",
   EXECUCAO: "Obra liberada. Alvará conferido pela CAPE e início autorizado.",
   CONCLUIDA: "Obra concluída.",
   COMPLEMENTO: "Devolvida para complementação: o responsável técnico do lote deve corrigir e reenviar.",
-  APROVADA: "Projeto aprovado: o responsável técnico do lote deve enviar o alvará de execução e a ART/RRT de execução.",
-  RESSALVAS: "Projeto aprovado com ressalvas: o responsável técnico do lote deve enviar o alvará de execução e a ART/RRT de execução.",
+  APROVADA: "Projeto aprovado: o responsável técnico do lote deve enviar o alvará de execução, o projeto carimbado pela Prefeitura e a ART/RRT de execução.",
+  RESSALVAS: "Projeto aprovado com ressalvas: o responsável técnico do lote deve enviar o alvará de execução, o projeto carimbado pela Prefeitura e a ART/RRT de execução.",
 };
 
 const AVISO_LEITURA: Record<SomenteLeitura, string> = {
@@ -156,12 +156,12 @@ export function RequerimentoCard({
                 feito={trocados.length > 0}
                 titulo={trocados.length > 0 ? `Arquivos substituídos (${trocados.length})` : "Substitua os arquivos corrigidos"}
               >
-                <SubstituirDocumentos solicitacaoId={s.id} documentos={s.documentos} devolvidaNoChecklist={s.devolvidaNoChecklist} trocadosIds={trocados.map((d) => d.id)} />
+                <SubstituirDocumentos solicitacaoId={s.id} documentos={s.documentos} obrigatorios={docsObrigatorios(s.lotesAdicionais.length)} devolvidaNoChecklist={s.devolvidaNoChecklist} trocadosIds={trocados.map((d) => d.id)} />
               </Passo>
               <Passo n={3} feito={false} titulo="Envie a complementação para a CAPE">
                 <EnviarComplementacao
                   solicitacaoId={s.id}
-                  faltando={DOC_ORDER.filter((t) => !s.documentos.some((d) => d.tipo === t)).map((t) => DOC_LABEL[t].nome)}
+                  faltando={docsObrigatorios(s.lotesAdicionais.length).filter((t) => !s.documentos.some((d) => d.tipo === t)).map((t) => DOC_LABEL[t].nome)}
                   semTroca={!!devolucao && trocados.length === 0}
                 />
               </Passo>
@@ -170,8 +170,8 @@ export function RequerimentoCard({
 
           {acao && (s.status === "APROVADA" || s.status === "RESSALVAS") && (
             <PainelAcao
-              titulo="Envie o alvará e a ART/RRT de execução"
-              subtitulo={`Projeto ${s.status === "RESSALVAS" ? "aprovado com ressalvas" : "aprovado"} pela CAPE. Para liberar o início da obra, anexe os dois documentos.`}
+              titulo="Envie o alvará, o projeto carimbado e a ART/RRT de execução"
+              subtitulo={`Projeto ${s.status === "RESSALVAS" ? "aprovado com ressalvas" : "aprovado"} pela CAPE. Para liberar o início da obra, anexe os três documentos.`}
             >
               {s.status === "RESSALVAS" && pendencias.length > 0 && <ListaPendencias pendencias={pendencias} titulo="Ressalvas da CAPE" />}
               <EnviarAlvara solicitacaoId={s.id} recusa={s.alvaraRecusa} />
@@ -192,6 +192,11 @@ export function RequerimentoCard({
                   <a href={`/api/alvara/${s.id}`} target="_blank" rel="noreferrer" style={{ fontWeight: 600 }}>
                     Alvará enviado
                   </a>
+                  {s.alvaraProjetoCaminho && (
+                    <a href={`/api/alvara/${s.id}?arquivo=projeto`} target="_blank" rel="noreferrer" style={{ fontWeight: 600 }}>
+                      Projeto carimbado enviado
+                    </a>
+                  )}
                   {s.alvaraArtCaminho && (
                     <a href={`/api/alvara/${s.id}?arquivo=art`} target="_blank" rel="noreferrer" style={{ fontWeight: 600 }}>
                       ART/RRT de execução enviada

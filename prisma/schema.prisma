@@ -100,6 +100,10 @@ enum DocumentoTipo {
   CAPA_IPTU
   MATRICULA
   LEVANTAMENTO_PLANIALTIMETRICO
+  // Só em projeto de mais de um lote: a unificação depende de aprovação prévia na
+  // Prefeitura (ver DOC_PROJETO_CONJUNTO).
+  PROJETO_APROVADO_PREFEITURA
+  ART_UNIFICACAO
   // Não obrigatório, como o projeto paisagístico (ver DOC_OPCIONAIS).
   OUTROS
 }
@@ -338,6 +342,10 @@ model Solicitacao {
   alvaraArtNome    String?
   alvaraArtCaminho String?
   alvaraArtTamanho Int?
+  // Projeto carimbado pela Prefeitura, também exigido para liberar a obra.
+  alvaraProjetoNome    String?
+  alvaraProjetoCaminho String?
+  alvaraProjetoTamanho Int?
   alvaraEnviadoEm  DateTime?
   alvaraRecusa     String?
   concluidaEm      DateTime?
@@ -544,6 +552,7 @@ enum ArquivoCategoria {
   DEVOLUTIVA         // apontamentos da CAPE ao RT
   ALVARA             // alvará de execução
   ART_EXECUCAO       // ART/RRT de execução enviada com o alvará
+  PROJETO_PREFEITURA // projeto carimbado pela Prefeitura, enviado com o alvará
   EVIDENCIA          // evidência de irregularidade
   VINCULO            // autorização do proprietário para o vínculo do RT
   DOCUMENTO_TECNICO  // documentos técnicos do empreendimento

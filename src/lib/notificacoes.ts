@@ -2,13 +2,14 @@ import { after } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { enviarEmail } from "@/lib/email";
 import { montarEmail } from "@/lib/email-layout";
-import { linkDoProprietario, linkDoRT, urlDoApp } from "@/lib/url-app";
-import { DOC_LABEL, DOC_ORDER, IRREGULARIDADE_LABEL } from "@/lib/status";
+import { linkDoRT, urlDoApp } from "@/lib/url-app";
+import { DOC_LABEL, docsObrigatorios, IRREGULARIDADE_LABEL } from "@/lib/status";
 import type { IrregularidadeTipo } from "@/generated/prisma/enums";
 
-// Cada mudança de etapa avisa por e-mail o RT e o proprietário, dizendo o que aconteceu,
-// o que cada um precisa fazer agora e o link de acesso. O envio roda depois da resposta
-// (after): a ação da CAPE ou do RT não espera o Resend, e e-mail que falha não desfaz a
+// Cada mudança de etapa avisa o RT por e-mail, dizendo o que aconteceu, o que ele precisa
+// fazer agora e o link de acesso. O proprietário só recebe o e-mail do protocolo
+// (acesso-proprietario.ts); o resto ele acompanha em /acompanhar. O envio roda depois da
+// resposta (after): a ação da CAPE ou do RT não espera o Resend, e e-mail que falha não desfaz a
 // mudança de etapa — fica registrado no log.
 export type EventoEtapa =
   | { tipo: "ANALISE_INICIADA" }
@@ -34,9 +35,8 @@ type Mensagem = {
   assunto: string;
   titulo: string;
   cor: string;
-  oQue: string; // o que aconteceu, para os dois
+  oQue: string;
   acaoRT: string;
-  acaoProprietario: string;
   detalhesTitulo?: string;
   detalhes?: string[];
 };
@@ -48,9 +48,7 @@ const AGUARDE = "Nenhuma ação é necessária agora. Você será avisado por e-
 const COMPLEMENTAR =
   "Acesse o sistema, abra a solicitação em Meus requerimentos, substitua os documentos indicados abaixo e clique em “Enviar complementação”.";
 
-async function mensagemDo(evento: EventoEtapa, solicitacaoId: string, nomeRT: string, prazoDias: number): Promise<Mensagem> {
-  const rtCuida = `O responsável técnico ${nomeRT} já foi avisado e é quem envia as correções. Nenhuma ação sua é necessária, mas vale conversar com ele sobre os ajustes.`;
-
+async function mensagemDo(evento: EventoEtapa, solicitacaoId: string, prazoDias: number): Promise<Mensagem> {
   switch (evento.tipo) {
     case "ANALISE_INICIADA":
       return {
@@ -59,14 +57,16 @@ async function mensagemDo(evento: EventoEtapa, solicitacaoId: string, nomeRT: st
         cor: AMARELO,
         oQue: `A CAPE validou a documentação e iniciou a análise técnica do projeto. O prazo de análise é de até ${prazoDias} dias úteis, contados a partir da validação documental.`,
         acaoRT: `${AGUARDE} Se o projeto tiver pendências, elas virão descritas item a item.`,
-        acaoProprietario: AGUARDE,
       };
 
     case "DOCUMENTACAO_DEVOLVIDA": {
       // O que o analista marcou na conferência: documento não validado (com a observação,
       // se houver) ou que nem chegou.
-      const docs = await prisma.solicitacaoDocumento.findMany({ where: { solicitacaoId } });
-      const detalhes = DOC_ORDER.flatMap((t) => {
+      const [docs, lotesAdicionais] = await Promise.all([
+        prisma.solicitacaoDocumento.findMany({ where: { solicitacaoId } }),
+        prisma.solicitacaoLoteAdicional.count({ where: { solicitacaoId } }),
+      ]);
+      const detalhes = docsObrigatorios(lotesAdicionais).flatMap((t) => {
         const d = docs.find((x) => x.tipo === t);
         if (!d) return [`${DOC_LABEL[t].nome}: não enviado.`];
         if (d.validado) return [];
@@ -78,7 +78,6 @@ async function mensagemDo(evento: EventoEtapa, solicitacaoId: string, nomeRT: st
         cor: VERMELHO,
         oQue: `Na conferência da documentação, a CAPE encontrou documentos que precisam ser corrigidos ou reenviados. A análise do projeto só começa depois que a documentação estiver completa — o prazo de ${prazoDias} dias úteis conta a partir da validação.`,
         acaoRT: COMPLEMENTAR,
-        acaoProprietario: rtCuida,
         detalhesTitulo: "Documentos a complementar",
         detalhes,
       };
@@ -91,7 +90,6 @@ async function mensagemDo(evento: EventoEtapa, solicitacaoId: string, nomeRT: st
         cor: VERMELHO,
         oQue: `A análise técnica encontrou ${evento.itens.length} pendência(s) no projeto em relação às normas do loteamento. O projeto precisa ser corrigido e reenviado para nova análise.`,
         acaoRT: `Corrija o projeto conforme as pendências abaixo${evento.comArquivo ? " e o arquivo de apontamentos da CAPE, disponível na solicitação" : ""}. Depois, em Meus requerimentos, substitua os documentos afetados e clique em “Enviar complementação”.`,
-        acaoProprietario: rtCuida,
         detalhesTitulo: "Pendências do check-list",
         detalhes: [
           ...evento.itens.map((i) => (i.observacao ? `${i.texto}\nApontamento: ${i.observacao}` : i.texto)),
@@ -106,7 +104,6 @@ async function mensagemDo(evento: EventoEtapa, solicitacaoId: string, nomeRT: st
         cor: AMARELO,
         oQue: "A CAPE recebeu os documentos complementados. A solicitação volta para conferência e reanálise.",
         acaoRT: AGUARDE,
-        acaoProprietario: AGUARDE,
       };
 
     case "PROJETO_APROVADO":
@@ -115,8 +112,7 @@ async function mensagemDo(evento: EventoEtapa, solicitacaoId: string, nomeRT: st
         titulo: "Projeto aprovado",
         cor: VERDE,
         oQue: "A CAPE aprovou o projeto. A aprovação da CAPE não substitui a aprovação da Prefeitura: a obra só pode começar depois que o alvará de execução emitido pela Prefeitura for apresentado no sistema e conferido pela CAPE.",
-        acaoRT: `Obtenha o alvará de execução na Prefeitura e anexe-o (PDF) na solicitação, em Meus requerimentos, junto com a ART/RRT de execução atual e válida.${evento.comArquivo ? " A CAPE anexou um arquivo com observações, disponível na solicitação." : ""}`,
-        acaoProprietario: `O responsável técnico ${nomeRT} deve apresentar no sistema o alvará de execução emitido pela Prefeitura. Não inicie a obra antes da conferência do alvará pela CAPE.`,
+        acaoRT: `Obtenha o alvará de execução na Prefeitura e anexe-o (PDF) na solicitação, em Meus requerimentos, junto com o projeto carimbado pela Prefeitura e a ART/RRT de execução atual e válida.${evento.comArquivo ? " A CAPE anexou um arquivo com observações, disponível na solicitação." : ""}`,
         ...(evento.comentario && { detalhesTitulo: "Comentários da CAPE", detalhes: [evento.comentario] }),
       };
 
@@ -125,9 +121,8 @@ async function mensagemDo(evento: EventoEtapa, solicitacaoId: string, nomeRT: st
         assunto: "alvará de execução em conferência",
         titulo: "Alvará em conferência",
         cor: AMARELO,
-        oQue: "O alvará de execução e a ART/RRT de execução foram enviados e estão em conferência pela CAPE.",
+        oQue: "O alvará de execução, o projeto carimbado pela Prefeitura e a ART/RRT de execução foram enviados e estão em conferência pela CAPE.",
         acaoRT: "Aguarde a conferência. A obra só pode começar depois que a CAPE aceitar o alvará — você será avisado por e-mail.",
-        acaoProprietario: "Aguarde a conferência. A obra só pode começar depois que a CAPE aceitar o alvará — você será avisado por e-mail.",
       };
 
     case "ALVARA_ACEITO":
@@ -137,7 +132,6 @@ async function mensagemDo(evento: EventoEtapa, solicitacaoId: string, nomeRT: st
         cor: VERDE,
         oQue: "A CAPE conferiu e aceitou o alvará de execução. A obra está liberada para início.",
         acaoRT: "A obra pode começar. Execute conforme o projeto aprovado e as regras do loteamento; a CAPE acompanha a execução e avisa se registrar alguma irregularidade.",
-        acaoProprietario: "A obra pode começar. Ela deve seguir o projeto aprovado e as regras do loteamento; a CAPE acompanha a execução.",
       };
 
     case "ALVARA_RECUSADO":
@@ -146,8 +140,7 @@ async function mensagemDo(evento: EventoEtapa, solicitacaoId: string, nomeRT: st
         titulo: "Alvará recusado",
         cor: VERMELHO,
         oQue: "A CAPE não aceitou o alvará de execução enviado. A obra continua sem liberação para início.",
-        acaoRT: "Anexe novamente o alvará de execução correto e a ART/RRT de execução atual (PDF) na solicitação, em Meus requerimentos.",
-        acaoProprietario: `O responsável técnico ${nomeRT} deve enviar o alvará correto. Não inicie a obra antes da liberação pela CAPE.`,
+        acaoRT: "Anexe novamente o alvará de execução correto, o projeto carimbado pela Prefeitura e a ART/RRT de execução atual (PDF) na solicitação, em Meus requerimentos.",
         detalhesTitulo: "Motivo",
         detalhes: [evento.motivo ?? "O documento enviado não é o alvará de execução válido para esta obra."],
       };
@@ -159,7 +152,6 @@ async function mensagemDo(evento: EventoEtapa, solicitacaoId: string, nomeRT: st
         cor: VERDE,
         oQue: "A CAPE registrou a conclusão da obra e arquivou a solicitação.",
         acaoRT: "Nenhuma ação é necessária. O histórico continua disponível no sistema.",
-        acaoProprietario: "Nenhuma ação é necessária. O histórico continua disponível para consulta.",
       };
 
     case "IRREGULARIDADE_REGISTRADA":
@@ -169,7 +161,6 @@ async function mensagemDo(evento: EventoEtapa, solicitacaoId: string, nomeRT: st
         cor: VERMELHO,
         oQue: `A CAPE registrou uma irregularidade na obra: ${IRREGULARIDADE_LABEL[evento.irregularidade]}.`,
         acaoRT: "Regularize a situação descrita abaixo o quanto antes e informe a CAPE. A solicitação só pode ser encerrada depois que a irregularidade for regularizada.",
-        acaoProprietario: `Converse com o responsável técnico ${nomeRT} e providencie a regularização. A obra só pode ser encerrada depois que a irregularidade for regularizada.`,
         detalhesTitulo: "Descrição",
         detalhes: [evento.descricao],
       };
@@ -181,7 +172,6 @@ async function mensagemDo(evento: EventoEtapa, solicitacaoId: string, nomeRT: st
         cor: VERDE,
         oQue: `A CAPE registrou como regularizada a irregularidade: ${IRREGULARIDADE_LABEL[evento.irregularidade]}.`,
         acaoRT: "Nenhuma ação é necessária. Siga a execução conforme o projeto aprovado.",
-        acaoProprietario: "Nenhuma ação é necessária.",
       };
   }
 }
@@ -191,8 +181,6 @@ async function enviarNotificacao(solicitacaoId: string, evento: EventoEtapa, bas
     where: { id: solicitacaoId },
     select: {
       protocolo: true,
-      proprietarioEmail: true,
-      responsavelTecnicoNome: true,
       responsavelTecnicoEmail: true,
       prazoDias: true,
       lote: {
@@ -205,43 +193,24 @@ async function enviarNotificacao(solicitacaoId: string, evento: EventoEtapa, bas
       },
     },
   });
-  const m = await mensagemDo(evento, solicitacaoId, sol.responsavelTecnicoNome, sol.prazoDias);
-  const comum = {
-    assunto: `CAPE Aprova — ${sol.protocolo}: ${m.assunto}`,
-    cabecalho: `Solicitação ${sol.protocolo}`,
-    titulo: m.titulo,
-    cor: m.cor,
-    dados: [["Lote", `${sol.lote.empreendimento.nome} · ${sol.lote.quadra.nome} L${sol.lote.numero}`]] as [string, string][],
-    detalhesTitulo: m.detalhesTitulo,
-    detalhes: m.detalhes,
-  };
-
-  const envios: Promise<unknown>[] = [];
   const rt = emailsDoRT(sol);
-  if (rt.length > 0) {
-    envios.push(
-      enviarEmail({
-        para: rt,
-        ...montarEmail({ ...comum, paragrafos: [m.oQue], acao: m.acaoRT, link: { url: linkDoRT(base), rotulo: "Acessar o sistema" } }),
-      }),
-    );
-  }
-  // Sem e-mail do proprietário (protocolos antigos): só o RT é avisado.
-  if (sol.proprietarioEmail) {
-    envios.push(
-      enviarEmail({
-        para: [sol.proprietarioEmail],
-        ...montarEmail({
-          ...comum,
-          paragrafos: [m.oQue],
-          acao: m.acaoProprietario,
-          link: { url: linkDoProprietario(base, sol.protocolo), rotulo: "Acompanhar a solicitação" },
-          rodape: "Este é um e-mail automático da CAPE Aprova. Para acompanhar, use o protocolo e a senha recebidos no protocolo da solicitação; dúvidas sobre o projeto, fale com o responsável técnico.",
-        }),
-      }),
-    );
-  }
-  await Promise.all(envios);
+  if (rt.length === 0) return;
+  const m = await mensagemDo(evento, solicitacaoId, sol.prazoDias);
+  await enviarEmail({
+    para: rt,
+    ...montarEmail({
+      assunto: `CAPE Aprova — ${sol.protocolo}: ${m.assunto}`,
+      cabecalho: `Solicitação ${sol.protocolo}`,
+      titulo: m.titulo,
+      cor: m.cor,
+      dados: [["Lote", `${sol.lote.empreendimento.nome} · ${sol.lote.quadra.nome} L${sol.lote.numero}`]],
+      detalhesTitulo: m.detalhesTitulo,
+      detalhes: m.detalhes,
+      paragrafos: [m.oQue],
+      acao: m.acaoRT,
+      link: { url: linkDoRT(base), rotulo: "Acessar o sistema" },
+    }),
+  });
 }
 
 // Chamar depois de gravada a mudança de etapa. O endereço do app é lido já (vem da

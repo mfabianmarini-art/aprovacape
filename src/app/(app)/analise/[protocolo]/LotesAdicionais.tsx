@@ -54,7 +54,7 @@ export function LotesAdicionais({ sol }: { sol: Sol }) {
         Lote principal: <strong>{rotuloPrincipal}</strong>, já vinculado ao RT
         {sol.lote.rt ? ` ${sol.lote.rt.name}` : ""} · proprietário {titular(referenciaDoLote(principal))}.
         {pendentes > 0 &&
-          " Confira na matrícula anexada que os demais lotes são do mesmo proprietário e aprove ou recuse cada vínculo. O projeto só pode ser aprovado depois disso."}
+          " Confira que os demais lotes são do mesmo proprietário e aprove ou recuse cada vínculo. O projeto só pode ser aprovado depois disso."}
       </div>
 
       {conferirContiguidade && (
@@ -108,7 +108,7 @@ export function LotesAdicionais({ sol }: { sol: Sol }) {
             )}
             {conf.situacao === "sem-referencia" && a.status === "PENDENTE" && (
               <div style={{ fontSize: 12, color: "#8A5210", lineHeight: 1.45 }}>
-                Sem proprietário cadastrado para comparar — confira pela matrícula anexada à solicitação.
+                Sem proprietário cadastrado para comparar — confira pela matrícula, se anexada, ou recuse indicando o que falta.
               </div>
             )}
             {conf.situacao === "confere" && a.status === "PENDENTE" && (

@@ -22,6 +22,7 @@ export const SELECT_VERSOES_ANTERIORES = {
 const CATEGORIA: Partial<Record<ArquivoCategoria, string>> = {
   ALVARA: "Alvará de execução",
   ART_EXECUCAO: "ART/RRT de execução",
+  PROJETO_PREFEITURA: "Projeto carimbado pela Prefeitura",
   DEVOLUTIVA: "Apontamentos da CAPE",
   EVIDENCIA: "Evidência",
   RECUPERADO: "Arquivo anterior",

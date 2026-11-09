@@ -25,24 +25,32 @@ export const DOC_LABEL: Record<DocumentoTipo, { nome: string }> = {
   CAPA_IPTU: { nome: "Capa do IPTU" },
   MATRICULA: { nome: "Matrícula do lote" },
   LEVANTAMENTO_PLANIALTIMETRICO: { nome: "Levantamento planialtimétrico" },
+  PROJETO_APROVADO_PREFEITURA: { nome: "Projeto aprovado na Prefeitura" },
+  ART_UNIFICACAO: { nome: "ART/RRT da unificação dos lotes" },
   OUTROS: { nome: "Outros documentos" },
 };
 
-// Obrigatórios: entram na conferência documental e travam o envio enquanto faltarem.
+// Obrigatórios em toda solicitação: entram na conferência documental e travam o envio
+// enquanto faltarem. Para saber o que uma solicitação exige, use docsObrigatorios.
 export const DOC_ORDER: DocumentoTipo[] = [
   "PROJETO_ARQUITETONICO",
   "PROJETO_ARQUITETONICO_DWG",
   "ART_RRT_PROJETO",
-  "ART_RRT_EXECUCAO",
   "MEMORIAL_DESCRITIVO",
-  "CAPA_IPTU",
-  "MATRICULA",
   "LEVANTAMENTO_PLANIALTIMETRICO",
 ];
 
+// Exigidos a mais em projeto de mais de um lote: a unificação precisa de aprovação prévia
+// na Prefeitura.
+export const DOC_PROJETO_CONJUNTO: DocumentoTipo[] = ["PROJETO_APROVADO_PREFEITURA", "ART_UNIFICACAO"];
+
+export function docsObrigatorios(lotesAdicionais: number): DocumentoTipo[] {
+  return lotesAdicionais > 0 ? [...DOC_ORDER, ...DOC_PROJETO_CONJUNTO] : DOC_ORDER;
+}
+
 // Opcionais: anexados quando houver, ficam fora da conferência documental e não travam
 // nada — a CAPE só os consulta.
-export const DOC_OPCIONAIS: DocumentoTipo[] = ["PROJETO_PAISAGISTICO", "OUTROS"];
+export const DOC_OPCIONAIS: DocumentoTipo[] = ["ART_RRT_EXECUCAO", "CAPA_IPTU", "MATRICULA", "PROJETO_PAISAGISTICO", "OUTROS"];
 
 // Formato e tamanho aceitos por documento. O projeto arquitetônico vem em dois campos: PDF
 // para leitura e DWG para a CAPE conferir no CAD — vários DWG vão juntos num .zip, daí o
@@ -58,6 +66,8 @@ export const DOC_REGRAS: Record<DocumentoTipo, { extensoes: readonly string[]; m
   CAPA_IPTU: { extensoes: [".pdf"], maxMB: 5 },
   MATRICULA: { extensoes: [".pdf"], maxMB: 5 },
   LEVANTAMENTO_PLANIALTIMETRICO: { extensoes: [".pdf", ".dwg"], maxMB: 5 },
+  PROJETO_APROVADO_PREFEITURA: { extensoes: [".pdf"], maxMB: 5 },
+  ART_UNIFICACAO: { extensoes: [".pdf"], maxMB: 5 },
   OUTROS: { extensoes: [".pdf", ".dwg", ".jpg", ".jpeg", ".png"], maxMB: 10 },
 };
 

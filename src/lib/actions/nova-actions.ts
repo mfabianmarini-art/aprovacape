@@ -9,7 +9,7 @@ import { marcarSubstituido, registrarArquivo } from "@/lib/arquivos";
 import { requireRole } from "@/lib/require-role";
 import { validarDocumentoEnviado } from "@/lib/upload-documento";
 import { descartarArquivo, lerArquivoEnviado } from "@/lib/upload-direto";
-import { DOC_ORDER } from "@/lib/status";
+import { docsObrigatorios } from "@/lib/status";
 import { emitirAcessoProprietario } from "@/lib/acesso-proprietario";
 import type { DocumentoTipo } from "@/generated/prisma/enums";
 
@@ -201,7 +201,7 @@ export async function enviarSolicitacaoAction(_prev: unknown, formData: FormData
     return { error: `${SO_LOTES_DA_QUADRA} Cancele este rascunho e abra outro.` };
   }
 
-  const faltando = DOC_ORDER.filter((t) => !sol.documentos.find((d) => d.tipo === t));
+  const faltando = docsObrigatorios(sol.lotesAdicionais.length).filter((t) => !sol.documentos.find((d) => d.tipo === t));
   if (faltando.length > 0) return { error: "Anexe todos os documentos do check-list antes de enviar." };
   const proprietarioEmail = sol.proprietarioEmail ?? parsed.data.proprietarioEmail;
   if (!proprietarioEmail) return { error: "Informe o e-mail do proprietário." };

@@ -5,13 +5,13 @@ import { prisma } from "@/lib/prisma";
 import { Prisma } from "@/generated/prisma/client";
 import { requireRole } from "@/lib/require-role";
 import { descartarArquivo, receberArquivo } from "@/lib/upload-direto";
-import { DOC_LABEL, DOC_ORDER } from "@/lib/status";
+import { DOC_LABEL, docsObrigatorios } from "@/lib/status";
 import { notificarEtapa } from "@/lib/notificacoes";
 import { registrarArquivo } from "@/lib/arquivos";
 
 // As ações da solicitação são do responsável técnico do lote; o proprietário só acompanha.
 async function loadOwnedSolicitacao(session: Awaited<ReturnType<typeof requireRole>>, solicitacaoId: string) {
-  const sol = await prisma.solicitacao.findUniqueOrThrow({ where: { id: solicitacaoId }, include: { lote: true } });
+  const sol = await prisma.solicitacao.findUniqueOrThrow({ where: { id: solicitacaoId }, include: { lote: true, lotesAdicionais: { select: { id: true } } } });
   if (sol.lote.rtId !== session.user.id) throw new Error("Solicitação não pertence a este usuário.");
   return sol;
 }
@@ -26,7 +26,8 @@ export async function reenviarComplementacaoAction(solicitacaoId: string): Promi
   // Sem isto a devolução voltava à CAPE com obrigatório faltando — a validação documental
   // não fecha nunca e o check-list fica travado (caso do SOL-2026-004, DWG que não subiu).
   const documentos = await prisma.solicitacaoDocumento.findMany({ where: { solicitacaoId: sol.id } });
-  const faltando = DOC_ORDER.filter((t) => !documentos.some((d) => d.tipo === t));
+  const obrigatorios = docsObrigatorios(sol.lotesAdicionais.length);
+  const faltando = obrigatorios.filter((t) => !documentos.some((d) => d.tipo === t));
   if (faltando.length > 0) {
     return { error: `Envie antes os documentos obrigatórios que faltam: ${faltando.map((t) => DOC_LABEL[t].nome).join(", ")}.` };
   }
@@ -54,7 +55,7 @@ export async function reenviarComplementacaoAction(solicitacaoId: string): Promi
   // a CAPE a reconferir arquivos intactos a cada rodada.
   // OUTROS não entra na conferência documental (não é obrigatório e não tem checkbox de
   // validação), então não pode impedir `documentacaoValidada` de fechar.
-  const todosValidados = DOC_ORDER.every((t) => documentos.find((d) => d.tipo === t)?.validado);
+  const todosValidados = obrigatorios.every((t) => documentos.find((d) => d.tipo === t)?.validado);
 
   await prisma.$transaction([
     prisma.solicitacao.update({
@@ -75,7 +76,7 @@ export async function reenviarComplementacaoAction(solicitacaoId: string): Promi
         solicitacaoId: sol.id,
         tipo: "REENVIO_RECEBIDO",
         texto: (() => {
-          const trocados = DOC_ORDER.filter((t) => !documentos.find((d) => d.tipo === t)?.validado).length;
+          const trocados = obrigatorios.filter((t) => !documentos.find((d) => d.tipo === t)?.validado).length;
           const oQue = trocados === 0 ? "sem troca de arquivos" : `${trocados} documento(s) a reanalisar`;
           return conta
             ? `Reenvio ${reenvios} de ${emp.reenviosSemTaxa} recebido — ${oQue}.`
@@ -95,27 +96,35 @@ export async function reenviarComplementacaoAction(solicitacaoId: string): Promi
 }
 
 // O alvará é documento da Prefeitura: o RT anexa, mas quem libera o início da obra é a
-// CAPE, depois de conferir. Junto vai a ART/RRT de execução atual e válida — é ela que
-// identifica quem responde pela obra a partir daqui.
+// CAPE, depois de conferir. Junto vão o projeto carimbado pela Prefeitura e a ART/RRT de
+// execução atual e válida — é ela que identifica quem responde pela obra a partir daqui.
 export async function enviarAlvaraAction(solicitacaoId: string, _prev: unknown, formData: FormData) {
   const session = await requireRole("RESPONSAVEL_TECNICO");
   const sol = await loadOwnedSolicitacao(session, solicitacaoId);
-  // Os dois PDFs já subiram direto ao Blob (upload-cliente.ts); qualquer recusa os apaga.
+  // Os três PDFs já subiram direto ao Blob (upload-cliente.ts); qualquer recusa os apaga.
   const alvaraPath = String(formData.get("pathname") ?? "");
   const artPath = String(formData.get("artPathname") ?? "");
+  const projetoPath = String(formData.get("projetoPathname") ?? "");
   const recusar = async (error: string) => {
-    await Promise.all([alvaraPath, artPath].filter(Boolean).map(descartarArquivo));
+    await Promise.all([alvaraPath, artPath, projetoPath].filter(Boolean).map(descartarArquivo));
     return { error };
   };
   if (sol.status !== "RESSALVAS" && sol.status !== "APROVADA") return recusar("Esta solicitação não está aguardando o alvará.");
   if (!alvaraPath) return recusar("Anexe o alvará de execução.");
+  if (!projetoPath) return recusar("Anexe o projeto carimbado pela Prefeitura.");
   if (!artPath) return recusar("Anexe a ART/RRT de execução atual e válida.");
 
   const destino = { destino: "alvara", solicitacaoId: sol.id } as const;
   const alvaraNome = String(formData.get("nomeArquivo") ?? "").slice(0, 255);
   const artNome = String(formData.get("artNomeArquivo") ?? "").slice(0, 255);
-  const [alvara, art] = await Promise.all([receberArquivo(alvaraPath, alvaraNome, destino), receberArquivo(artPath, artNome, destino)]);
+  const projetoNome = String(formData.get("projetoNomeArquivo") ?? "").slice(0, 255);
+  const [alvara, art, projeto] = await Promise.all([
+    receberArquivo(alvaraPath, alvaraNome, destino),
+    receberArquivo(artPath, artNome, destino),
+    receberArquivo(projetoPath, projetoNome, destino),
+  ]);
   if ("erro" in alvara) return recusar(`Alvará: ${alvara.erro}`);
+  if ("erro" in projeto) return recusar(`Projeto carimbado: ${projeto.erro}`);
   if ("erro" in art) return recusar(`ART/RRT de execução: ${art.erro}`);
   const saved = { nomeArquivo: alvaraNome, caminhoArquivo: alvaraPath, tamanhoBytes: alvara.tamanho };
 
@@ -133,9 +142,22 @@ export async function enviarAlvaraAction(solicitacaoId: string, _prev: unknown, 
           alvaraArtNome: artNome,
           alvaraArtCaminho: artPath,
           alvaraArtTamanho: art.tamanho,
+          alvaraProjetoNome: projetoNome,
+          alvaraProjetoCaminho: projetoPath,
+          alvaraProjetoTamanho: projeto.tamanho,
           alvaraEnviadoEm: new Date(),
           alvaraRecusa: null,
         },
+      }),
+      registrarArquivo({
+        caminho: projetoPath,
+        nome: projetoNome,
+        tamanho: projeto.tamanho,
+        hash: String(formData.get("projetoHash") ?? ""),
+        categoria: "PROJETO_PREFEITURA",
+        solicitacaoId: sol.id,
+        empreendimentoId: sol.lote.empreendimentoId,
+        enviadoPorId: session.user.id,
       }),
       registrarArquivo({
         caminho: artPath,
@@ -161,7 +183,7 @@ export async function enviarAlvaraAction(solicitacaoId: string, _prev: unknown, 
         data: {
           solicitacaoId: sol.id,
           tipo: "ALVARA_ENVIADO",
-          texto: "Alvará de execução e ART/RRT de execução enviados. Aguardando conferência da CAPE para liberar o início da obra.",
+          texto: "Alvará de execução, projeto carimbado pela Prefeitura e ART/RRT de execução enviados. Aguardando conferência da CAPE para liberar o início da obra.",
           cor: "#4B3A7A",
           autorId: session.user.id,
         },

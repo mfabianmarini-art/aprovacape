@@ -8,7 +8,7 @@ import { Prisma } from "@/generated/prisma/client";
 import { requireRole } from "@/lib/require-role";
 import { ehZip, extensaoDe } from "@/lib/upload-documento";
 import { descartarArquivo, lerArquivoEnviado, receberArquivo } from "@/lib/upload-direto";
-import { DOC_ORDER, IRREGULARIDADE_LABEL } from "@/lib/status";
+import { docsObrigatorios, IRREGULARIDADE_LABEL } from "@/lib/status";
 import { emitirAcessoProprietario } from "@/lib/acesso-proprietario";
 import { notificarEtapa } from "@/lib/notificacoes";
 import { checklistDaSolicitacao } from "@/lib/queries/checklist";
@@ -20,7 +20,7 @@ import type { DocumentoTipo } from "@/generated/prisma/enums";
 async function loadSolicitacao(solicitacaoId: string) {
   return prisma.solicitacao.findUniqueOrThrow({
     where: { id: solicitacaoId },
-    include: { documentos: true, lote: { include: { empreendimento: true } } },
+    include: { documentos: true, lote: { include: { empreendimento: true } }, lotesAdicionais: { select: { id: true } } },
   });
 }
 
@@ -46,7 +46,7 @@ export async function toggleDocumentoAction(solicitacaoId: string, tipo: Documen
   });
 
   const updated = await prisma.solicitacaoDocumento.findMany({ where: { solicitacaoId } });
-  const allValidados = DOC_ORDER.every((t) => updated.find((d) => d.tipo === t)?.validado);
+  const allValidados = docsObrigatorios(sol.lotesAdicionais.length).every((t) => updated.find((d) => d.tipo === t)?.validado);
   // O prazo de análise corre da validação documental: começa quando o último documento é
   // validado e, se um deles for desmarcado antes da análise, volta a esperar.
   const prazoInicioEm = allValidados ? (sol.prazoInicioEm ?? new Date()) : sol.status === "ENVIADA" ? null : sol.prazoInicioEm;
@@ -111,7 +111,7 @@ export async function devolverDocumentacaoAction(solicitacaoId: string) {
   // deve render outro evento no histórico.
   if (sol.status === "COMPLEMENTO") return;
   // Nada pendente na conferência documental: não há o que pedir de volta.
-  if (DOC_ORDER.every((t) => sol.documentos.find((d) => d.tipo === t)?.validado)) return;
+  if (docsObrigatorios(sol.lotesAdicionais.length).every((t) => sol.documentos.find((d) => d.tipo === t)?.validado)) return;
 
   const ok = await umaVez(() =>
     prisma.$transaction([
@@ -159,7 +159,12 @@ export async function decidirItemAction(solicitacaoId: string, itemId: string, d
 
   if (sol.status === "ENVIADA") {
     // Condicionado ao status: dois cliques simultâneos não mandam dois avisos.
-    const { count } = await prisma.solicitacao.updateMany({ where: { id: solicitacaoId, status: "ENVIADA" }, data: { status: "ANALISE" } });
+    // O check-list só abre com a documentação validada. Pedido protocolado quando havia mais
+    // documentos obrigatórios pode chegar aqui sem ter fechado a validação pelo checkbox.
+    const { count } = await prisma.solicitacao.updateMany({
+      where: { id: solicitacaoId, status: "ENVIADA" },
+      data: { status: "ANALISE", documentacaoValidada: true, prazoInicioEm: sol.prazoInicioEm ?? new Date() },
+    });
     if (count === 1) await notificarEtapa(solicitacaoId, { tipo: "ANALISE_INICIADA" });
   }
 
@@ -312,6 +317,9 @@ export async function aceitarAlvaraAction(solicitacaoId: string) {
   const session = await requireRole("ADMIN_CAPE", "CAPE_ANALISTA");
   const sol = await prisma.solicitacao.findUniqueOrThrow({ where: { id: solicitacaoId } });
   if (sol.status !== "ALVARA_CONFERENCIA") return;
+  // Os três são requisito da liberação. Falta em envio anterior à exigência: a CAPE recusa
+  // e o RT manda de novo.
+  if (!sol.alvaraCaminho || !sol.alvaraProjetoCaminho || !sol.alvaraArtCaminho) return;
 
   await prisma.$transaction([
     prisma.solicitacao.update({
@@ -356,13 +364,17 @@ export async function recusarAlvaraAction(solicitacaoId: string, formData: FormD
         alvaraArtNome: null,
         alvaraArtCaminho: null,
         alvaraArtTamanho: null,
+        alvaraProjetoNome: null,
+        alvaraProjetoCaminho: null,
+        alvaraProjetoTamanho: null,
         alvaraEnviadoEm: null,
         alvaraRecusa: motivo,
       },
     }),
-    // Alvará e ART recusados saem da solicitação; os arquivos ficam como versões anteriores
-    // até a liberação da obra. O RT reenvia os dois.
+    // Os documentos recusados saem da solicitação; os arquivos ficam como versões anteriores
+    // até a liberação da obra. O RT reenvia os três.
     marcarSubstituido(sol.alvaraCaminho),
+    marcarSubstituido(sol.alvaraProjetoCaminho),
     marcarSubstituido(sol.alvaraArtCaminho),
     prisma.historicoEvento.create({
       data: {

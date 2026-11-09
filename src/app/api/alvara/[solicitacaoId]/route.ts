@@ -10,12 +10,16 @@ export async function GET(req: Request, { params }: { params: Promise<{ solicita
 
   const { solicitacaoId } = await params;
   const sol = await prisma.solicitacao.findUnique({ where: { id: solicitacaoId }, include: INCLUI_LOTE_E_SINDICO });
-  // ?arquivo=art: a ART/RRT de execução enviada junto com o alvará.
-  const art = new URL(req.url).searchParams.get("arquivo") === "art";
-  const caminho = art ? sol?.alvaraArtCaminho : sol?.alvaraCaminho;
-  if (!sol || !caminho) return new NextResponse("Não encontrado.", { status: 404 });
+  // ?arquivo=art ou ?arquivo=projeto: o que foi enviado junto com o alvará.
+  const arquivo = new URL(req.url).searchParams.get("arquivo");
+  const doc =
+    arquivo === "art"
+      ? { caminho: sol?.alvaraArtCaminho, nome: sol?.alvaraArtNome, padrao: "art-execucao.pdf" }
+      : arquivo === "projeto"
+        ? { caminho: sol?.alvaraProjetoCaminho, nome: sol?.alvaraProjetoNome, padrao: "projeto-carimbado.pdf" }
+        : { caminho: sol?.alvaraCaminho, nome: sol?.alvaraNome, padrao: "alvara.pdf" };
+  if (!sol || !doc.caminho) return new NextResponse("Não encontrado.", { status: 404 });
   if (!podeVerArquivosDaSolicitacao(session.user, sol)) return new NextResponse("Sem permissão.", { status: 403 });
 
-  const nome = (art ? sol.alvaraArtNome : sol.alvaraNome) ?? (art ? "art-execucao.pdf" : "alvara.pdf");
-  return servirArquivo(req, { caminho, nome, usuarioId: session.user.id });
+  return servirArquivo(req, { caminho: doc.caminho, nome: doc.nome ?? doc.padrao, usuarioId: session.user.id });
 }

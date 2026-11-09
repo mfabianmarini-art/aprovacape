@@ -2,6 +2,6 @@
 // visível mesmo com o card fechado. Nulo quando a vez é da CAPE.
 export function proximaAcaoDoRT(status: string) {
   if (status === "COMPLEMENTO") return "Corrigir os arquivos apontados e reenviar";
-  if (status === "APROVADA" || status === "RESSALVAS") return "Enviar o alvará e a ART/RRT de execução";
+  if (status === "APROVADA" || status === "RESSALVAS") return "Enviar o alvará, o projeto carimbado e a ART/RRT de execução";
   return null;
 }
