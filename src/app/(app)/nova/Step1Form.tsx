@@ -93,12 +93,6 @@ export function Step1Form({
         </label>
         {maisDeUmLote && (
           <>
-            <span style={{ fontSize: 11.5, color: "#7A7472", lineHeight: 1.45 }}>
-              Indique os outros lotes do projeto: só lotes contíguos, da mesma quadra do lote principal
-              {quadra ? ` (${quadra.nome})` : ""}. Os que ainda não estão vinculados a você não impedem o envio: a CAPE confere
-              a titularidade de cada um na análise e aprova ou recusa o vínculo. Junte no mesmo PDF a matrícula e a capa do
-              IPTU de todos os lotes.
-            </span>
             <SeletorLotes
               lotes={lotesDaQuadra}
               excluidos={new Set([loteId, ...indicados])}
