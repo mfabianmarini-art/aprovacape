@@ -2,6 +2,8 @@
 
 import { useActionState, useState } from "react";
 import { enviarSolicitacaoAction } from "@/lib/actions/nova-actions";
+import { REGULAMENTO_ARQP_TEXTO } from "@/lib/regulamento-arqp";
+import { DeclaracaoArqp, type DadosDeclaracaoArqp } from "./DeclaracaoArqp";
 
 const inputStyle: React.CSSProperties = { border: "1px solid #DDD8CE", borderRadius: 4, padding: "10px 11px", fontSize: 13.5 };
 const labelTextStyle: React.CSSProperties = { fontSize: 11, letterSpacing: ".13em", textTransform: "uppercase", color: "#7A7472" };
@@ -20,9 +22,9 @@ const DECLARACOES = [
       "Declaro ciência de que é obrigatória a apresentação à CAPE da matrícula atualizada do imóvel assim que for liberado o TVO (Termo de Vistoria de Obra).",
   },
 ] as const;
-type Decl = (typeof DECLARACOES)[number]["id"];
+type Decl = (typeof DECLARACOES)[number]["id"] | "d5";
 
-export type PerfilRT = { nome: string; email: string; registro: string };
+export type PerfilRT = { nome: string; email: string; cpf: string; registro: string };
 
 function CamposRT({ prefixo, inicial }: { prefixo: "rt" | "rtExec"; inicial?: PerfilRT }) {
   return (
@@ -43,12 +45,23 @@ function CamposRT({ prefixo, inicial }: { prefixo: "rt" | "rtExec"; inicial?: Pe
   );
 }
 
-export function Step3Send({ rascunho, perfilRT, emailProprietario }: { rascunho: { id: string }; perfilRT: PerfilRT; emailProprietario: string | null }) {
+export function Step3Send({
+  rascunho,
+  perfilRT,
+  emailProprietario,
+  regulamentoArqp,
+}: {
+  rascunho: { id: string };
+  perfilRT: PerfilRT;
+  emailProprietario: string | null;
+  regulamentoArqp: DadosDeclaracaoArqp | null;
+}) {
   const [state, formAction, pending] = useActionState(enviarSolicitacaoAction, null as { error?: string } | null);
-  const [decl, setDecl] = useState<Record<Decl, boolean>>({ d1: false, d2: false, d3: false, d4: false });
+  const [decl, setDecl] = useState<Record<Decl, boolean>>({ d1: false, d2: false, d3: false, d4: false, d5: false });
   // Sem resposta pré-marcada: quem envia decide de propósito quem responde pela execução.
   const [mesmoRT, setMesmoRT] = useState<"sim" | "nao" | "a_contratar" | null>(null);
-  const declaracoesOk = DECLARACOES.every((d) => decl[d.id]);
+  const declaracoes: { id: Decl; texto: string }[] = regulamentoArqp ? [...DECLARACOES, { id: "d5", texto: REGULAMENTO_ARQP_TEXTO }] : [...DECLARACOES];
+  const declaracoesOk = declaracoes.every((d) => decl[d.id]);
   const podeEnviar = declaracoesOk && mesmoRT !== null;
 
   return (
@@ -115,17 +128,23 @@ export function Step3Send({ rascunho, perfilRT, emailProprietario }: { rascunho:
 
       <div style={{ background: "#FAF9F6", border: "1px solid #EDE9E1", borderRadius: 4, padding: "16px 18px", display: "flex", flexDirection: "column", gap: 9 }}>
         <div style={labelTextStyle}>Declarações obrigatórias</div>
-        {DECLARACOES.map((d) => (
-          <label key={d.id} style={{ display: "grid", gridTemplateColumns: "18px 1fr", gap: 10, alignItems: "start", cursor: "pointer" }}>
+        {declaracoes.map((d) => (
+          <div key={d.id} style={{ display: "grid", gridTemplateColumns: "18px 1fr", gap: 10, alignItems: "start" }}>
             <input
+              id={`declaracao-${d.id}`}
               type="checkbox"
               name={d.id}
               checked={decl[d.id]}
               onChange={(e) => setDecl((s) => ({ ...s, [d.id]: e.target.checked }))}
               style={{ width: 16, height: 16, marginTop: 2, accentColor: "#E01B22", cursor: "pointer" }}
             />
-            <span style={{ fontSize: 12.5, lineHeight: 1.5, color: "#3B4653" }}>{d.texto}</span>
-          </label>
+            <div style={{ fontSize: 12.5, lineHeight: 1.5, color: "#3B4653" }}>
+              <label htmlFor={`declaracao-${d.id}`} style={{ cursor: "pointer" }}>
+                {d.texto}
+              </label>
+              {d.id === "d5" && regulamentoArqp && <DeclaracaoArqp dados={regulamentoArqp} />}
+            </div>
+          </div>
         ))}
       </div>
 
@@ -137,7 +156,7 @@ export function Step3Send({ rascunho, perfilRT, emailProprietario }: { rascunho:
             ? "Pronto para envio."
             : mesmoRT === null
               ? "Informe quem é o responsável pela execução e aceite as declarações para enviar."
-              : `Aceite as ${DECLARACOES.length} declarações para enviar.`}
+              : `Aceite as ${declaracoes.length} declarações para enviar.`}
         </div>
         <div style={{ display: "flex", gap: 9 }}>
           <a

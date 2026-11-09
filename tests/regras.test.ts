@@ -147,6 +147,13 @@ test("responsável pela execução: nome, registro e e-mail válidos", async () 
   assert.ok(!rtExecucaoSchema.safeParse({ ...ok, rtExecEmail: "ana" }).success);
 });
 
+test("declaração da ARQP só no Quinta da Primavera", async () => {
+  const { exigeRegulamentoArqp } = await import("@/lib/regulamento-arqp");
+  assert.ok(exigeRegulamentoArqp("Quinta da Primavera"));
+  assert.ok(exigeRegulamentoArqp(" quinta da primavera "));
+  assert.ok(!exigeRegulamentoArqp("Outro Residencial"));
+});
+
 test("lote adicional: mesmo proprietário do lote principal", async () => {
   const { titularidadeEntreLotes } = await import("@/lib/conferencia-vinculo");
   const lote = (titularCpf: string | null, contaCpf?: string) => ({

@@ -12,6 +12,7 @@ import { descartarArquivo, lerArquivoEnviado } from "@/lib/upload-direto";
 import { DOC_PROJETO_CONJUNTO, docsObrigatorios } from "@/lib/status";
 import { emitirAcessoProprietario } from "@/lib/acesso-proprietario";
 import { rtExecucaoSchema } from "@/lib/rt-execucao";
+import { exigeRegulamentoArqp } from "@/lib/regulamento-arqp";
 import type { DocumentoTipo } from "@/generated/prisma/enums";
 
 // Só o responsável técnico abre e movimenta solicitações. O proprietário acompanha, sem
@@ -206,6 +207,8 @@ const enviarSchema = z.object({
   d3: z.literal("on"),
   // Matrícula atualizada após o TVO.
   d4: z.literal("on"),
+  // Regulamento de Obras da ARQP: só exigida no Quinta da Primavera.
+  d5: z.literal("on").optional(),
 });
 
 // "Sim" na pergunta do passo 3: o RT do projeto também responde pela execução, e os
@@ -240,6 +243,8 @@ export async function enviarSolicitacaoAction(_prev: unknown, formData: FormData
   });
   if (sol.lote.rtId !== session.user.id) return { error: "Solicitação não pertence a este usuário." };
   if (sol.status !== "RASCUNHO") return { error: "Esta solicitação já foi enviada." };
+  const exigeArqp = exigeRegulamentoArqp(sol.lote.empreendimento.nome);
+  if (exigeArqp && parsed.data.d5 !== "on") return { error: "Aceite a declaração do Regulamento de Obras da ARQP antes de enviar." };
   // Rascunho aberto antes da regra de contiguidade.
   if (sol.lotesAdicionais.some((a) => a.lote.quadraId !== sol.lote.quadraId)) {
     return { error: `${SO_LOTES_DA_QUADRA} Cancele este rascunho e abra outro.` };
@@ -287,7 +292,8 @@ export async function enviarSolicitacaoAction(_prev: unknown, formData: FormData
           data: {
             solicitacaoId: sol.id,
             tipo: "SOLICITACAO_ENVIADA",
-            texto: `Solicitação protocolada por ${session.user.name}.`,
+            // O aceite substitui a declaração assinada em papel: fica registrado quem aceitou e quando.
+            texto: `Solicitação protocolada por ${session.user.name}.${exigeArqp ? " Declarou ciência e concordância com o Regulamento de Obras - ARQP (item 1.53 do Regulamento Interno)." : ""}`,
             cor: "#A89F9F",
             autorId: session.user.id,
           },

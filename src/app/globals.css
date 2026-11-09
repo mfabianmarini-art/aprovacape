@@ -251,3 +251,7 @@ textarea {
     animation: none;
   }
 }
+
+.modal-documento::backdrop {
+  background: rgba(35, 31, 32, 0.55);
+}

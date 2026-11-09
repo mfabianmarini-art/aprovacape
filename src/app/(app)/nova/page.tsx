@@ -7,6 +7,7 @@ import { Step1Form } from "./Step1Form";
 import { Step2Uploads } from "./Step2Uploads";
 import { Step3Send } from "./Step3Send";
 import { RascunhosEmAndamento } from "./RascunhosEmAndamento";
+import { exigeRegulamentoArqp } from "@/lib/regulamento-arqp";
 
 export default async function NovaPage({
   searchParams,
@@ -98,9 +99,22 @@ export default async function NovaPage({
             {passo === 2 && rascunhoValido && <Step2Uploads rascunho={rascunhoValido} />}
             {passo === 3 && rascunhoValido && (
               <Step3Send
-                rascunho={rascunhoValido}
+                rascunho={{ id: rascunhoValido.id }}
                 perfilRT={perfilRT}
                 emailProprietario={rascunhoValido.proprietarioEmail}
+                regulamentoArqp={
+                  exigeRegulamentoArqp(rascunhoValido.lote.empreendimento.nome)
+                    ? {
+                        empreendimento: rascunhoValido.lote.empreendimento.nome,
+                        quadra: rascunhoValido.lote.quadra.nome,
+                        lotes: [rascunhoValido.lote, ...rascunhoValido.lotesAdicionais.map((a) => a.lote)].map((l) => l.numero),
+                        proprietario: rascunhoValido.lote.titularNome ?? rascunhoValido.lote.proprietario?.name ?? null,
+                        rtNome: perfilRT.nome,
+                        rtCpf: perfilRT.cpf,
+                        rtRegistro: perfilRT.registro,
+                      }
+                    : null
+                }
               />
             )}
           </section>

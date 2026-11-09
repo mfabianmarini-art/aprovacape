@@ -64,7 +64,7 @@ export async function getRascunho(id: string) {
     where: { id },
     include: {
       documentos: true,
-      lote: { include: { quadra: true, empreendimento: true } },
+      lote: { include: { quadra: true, empreendimento: true, proprietario: { select: { name: true } } } },
       lotesAdicionais: { include: { lote: { include: { quadra: true } } }, orderBy: { createdAt: "asc" } },
     },
   });
@@ -74,8 +74,8 @@ export async function getRascunho(id: string) {
 export async function getPerfilRT(userId: string) {
   const u = await prisma.user.findUniqueOrThrow({
     where: { id: userId },
-    select: { name: true, email: true, conselho: true, registroNumero: true, registroUf: true },
+    select: { name: true, email: true, cpf: true, conselho: true, registroNumero: true, registroUf: true },
   });
   const registro = u.registroNumero ? `${u.conselho ?? ""} ${u.registroNumero}${u.registroUf ? `/${u.registroUf}` : ""}`.trim() : "";
-  return { nome: u.name, email: u.email, registro };
+  return { nome: u.name, email: u.email, cpf: u.cpf, registro };
 }
