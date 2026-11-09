@@ -13,7 +13,7 @@ import { emitirAcessoProprietario } from "@/lib/acesso-proprietario";
 import { notificarEtapa } from "@/lib/notificacoes";
 import { checklistDaSolicitacao } from "@/lib/queries/checklist";
 import { partesDoItem } from "@/lib/checklist-texto";
-import { titularidadeEntreLotes } from "@/lib/conferencia-vinculo";
+import { rtAposDesvinculo, titularidadeEntreLotes } from "@/lib/conferencia-vinculo";
 import { excluirVersoesDaAprovacao, marcarSubstituido, registrarArquivo } from "@/lib/arquivos";
 import type { DocumentoTipo } from "@/generated/prisma/enums";
 
@@ -585,6 +585,7 @@ async function loadLoteAdicional(id: string) {
   return prisma.solicitacaoLoteAdicional.findUniqueOrThrow({
     where: { id },
     include: {
+      rtAnterior: conta,
       lote: { include: { quadra: { select: { nome: true } }, rt: conta, proprietario: conta } },
       solicitacao: { include: { lote: { include: { proprietario: conta, rt: conta } } } },
     },
@@ -618,7 +619,14 @@ export async function aprovarLoteAdicionalAction(id: string, formData: FormData)
     prisma.$transaction([
       prisma.solicitacaoLoteAdicional.update({
         where: { id, status: "PENDENTE" },
-        data: { status: "APROVADO", revisadoPorId: session.user.id, revisadoEm: new Date(), motivoRecusa: null },
+        data: {
+          status: "APROVADO",
+          revisadoPorId: session.user.id,
+          revisadoEm: new Date(),
+          motivoRecusa: null,
+          rtAlterado: lote.rtId !== rt.id,
+          rtAnteriorId: lote.rtId !== rt.id ? lote.rtId : null,
+        },
       }),
       prisma.lote.update({ where: { id: lote.id }, data: { rtId: rt.id } }),
       prisma.historicoEvento.create({
@@ -677,4 +685,77 @@ export async function recusarLoteAdicionalAction(id: string, formData: FormData)
   if (!ok) return;
 
   revalidateAll(sol.protocolo);
+}
+
+// Corrige uma aprovação feita por engano (lotes que, na planta, não fazem divisa). O lote
+// sai do projeto e o RT volta a ser o de antes da aprovação; a situação da solicitação não
+// muda. Por desfazer uma decisão já comunicada, o motivo é obrigatório.
+export async function desvincularLoteAdicionalAction(id: string, formData: FormData) {
+  const session = await requireRole("ADMIN_CAPE", "CAPE_ANALISTA");
+  const motivo = normalizarObservacao(String(formData.get("motivo") ?? ""));
+  if (!motivo) return;
+  const adicional = await loadLoteAdicional(id);
+  const { lote, solicitacao: sol, rtAnterior } = adicional;
+  if (adicional.status !== "APROVADO" || sol.status === "RASCUNHO") return;
+
+  const rtProjeto = sol.lote.rt;
+  const [projetosNoLote, outrasAprovacoes] = rtProjeto
+    ? await Promise.all([
+        prisma.solicitacao.count({ where: { loteId: lote.id, criadoPorId: rtProjeto.id, status: { not: "RASCUNHO" } } }),
+        prisma.solicitacaoLoteAdicional.count({ where: { loteId: lote.id, id: { not: id }, status: "APROVADO", solicitacao: { lote: { rtId: rtProjeto.id } } } }),
+      ])
+    : [0, 0];
+  const decisao = rtAposDesvinculo({
+    rtAlterado: adicional.rtAlterado,
+    rtAnteriorId: adicional.rtAnteriorId,
+    rtDoLote: lote.rtId,
+    rtDoProjeto: rtProjeto?.id ?? null,
+    retirarRt: formData.get("retirarRt") === "on",
+    temOutroProjeto: projetosNoLote + outrasAprovacoes > 0,
+  });
+  const restaurado = decisao.altera && decisao.rtId ? rtAnterior : null;
+  // A aprovação registrou a troca nas solicitações do lote; a volta fica registrada igual.
+  const solicitacoesDoLote = restaurado
+    ? await prisma.solicitacao.findMany({ where: { loteId: lote.id, status: { not: "RASCUNHO" } }, select: { id: true } })
+    : [];
+  const efeito = !decisao.altera
+    ? ""
+    : restaurado
+      ? ` O lote voltou ao responsável técnico ${restaurado.name}.`
+      : ` ${rtProjeto?.name} deixa de ser o responsável técnico deste lote.`;
+
+  const ok = await umaVez(() =>
+    prisma.$transaction([
+      prisma.solicitacaoLoteAdicional.update({
+        where: { id, status: "APROVADO" },
+        data: { status: "RECUSADO", revisadoPorId: session.user.id, revisadoEm: new Date(), motivoRecusa: motivo },
+      }),
+      ...(decisao.altera ? [prisma.lote.update({ where: { id: lote.id }, data: { rtId: decisao.rtId } })] : []),
+      prisma.historicoEvento.create({
+        data: {
+          solicitacaoId: sol.id,
+          tipo: "LOTE_ADICIONAL_RECUSADO",
+          texto: `${lote.quadra.nome} L${lote.numero} desvinculado pela CAPE: o lote deixa de fazer parte desta aprovação.${efeito}\nMotivo: ${motivo}`,
+          cor: "#8C2B22",
+          autorId: session.user.id,
+        },
+      }),
+      ...solicitacoesDoLote.map((s) =>
+        prisma.historicoEvento.create({
+          data: {
+            solicitacaoId: s.id,
+            tipo: "VINCULO_SUBSTITUIDO",
+            texto: `Responsável técnico do lote alterado pela CAPE: de ${rtProjeto?.name} para ${restaurado?.name} (desvínculo do projeto ${sol.protocolo}). As ações desta solicitação passam para o novo responsável.`,
+            cor: "#B4711A",
+            autorId: session.user.id,
+          },
+        }),
+      ),
+    ]),
+  );
+  if (!ok) return;
+
+  revalidateAll(sol.protocolo);
+  revalidatePath("/empreendimentos");
+  revalidatePath("/nova");
 }

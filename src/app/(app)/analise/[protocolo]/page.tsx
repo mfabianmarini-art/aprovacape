@@ -68,6 +68,7 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
   const avaliados = aprovados + reprovados + naoSeAplica;
   const lotesPendentes = sol.lotesAdicionais.filter((a) => a.status === "PENDENTE").length;
   const lotesRecusados = sol.lotesAdicionais.filter((a) => a.status === "RECUSADO").map((a) => `${a.lote.quadra.nome} L${a.lote.numero}`);
+  const lotesNoProjeto = sol.lotesAdicionais.filter((a) => a.status !== "RECUSADO").map((a) => `${a.lote.quadra.nome} L${a.lote.numero}`);
 
   let veredito: string;
   let vereditoCor: string;
@@ -127,9 +128,7 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
   const selCampos: [string, string][] = [
     ["Empreendimento", sol.lote.empreendimento.nome],
     ["Lote", `${sol.lote.quadra.nome} L${sol.lote.numero}`],
-    ...(sol.lotesAdicionais.length
-      ? [["Lotes adicionais", sol.lotesAdicionais.map((a) => `${a.lote.quadra.nome} L${a.lote.numero}`).join(", ")] as [string, string]]
-      : []),
+    ...(lotesNoProjeto.length ? [["Lotes adicionais", lotesNoProjeto.join(", ")] as [string, string]] : []),
     ["Proprietário", sol.lote.proprietario?.name ?? "—"],
     ["RT do projeto", `${sol.responsavelTecnicoNome} · ${sol.responsavelTecnicoRegistro}`],
     ["RT da execução", sol.rtExecucaoNome ? `${sol.rtExecucaoNome} · ${sol.rtExecucaoRegistro}` : "A contratar: será informado na liberação da obra"],

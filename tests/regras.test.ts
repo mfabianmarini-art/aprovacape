@@ -154,6 +154,18 @@ test("declaração da ARQP só no Quinta da Primavera", async () => {
   assert.ok(!exigeRegulamentoArqp("Outro Residencial"));
 });
 
+test("desvínculo de lote adicional só desfaz o que a aprovação fez", async () => {
+  const { rtAposDesvinculo } = await import("@/lib/conferencia-vinculo");
+  const base = { rtAlterado: true, rtAnteriorId: null, rtDoLote: "rt", rtDoProjeto: "rt", retirarRt: false, temOutroProjeto: false };
+  assert.deepEqual(rtAposDesvinculo(base), { altera: true, rtId: null }, "lote sem RT antes: volta a ficar sem");
+  assert.deepEqual(rtAposDesvinculo({ ...base, rtAnteriorId: "outro" }), { altera: true, rtId: "outro" }, "RT substituído volta");
+  assert.deepEqual(rtAposDesvinculo({ ...base, rtAlterado: false }), { altera: false }, "RT que já respondia pelo lote fica");
+  assert.deepEqual(rtAposDesvinculo({ ...base, temOutroProjeto: true }), { altera: false }, "RT com outro projeto no lote fica");
+  assert.deepEqual(rtAposDesvinculo({ ...base, rtDoLote: "terceiro" }), { altera: false }, "lote já passou a outro RT");
+  assert.deepEqual(rtAposDesvinculo({ ...base, rtAlterado: null }), { altera: false }, "sem registro: só com decisão explícita");
+  assert.deepEqual(rtAposDesvinculo({ ...base, rtAlterado: null, retirarRt: true }), { altera: true, rtId: null });
+});
+
 test("lote adicional: mesmo proprietário do lote principal", async () => {
   const { titularidadeEntreLotes } = await import("@/lib/conferencia-vinculo");
   const lote = (titularCpf: string | null, contaCpf?: string) => ({

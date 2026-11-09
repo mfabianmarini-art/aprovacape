@@ -19,6 +19,7 @@ export async function getAnalise(protocolo: string) {
       lotesAdicionais: {
         orderBy: { createdAt: "asc" },
         include: {
+          rtAnterior: { select: { name: true } },
           lote: {
             include: {
               quadra: { select: { nome: true } },

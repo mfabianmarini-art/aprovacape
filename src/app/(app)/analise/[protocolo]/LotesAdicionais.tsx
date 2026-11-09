@@ -1,7 +1,7 @@
 import { formatarCpf } from "@/lib/cpf";
 import { formatDateTime } from "@/lib/status";
 import { referenciaDoLote, titularidadeEntreLotes, type LoteParaConferencia } from "@/lib/conferencia-vinculo";
-import { aprovarLoteAdicionalAction, recusarLoteAdicionalAction } from "@/lib/actions/analise-actions";
+import { aprovarLoteAdicionalAction, desvincularLoteAdicionalAction, recusarLoteAdicionalAction } from "@/lib/actions/analise-actions";
 import type { getAnalise } from "@/lib/queries/analise";
 
 type Sol = NonNullable<Awaited<ReturnType<typeof getAnalise>>>["solicitacao"];
@@ -28,6 +28,7 @@ export function LotesAdicionais({ sol }: { sol: Sol }) {
   const restantes = sol.lotesAdicionais.filter((a) => a.status !== "RECUSADO");
   const numeros = [sol.lote.numero, ...restantes.map((a) => a.lote.numero)];
   const conferirContiguidade = pendentes > 0 || (restantes.length > 0 && restantes.length < sol.lotesAdicionais.length);
+  const parecerEmitido = ["APROVADA", "RESSALVAS", "ALVARA_CONFERENCIA", "EXECUCAO", "CONCLUIDA"].includes(sol.status);
 
   return (
     <section
@@ -44,7 +45,7 @@ export function LotesAdicionais({ sol }: { sol: Sol }) {
     >
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <div style={{ fontFamily: "var(--font-display)", fontSize: 17, fontWeight: 600, letterSpacing: ".04em", textTransform: "uppercase" }}>
-          Projeto em {sol.lotesAdicionais.length + 1} lotes
+          Projeto em {restantes.length + 1} {restantes.length ? "lotes" : "lote"}
         </div>
         <div style={{ fontSize: 11.5, color: pendentes ? "#8A5210" : "#7A7472", fontFamily: "var(--font-mono)" }}>
           {pendentes ? `${pendentes} lote(s) a conferir` : "todos os lotes conferidos"}
@@ -179,6 +180,47 @@ export function LotesAdicionais({ sol }: { sol: Sol }) {
                   </button>
                 </form>
               </div>
+            )}
+            {a.status === "APROVADO" && podeDecidir && (
+              <details>
+                <summary style={{ fontSize: 12, fontWeight: 600, color: "#8C2B22", cursor: "pointer" }}>Desvincular este lote</summary>
+                <form action={desvincularLoteAdicionalAction.bind(null, a.id)} style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 8 }}>
+                  <div style={{ fontSize: 12, color: "#4A5563", lineHeight: 1.45 }}>
+                    O lote sai deste projeto.{" "}
+                    {a.rtAlterado === true
+                      ? a.rtAnterior
+                        ? `O RT do lote volta a ser ${a.rtAnterior.name}.`
+                        : "O RT do projeto deixa de responder por este lote."
+                      : a.rtAlterado === false
+                        ? "O RT continua no lote, porque já respondia por ele antes da aprovação."
+                        : ""}
+                    {parecerEmitido && " A situação da solicitação não muda: o parecer já emitido continua valendo."}
+                  </div>
+                  {a.rtAlterado === null && (
+                    <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#3B4653", cursor: "pointer" }}>
+                      <input type="checkbox" name="retirarRt" />
+                      Retirar também o RT deste lote (esta aprovação não registrou se ele já respondia pelo lote)
+                    </label>
+                  )}
+                  <div style={{ display: "flex", gap: 9, alignItems: "flex-end", flexWrap: "wrap" }}>
+                    <input
+                      name="motivo"
+                      required
+                      pattern=".*\S.*"
+                      maxLength={1000}
+                      aria-label={`Motivo do desvínculo de ${rotulo}`}
+                      placeholder="Motivo (vai ao RT no histórico)"
+                      style={{ flex: 1, minWidth: 220, border: "1px solid #DDD8CE", borderRadius: 4, padding: "8px 10px", fontSize: 12.5 }}
+                    />
+                    <button
+                      type="submit"
+                      style={{ border: "1px solid #8C2B22", background: "#fff", color: "#8C2B22", borderRadius: 4, padding: "8px 13px", fontSize: 12.5, fontWeight: 600, cursor: "pointer" }}
+                    >
+                      Confirmar desvínculo
+                    </button>
+                  </div>
+                </form>
+              </details>
             )}
           </div>
         );

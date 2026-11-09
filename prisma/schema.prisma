@@ -182,6 +182,7 @@ model User {
   documentosTecnicosEnviados DocumentoTecnico[] @relation("DocumentoTecnicoEnviadoPor")
   lotesTitularAtualizados    Lote[]             @relation("LoteTitularAtualizadoPor")
   lotesAdicionaisRevisados   SolicitacaoLoteAdicional[] @relation("LoteAdicionalRevisadoPor")
+  lotesAdicionaisRtAnterior  SolicitacaoLoteAdicional[] @relation("LoteAdicionalRtAnterior")
   devolutivasTecnicas        DevolutivaTecnica[] @relation("DevolutivaTecnicaAutor")
   redefinicoesSenha          RedefinicaoSenha[]
   arquivosEnviados           Arquivo[]          @relation("ArquivoEnviadoPor")
@@ -401,6 +402,11 @@ model SolicitacaoLoteAdicional {
   revisadoEm    DateTime?
   // Vai no histórico da solicitação, que o RT e o proprietário acompanham.
   motivoRecusa  String?
+  // O que a aprovação fez em Lote.rtId, para o desvínculo desfazer só isso (ver
+  // rtAposDesvinculo). Nulo: ainda sem aprovação, ou aprovada antes deste registro existir.
+  rtAlterado    Boolean?
+  rtAnteriorId  String?
+  rtAnterior    User?         @relation("LoteAdicionalRtAnterior", fields: [rtAnteriorId], references: [id], onDelete: SetNull)
   createdAt     DateTime      @default(now())
 
   @@unique([solicitacaoId, loteId])

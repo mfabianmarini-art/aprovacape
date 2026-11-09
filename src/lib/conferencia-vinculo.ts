@@ -58,3 +58,20 @@ export function titularidadeEntreLotes(principal: LoteParaConferencia, adicional
   if (!p || !a) return { situacao: "sem-referencia", principal: p, adicional: a };
   return { situacao: mesmoCpf(p.cpf, a.cpf) ? "confere" : "divergente", principal: p, adicional: a };
 }
+
+// Quem fica como RT do lote quando a CAPE desfaz a aprovação de um lote adicional. Só mexe
+// no que aquela aprovação fez: não tira o RT que já respondia pelo lote, nem o que tem outro
+// projeto nele. Em aprovação sem registro do que fez, quem desvincula decide (retirarRt).
+export function rtAposDesvinculo(v: {
+  rtAlterado: boolean | null;
+  rtAnteriorId: string | null;
+  rtDoLote: string | null;
+  rtDoProjeto: string | null;
+  retirarRt: boolean;
+  temOutroProjeto: boolean;
+}): { altera: false } | { altera: true; rtId: string | null } {
+  if (!v.rtDoLote || v.rtDoLote !== v.rtDoProjeto || v.temOutroProjeto) return { altera: false };
+  if (v.rtAlterado === true) return { altera: true, rtId: v.rtAnteriorId };
+  if (v.rtAlterado === null && v.retirarRt) return { altera: true, rtId: null };
+  return { altera: false };
+}
