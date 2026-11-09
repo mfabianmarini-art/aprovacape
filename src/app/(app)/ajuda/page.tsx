@@ -130,6 +130,7 @@ const PASSOS: { id: string; titulo: string; onde?: { href: string; rotulo: strin
           execução e anexe, na própria solicitação, o <strong>alvará</strong>, o <strong>projeto carimbado pela Prefeitura</strong> e a{" "}
           <strong>ART/RRT de execução atual e válida</strong> (todos em PDF).
         </p>
+        <p style={texto}>Se no protocolo o profissional da execução ainda não estava contratado, informe-o nesta etapa.</p>
         <p style={texto}>A CAPE confere os três documentos. A obra só pode começar depois que forem aceitos — você recebe um e-mail.</p>
       </>
     ),

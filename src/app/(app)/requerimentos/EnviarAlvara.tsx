@@ -5,6 +5,14 @@ import { enviarAlvaraAction } from "@/lib/actions/requerimento-actions";
 import { enviarVarios, mensagemDeFalhaNoEnvio, ProblemaNoArquivo } from "@/lib/upload-cliente";
 
 type Escolha = { alvara: File | null; projeto: File | null; art: File | null };
+type RtExecucao = { nome: string; registro: string; email: string };
+
+const inputStyle: React.CSSProperties = { border: "1px solid #DDD8CE", borderRadius: 4, padding: "9px 11px", fontSize: 13, minWidth: 0 };
+const CAMPOS_RT = [
+  ["nome", "Nome", "text"],
+  ["registro", "Registro CAU / CREA", "text"],
+  ["email", "E-mail", "email"],
+] as const;
 
 function SeletorPdf({
   id,
@@ -59,19 +67,23 @@ function SeletorPdf({
 // Alvará da Prefeitura, projeto carimbado e ART/RRT de execução atual e válida: os três são
 // exigidos para a CAPE liberar o início da obra. Escolher não envia; o envio tranca a solicitação em
 // conferência, então o RT confere os nomes antes de confirmar.
-export function EnviarAlvara({ solicitacaoId, recusa }: { solicitacaoId: string; recusa: string | null }) {
+// rtExecucao: preenchido só quando o profissional da execução ficou para esta etapa (com o
+// que foi informado num envio anterior recusado, se houver).
+export function EnviarAlvara({ solicitacaoId, recusa, rtExecucao }: { solicitacaoId: string; recusa: string | null; rtExecucao: RtExecucao | null }) {
   const [state, formAction, registrando] = useActionState(enviarAlvaraAction.bind(null, solicitacaoId), null as { error?: string } | null);
   const [escolha, setEscolha] = useState<Escolha>({ alvara: null, projeto: null, art: null });
+  const [rt, setRt] = useState<RtExecucao>(rtExecucao ?? { nome: "", registro: "", email: "" });
   const [progresso, setProgresso] = useState<number | null>(null);
   const [erroEnvio, setErroEnvio] = useState<string | null>(null);
   const [, startTransition] = useTransition();
   const enviando = useRef(false);
   const pending = registrando || progresso !== null;
-  const completo = !!escolha.alvara && !!escolha.projeto && !!escolha.art;
+  const rtCompleto = !rtExecucao || (!!rt.nome.trim() && !!rt.registro.trim() && !!rt.email.trim());
+  const completo = !!escolha.alvara && !!escolha.projeto && !!escolha.art && rtCompleto;
 
   async function confirmar(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (!escolha.alvara || !escolha.projeto || !escolha.art || pending || enviando.current) return;
+    if (!escolha.alvara || !escolha.projeto || !escolha.art || !rtCompleto || pending || enviando.current) return;
     enviando.current = true;
     setErroEnvio(null);
     setProgresso(0);
@@ -80,6 +92,11 @@ export function EnviarAlvara({ solicitacaoId, recusa }: { solicitacaoId: string;
       // action confere e registra os três.
       const [alvara, projeto, art] = await enviarVarios([escolha.alvara, escolha.projeto, escolha.art], { destino: "alvara", solicitacaoId }, setProgresso);
       const fd = new FormData();
+      if (rtExecucao) {
+        fd.set("rtExecNome", rt.nome);
+        fd.set("rtExecRegistro", rt.registro);
+        fd.set("rtExecEmail", rt.email);
+      }
       fd.set("pathname", alvara.pathname);
       fd.set("nomeArquivo", alvara.nomeArquivo);
       fd.set("hash", alvara.hash);
@@ -104,6 +121,20 @@ export function EnviarAlvara({ solicitacaoId, recusa }: { solicitacaoId: string;
         <div style={{ fontSize: 12.5, color: "#8C2B22", background: "#FDF6F5", border: "1px solid #E8C9C4", borderRadius: 4, padding: "11px 13px", lineHeight: 1.45 }}>
           <strong>Envio anterior recusado pela CAPE:</strong> {recusa}
         </div>
+      )}
+
+      {rtExecucao && (
+        <fieldset style={{ border: "1px solid #EDE9E1", borderRadius: 4, padding: "12px 14px", margin: 0, display: "flex", flexDirection: "column", gap: 8 }}>
+          <legend style={{ fontSize: 13, fontWeight: 600, color: "#231F20", padding: "0 6px" }}>Responsável técnico pela execução</legend>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(190px,1fr))", gap: 10 }}>
+            {CAMPOS_RT.map(([campo, rotulo, tipo]) => (
+              <label key={campo} style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 11.5, color: "#7A7472" }}>
+                {rotulo}
+                <input type={tipo} required value={rt[campo]} onChange={(e) => setRt((r) => ({ ...r, [campo]: e.target.value }))} style={inputStyle} />
+              </label>
+            ))}
+          </div>
+        </fieldset>
       )}
 
       <SeletorPdf
@@ -149,7 +180,11 @@ export function EnviarAlvara({ solicitacaoId, recusa }: { solicitacaoId: string;
           {progresso !== null ? `Enviando… ${progresso}%` : registrando ? "Conferindo…" : "Enviar para a CAPE"}
         </button>
         <span style={{ fontSize: 11.5, color: "#7A7472", lineHeight: 1.4 }}>
-          {completo ? "Depois de enviar, a solicitação fica em conferência até a CAPE aceitar." : "Anexe os três documentos para enviar."}
+          {completo
+            ? "Depois de enviar, a solicitação fica em conferência até a CAPE aceitar."
+            : rtExecucao
+              ? "Informe o responsável pela execução e anexe os três documentos para enviar."
+              : "Anexe os três documentos para enviar."}
         </span>
       </div>
 

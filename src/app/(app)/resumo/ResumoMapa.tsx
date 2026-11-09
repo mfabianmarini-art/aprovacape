@@ -523,7 +523,7 @@ export function ResumoMapa({ data, podeAnalisar }: { data: Data; podeAnalisar: b
                             </Bloco>
 
                             <Bloco titulo="Responsável técnico pela execução">
-                              <Campo k="Nome" v={s.rtExecucaoNome || "—"} />
+                              <Campo k="Nome" v={s.rtExecucaoNome || (s.rtExecucaoNaLiberacao ? "A contratar" : "—")} />
                               <Campo k="Registro" v={s.rtExecucaoRegistro || "—"} />
                               <Campo k="E-mail" v={s.rtExecucaoEmail || "—"} />
                               <Campo k="RT do lote" v={lote.rt?.name ?? "—"} />

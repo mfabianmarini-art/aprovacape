@@ -8,6 +8,7 @@ import { descartarArquivo, receberArquivo } from "@/lib/upload-direto";
 import { DOC_LABEL, docsObrigatorios } from "@/lib/status";
 import { notificarEtapa } from "@/lib/notificacoes";
 import { registrarArquivo } from "@/lib/arquivos";
+import { rtExecucaoSchema } from "@/lib/rt-execucao";
 
 // As ações da solicitação são do responsável técnico do lote; o proprietário só acompanha.
 async function loadOwnedSolicitacao(session: Awaited<ReturnType<typeof requireRole>>, solicitacaoId: string) {
@@ -110,6 +111,9 @@ export async function enviarAlvaraAction(solicitacaoId: string, _prev: unknown, 
     return { error };
   };
   if (sol.status !== "RESSALVAS" && sol.status !== "APROVADA") return recusar("Esta solicitação não está aguardando o alvará.");
+  // Profissional da execução que não estava contratado no protocolo: é informado aqui.
+  const rtExec = sol.rtExecucaoNaLiberacao ? rtExecucaoSchema.safeParse(Object.fromEntries(formData.entries())) : null;
+  if (rtExec && !rtExec.success) return recusar(rtExec.error.issues[0]?.message ?? "Informe o responsável técnico pela execução.");
   if (!alvaraPath) return recusar("Anexe o alvará de execução.");
   if (!projetoPath) return recusar("Anexe o projeto carimbado pela Prefeitura.");
   if (!artPath) return recusar("Anexe a ART/RRT de execução atual e válida.");
@@ -136,6 +140,11 @@ export async function enviarAlvaraAction(solicitacaoId: string, _prev: unknown, 
         data: {
           status: "ALVARA_CONFERENCIA",
           statusAntesAlvara: sol.status,
+          ...(rtExec && {
+            rtExecucaoNome: rtExec.data.rtExecNome,
+            rtExecucaoRegistro: rtExec.data.rtExecRegistro,
+            rtExecucaoEmail: rtExec.data.rtExecEmail,
+          }),
           alvaraNome: saved.nomeArquivo,
           alvaraCaminho: saved.caminhoArquivo,
           alvaraTamanho: saved.tamanhoBytes,
@@ -183,7 +192,7 @@ export async function enviarAlvaraAction(solicitacaoId: string, _prev: unknown, 
         data: {
           solicitacaoId: sol.id,
           tipo: "ALVARA_ENVIADO",
-          texto: "Alvará de execução, projeto carimbado pela Prefeitura e ART/RRT de execução enviados. Aguardando conferência da CAPE para liberar o início da obra.",
+          texto: `Alvará de execução, projeto carimbado pela Prefeitura e ART/RRT de execução enviados.${rtExec ? ` Responsável técnico pela execução: ${rtExec.data.rtExecNome} · ${rtExec.data.rtExecRegistro}.` : ""} Aguardando conferência da CAPE para liberar o início da obra.`,
           cor: "#4B3A7A",
           autorId: session.user.id,
         },

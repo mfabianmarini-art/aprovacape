@@ -330,6 +330,9 @@ model Solicitacao {
   rtExecucaoNome     String @default("")
   rtExecucaoRegistro String @default("")
   rtExecucaoEmail    String @default("")
+  // O profissional da execução ainda não estava contratado no protocolo: os três campos
+  // acima ficam vazios e o RT os preenche ao enviar o alvará.
+  rtExecucaoNaLiberacao Boolean @default(false)
   documentacaoValidada Boolean       @default(false)
 
   // Alvará de execução da Prefeitura. O arquivo vive no Blob como os demais; o status

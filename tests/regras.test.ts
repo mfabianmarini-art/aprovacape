@@ -138,6 +138,15 @@ test("área de intervenção sempre com duas casas decimais", async () => {
   assert.equal(formatArea(1250.126), "1.250,13");
 });
 
+test("responsável pela execução: nome, registro e e-mail válidos", async () => {
+  const { rtExecucaoSchema } = await import("@/lib/rt-execucao");
+  const ok = { rtExecNome: "Ana Souza", rtExecRegistro: "CAU A123456-7", rtExecEmail: "ana@exemplo.com" };
+  assert.ok(rtExecucaoSchema.safeParse(ok).success);
+  assert.ok(!rtExecucaoSchema.safeParse({ ...ok, rtExecNome: "" }).success);
+  assert.ok(!rtExecucaoSchema.safeParse({ ...ok, rtExecRegistro: " " }).success);
+  assert.ok(!rtExecucaoSchema.safeParse({ ...ok, rtExecEmail: "ana" }).success);
+});
+
 test("lote adicional: mesmo proprietário do lote principal", async () => {
   const { titularidadeEntreLotes } = await import("@/lib/conferencia-vinculo");
   const lote = (titularCpf: string | null, contaCpf?: string) => ({

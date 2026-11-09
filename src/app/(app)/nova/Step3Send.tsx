@@ -47,7 +47,7 @@ export function Step3Send({ rascunho, perfilRT, emailProprietario }: { rascunho:
   const [state, formAction, pending] = useActionState(enviarSolicitacaoAction, null as { error?: string } | null);
   const [decl, setDecl] = useState<Record<Decl, boolean>>({ d1: false, d2: false, d3: false, d4: false });
   // Sem resposta pré-marcada: quem envia decide de propósito quem responde pela execução.
-  const [mesmoRT, setMesmoRT] = useState<"sim" | "nao" | null>(null);
+  const [mesmoRT, setMesmoRT] = useState<"sim" | "nao" | "a_contratar" | null>(null);
   const declaracoesOk = DECLARACOES.every((d) => decl[d.id]);
   const podeEnviar = declaracoesOk && mesmoRT !== null;
 
@@ -69,6 +69,7 @@ export function Step3Send({ rascunho, perfilRT, emailProprietario }: { rascunho:
             [
               ["sim", "Sim, sou eu também"],
               ["nao", "Não, é outro profissional"],
+              ["a_contratar", "Profissional ainda não contratado"],
             ] as const
           ).map(([v, rotulo]) => (
             <label key={v} style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13, cursor: "pointer" }}>
@@ -91,6 +92,11 @@ export function Step3Send({ rascunho, perfilRT, emailProprietario }: { rascunho:
           </span>
         )}
         {mesmoRT === "nao" && <CamposRT prefixo="rtExec" />}
+        {mesmoRT === "a_contratar" && (
+          <span style={{ fontSize: 12, color: "#8A5210", lineHeight: 1.45 }}>
+            O profissional deverá ser informado na liberação da obra, junto com o alvará, o projeto carimbado e a ART/RRT de execução.
+          </span>
+        )}
       </fieldset>
 
       {/* O e-mail é informado no passo 1; aqui só aparece para rascunhos criados antes disso. */}

@@ -171,10 +171,14 @@ export function RequerimentoCard({
           {acao && (s.status === "APROVADA" || s.status === "RESSALVAS") && (
             <PainelAcao
               titulo="Envie o alvará, o projeto carimbado e a ART/RRT de execução"
-              subtitulo={`Projeto ${s.status === "RESSALVAS" ? "aprovado com ressalvas" : "aprovado"} pela CAPE. Para liberar o início da obra, anexe os três documentos.`}
+              subtitulo={`Projeto ${s.status === "RESSALVAS" ? "aprovado com ressalvas" : "aprovado"} pela CAPE. Para liberar o início da obra, ${s.rtExecucaoNaLiberacao ? "informe o responsável pela execução e " : ""}anexe os três documentos.`}
             >
               {s.status === "RESSALVAS" && pendencias.length > 0 && <ListaPendencias pendencias={pendencias} titulo="Ressalvas da CAPE" />}
-              <EnviarAlvara solicitacaoId={s.id} recusa={s.alvaraRecusa} />
+              <EnviarAlvara
+                solicitacaoId={s.id}
+                recusa={s.alvaraRecusa}
+                rtExecucao={s.rtExecucaoNaLiberacao ? { nome: s.rtExecucaoNome, registro: s.rtExecucaoRegistro, email: s.rtExecucaoEmail } : null}
+              />
             </PainelAcao>
           )}
 

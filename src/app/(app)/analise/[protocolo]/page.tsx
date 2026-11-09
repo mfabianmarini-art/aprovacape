@@ -132,7 +132,7 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
       : []),
     ["Proprietário", sol.lote.proprietario?.name ?? "—"],
     ["RT do projeto", `${sol.responsavelTecnicoNome} · ${sol.responsavelTecnicoRegistro}`],
-    ["RT da execução", `${sol.rtExecucaoNome} · ${sol.rtExecucaoRegistro}`],
+    ["RT da execução", sol.rtExecucaoNome ? `${sol.rtExecucaoNome} · ${sol.rtExecucaoRegistro}` : "A contratar: será informado na liberação da obra"],
     ["Tipo de obra", TIPO_LABEL[sol.tipo]],
     ["Protocolado em", formatDate(sol.createdAt)],
     ["Prazo de análise", prazoAnaliseTexto(sol)],
@@ -232,6 +232,11 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
               {sol.alvaraEnviadoEm ? ` em ${formatDateTime(sol.alvaraEnviadoEm)}` : ""}. Confira os três — a ART deve estar
               válida e corresponder a esta obra. A obra só é liberada depois que a CAPE aceitar.
             </div>
+            {sol.rtExecucaoNaLiberacao && (
+              <div style={{ fontSize: 12.5, color: "#3B4653", lineHeight: 1.5 }}>
+                <strong>Responsável técnico pela execução, informado nesta etapa:</strong> {sol.rtExecucaoNome} · {sol.rtExecucaoRegistro} · {sol.rtExecucaoEmail}
+              </div>
+            )}
             <div style={{ display: "flex", gap: 18, flexWrap: "wrap" }}>
               <a href={`/api/alvara/${sol.id}`} target="_blank" rel="noreferrer" style={{ fontSize: 13, fontWeight: 600, color: "#4B3A7A" }}>
                 Alvará: {sol.alvaraNome ?? "abrir"}

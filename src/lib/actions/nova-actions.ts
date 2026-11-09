@@ -11,6 +11,7 @@ import { validarDocumentoEnviado } from "@/lib/upload-documento";
 import { descartarArquivo, lerArquivoEnviado } from "@/lib/upload-direto";
 import { DOC_PROJETO_CONJUNTO, docsObrigatorios } from "@/lib/status";
 import { emitirAcessoProprietario } from "@/lib/acesso-proprietario";
+import { rtExecucaoSchema } from "@/lib/rt-execucao";
 import type { DocumentoTipo } from "@/generated/prisma/enums";
 
 // Só o responsável técnico abre e movimenta solicitações. O proprietário acompanha, sem
@@ -197,10 +198,7 @@ const enviarSchema = z.object({
   rtNome: z.string().trim().min(3, "Informe o responsável técnico pelo projeto"),
   rtRegistro: z.string().trim().min(3, "Informe o registro CAU/CREA do responsável técnico pelo projeto"),
   rtEmail: z.string().trim().email("E-mail inválido para o responsável técnico pelo projeto"),
-  mesmoRTExecucao: z.enum(["sim", "nao"], { message: "Informe se o responsável pelo projeto também responde pela execução" }),
-  rtExecNome: z.string().trim().min(3, "Informe o responsável técnico pela execução"),
-  rtExecRegistro: z.string().trim().min(3, "Informe o registro CAU/CREA do responsável técnico pela execução"),
-  rtExecEmail: z.string().trim().email("E-mail inválido para o responsável técnico pela execução"),
+  mesmoRTExecucao: z.enum(["sim", "nao", "a_contratar"], { message: "Informe se o responsável pelo projeto também responde pela execução" }),
   // Só para rascunhos criados antes de o e-mail ser pedido no passo 1.
   proprietarioEmail: z.string().trim().toLowerCase().email("Informe um e-mail válido do proprietário").optional(),
   d1: z.literal("on"),
@@ -224,8 +222,13 @@ function dadosDoEnvio(formData: FormData) {
 
 export async function enviarSolicitacaoAction(_prev: unknown, formData: FormData) {
   const session = await requireRole(RT);
-  const parsed = enviarSchema.safeParse(dadosDoEnvio(formData));
+  const dados = dadosDoEnvio(formData);
+  const parsed = enviarSchema.safeParse(dados);
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Preencha todos os campos e aceite as declarações." };
+  // Profissional ainda não contratado: nada a validar agora, ele é informado com o alvará.
+  const aContratar = parsed.data.mesmoRTExecucao === "a_contratar";
+  const rtExec = aContratar ? null : rtExecucaoSchema.safeParse(dados);
+  if (rtExec && !rtExec.success) return { error: rtExec.error.issues[0]?.message ?? "Informe o responsável técnico pela execução." };
 
   const sol = await prisma.solicitacao.findUniqueOrThrow({
     where: { id: parsed.data.solicitacaoId },
@@ -274,9 +277,10 @@ export async function enviarSolicitacaoAction(_prev: unknown, formData: FormData
             responsavelTecnicoNome: parsed.data.rtNome,
             responsavelTecnicoRegistro: parsed.data.rtRegistro,
             responsavelTecnicoEmail: parsed.data.rtEmail,
-            rtExecucaoNome: parsed.data.rtExecNome,
-            rtExecucaoRegistro: parsed.data.rtExecRegistro,
-            rtExecucaoEmail: parsed.data.rtExecEmail,
+            rtExecucaoNome: rtExec?.data.rtExecNome ?? "",
+            rtExecucaoRegistro: rtExec?.data.rtExecRegistro ?? "",
+            rtExecucaoEmail: rtExec?.data.rtExecEmail ?? "",
+            rtExecucaoNaLiberacao: aContratar,
           },
         }),
         prisma.historicoEvento.create({
