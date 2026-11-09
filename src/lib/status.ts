@@ -91,7 +91,7 @@ export const TIPO_LABEL: Record<SolicitacaoTipo, string> = {
 const LOTE_ADICIONAL_LABEL: Record<VinculoStatus, string> = {
   PENDENTE: "aguardando conferência da CAPE",
   APROVADO: "",
-  RECUSADO: "vínculo recusado pela CAPE",
+  RECUSADO: "recusado pela CAPE",
 };
 
 export function lotesAdicionaisTexto(lotes: { status: VinculoStatus; lote: { numero: string; quadra: { nome: string } } }[]) {

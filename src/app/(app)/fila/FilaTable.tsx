@@ -123,7 +123,7 @@ export function FilaTable({ fila }: { fila: Fila }) {
                     </div>
                     {s.lotesAdicionais.some((a) => a.status === "PENDENTE") && (
                       <span style={{ alignSelf: "flex-start", fontSize: 10.5, fontWeight: 600, letterSpacing: ".06em", textTransform: "uppercase", color: "#8A5210", background: "#FBF5EA", border: "1px solid #EAD9BC", borderRadius: 3, padding: "2px 6px" }}>
-                        {s.lotesAdicionais.filter((a) => a.status === "PENDENTE").length} lote(s) a vincular
+                        {s.lotesAdicionais.filter((a) => a.status === "PENDENTE").length} lote(s) a conferir
                       </span>
                     )}
                     <div style={{ fontSize: 11.5, color: "#7A7472" }}>

@@ -375,9 +375,9 @@ model Solicitacao {
 
 // Projeto que abrange mais de um lote do mesmo proprietário. O lote principal é
 // Solicitacao.loteId, que precisa já estar vinculado ao RT para a solicitação ser aberta;
-// estes são os demais. Lote que ainda não é do RT entra PENDENTE e a CAPE, na análise da
-// solicitação, confere a titularidade e aprova (o RT passa a ser o do lote) ou recusa.
-// Lote que já era do RT entra APROVADO, sem revisor.
+// estes são os demais. Todos entram PENDENTE, mesmo os que já são do RT: a CAPE, na análise
+// da solicitação, confere a titularidade e a contiguidade na planta e aprova (o RT passa a
+// ser o do lote) ou recusa. APROVADO sem revisor são pedidos anteriores a essa regra.
 model SolicitacaoLoteAdicional {
   id            String        @id @default(cuid())
   solicitacaoId String

@@ -26,17 +26,16 @@ export async function getMeusRascunhos(userId: string) {
   });
 }
 
-// Quadras e lotes dos empreendimentos em que o RT tem lote, para indicar os demais lotes
-// de um projeto que abrange mais de um. Qualquer lote serve: os que ainda não são do RT
-// a CAPE confere na análise.
-export async function getLotesParaProjetoConjunto(empreendimentoIds: string[]) {
+// Quadras em que o RT tem lote, para indicar os demais lotes de um projeto que abrange
+// mais de um: precisam ser contíguos, então da mesma quadra. Qualquer lote dela serve; os
+// que ainda não são do RT a CAPE confere na análise.
+export async function getLotesParaProjetoConjunto(quadraIds: string[]) {
   return prisma.quadra.findMany({
-    where: { empreendimentoId: { in: empreendimentoIds } },
+    where: { id: { in: quadraIds } },
     select: {
       id: true,
       nome: true,
-      empreendimentoId: true,
-      lotes: { select: { id: true, numero: true, rtId: true }, orderBy: { numero: "asc" } },
+      lotes: { select: { id: true, numero: true }, orderBy: { numero: "asc" } },
     },
     orderBy: { nome: "asc" },
   });

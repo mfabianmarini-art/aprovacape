@@ -579,7 +579,7 @@ async function loadLoteAdicional(id: string) {
   });
 }
 
-export async function aprovarLoteAdicionalAction(id: string) {
+export async function aprovarLoteAdicionalAction(id: string, formData: FormData) {
   const session = await requireRole("ADMIN_CAPE", "CAPE_ANALISTA");
   const adicional = await loadLoteAdicional(id);
   const { lote, solicitacao: sol } = adicional;
@@ -589,6 +589,10 @@ export async function aprovarLoteAdicionalAction(id: string) {
   if (!rt) return;
   // Mesma trava da tela: lotes de proprietários diferentes não entram no mesmo projeto.
   if (titularidadeEntreLotes(sol.lote, lote).situacao === "divergente") return;
+  // Só lotes contíguos: outra quadra nunca é; dentro dela, o cadastro não guarda quais
+  // lotes fazem divisa e a numeração pode ter saltos, então quem aprova declara que conferiu.
+  if (lote.quadraId !== sol.lote.quadraId) return;
+  if (formData.get("contiguidade") !== "on") return;
 
   const rotulo = `${lote.quadra.nome} L${lote.numero}`;
   // O lote guarda um único RT: aprovar sobre lote de outro profissional o substitui, e a
@@ -609,7 +613,7 @@ export async function aprovarLoteAdicionalAction(id: string) {
         data: {
           solicitacaoId: sol.id,
           tipo: "LOTE_ADICIONAL_APROVADO",
-          texto: `Titularidade conferida: ${rotulo} vinculado ao responsável técnico ${rt.name} e incluído neste projeto.`,
+          texto: `Titularidade e contiguidade na planta conferidas: ${rotulo} vinculado ao responsável técnico ${rt.name} e incluído neste projeto.`,
           cor: "#24603A",
           autorId: session.user.id,
         },
@@ -651,7 +655,7 @@ export async function recusarLoteAdicionalAction(id: string, formData: FormData)
         data: {
           solicitacaoId: sol.id,
           tipo: "LOTE_ADICIONAL_RECUSADO",
-          texto: `Vínculo de ${lote.quadra.nome} L${lote.numero} recusado pela CAPE: o lote não faz parte desta aprovação.${motivo ? `\nMotivo: ${motivo}` : ""}`,
+          texto: `${lote.quadra.nome} L${lote.numero} recusado pela CAPE: o lote não faz parte desta aprovação.${motivo ? `\nMotivo: ${motivo}` : ""}`,
           cor: "#8C2B22",
           autorId: session.user.id,
         },

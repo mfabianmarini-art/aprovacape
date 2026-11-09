@@ -26,7 +26,7 @@ export default async function NovaPage({
   const [rascunho, emailsSugeridos, quadras] = await Promise.all([
     rascunhoId ? getRascunho(rascunhoId) : null,
     emailsSugeridosPorLote(session.user.id, lotes.map((l) => l.id)),
-    getLotesParaProjetoConjunto([...new Set(lotes.map((l) => l.empreendimentoId))]),
+    getLotesParaProjetoConjunto([...new Set(lotes.map((l) => l.quadraId))]),
   ]);
   const rascunhoValido = rascunho && rascunho.status === "RASCUNHO" && rascunho.lote.rtId === session.user.id ? rascunho : null;
 

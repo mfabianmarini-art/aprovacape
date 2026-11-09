@@ -7,12 +7,12 @@ import { TIPO_LABEL } from "@/lib/status";
 type Lote = {
   id: string;
   numero: string;
-  empreendimentoId: string;
+  quadraId: string;
   quadra: { nome: string };
   empreendimento: { nome: string };
 };
 
-type Quadra = { id: string; nome: string; empreendimentoId: string; lotes: { id: string; numero: string }[] };
+type Quadra = { id: string; nome: string; lotes: { id: string; numero: string }[] };
 
 const inputStyle: React.CSSProperties = { border: "1px solid #DDD8CE", borderRadius: 4, padding: "10px 11px", fontSize: 13.5 };
 const labelTextStyle: React.CSSProperties = { fontSize: 11, letterSpacing: ".13em", textTransform: "uppercase", color: "#7A7472" };
@@ -42,11 +42,12 @@ export function Step1Form({
     );
   }
 
-  // Só os do empreendimento do lote principal, sem ele mesmo: trocar o lote principal não
-  // descarta o que foi indicado, mas o que deixou de caber não vai no envio.
+  // Só os da quadra do lote principal, sem ele mesmo: trocar o lote principal não descarta
+  // o que foi indicado, mas o que deixou de caber não vai no envio.
   const principal = lotes.find((l) => l.id === loteId);
-  const quadrasDoEmp = quadras.filter((q) => q.empreendimentoId === principal?.empreendimentoId);
-  const rotulos = new Map(quadrasDoEmp.flatMap((q) => q.lotes.map((l) => [l.id, `${q.nome} L${l.numero}`] as const)));
+  const quadra = quadras.find((q) => q.id === principal?.quadraId);
+  const lotesDaQuadra = quadra?.lotes ?? [];
+  const rotulos = new Map(lotesDaQuadra.map((l) => [l.id, `${quadra?.nome} L${l.numero}`] as const));
   const indicados = adicionais.filter((id) => id !== loteId && rotulos.has(id));
   const meus = new Set(lotes.map((l) => l.id));
 
@@ -88,17 +89,18 @@ export function Step1Form({
             onChange={(e) => setMaisDeUmLote(e.target.checked)}
             style={{ marginTop: 2 }}
           />
-          <span>O projeto abrange mais de um lote do mesmo proprietário</span>
+          <span>O projeto abrange mais de um lote contíguo do mesmo proprietário</span>
         </label>
         {maisDeUmLote && (
           <>
             <span style={{ fontSize: 11.5, color: "#7A7472", lineHeight: 1.45 }}>
-              Indique os outros lotes do projeto. Os que ainda não estão vinculados a você não impedem o envio: a CAPE confere
+              Indique os outros lotes do projeto: só lotes contíguos, da mesma quadra do lote principal
+              {quadra ? ` (${quadra.nome})` : ""}. Os que ainda não estão vinculados a você não impedem o envio: a CAPE confere
               a titularidade de cada um na análise e aprova ou recusa o vínculo. Junte no mesmo PDF a matrícula e a capa do
               IPTU de todos os lotes.
             </span>
             <SeletorLotes
-              quadras={quadrasDoEmp}
+              lotes={lotesDaQuadra}
               excluidos={new Set([loteId, ...indicados])}
               meus={meus}
               onAdicionar={(id) => setAdicionais((a) => [...a, id])}
@@ -160,52 +162,35 @@ export function Step1Form({
 }
 
 function SeletorLotes({
-  quadras,
+  lotes,
   excluidos,
   meus,
   onAdicionar,
 }: {
-  quadras: Quadra[];
+  lotes: { id: string; numero: string }[];
   excluidos: Set<string>;
   meus: Set<string>;
   onAdicionar: (loteId: string) => void;
 }) {
-  const [quadraId, setQuadraId] = useState("");
   const [loteId, setLoteId] = useState("");
-  const disponiveis = quadras.find((q) => q.id === quadraId)?.lotes.filter((l) => !excluidos.has(l.id)) ?? [];
 
   return (
     <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
       <select
-        aria-label="Quadra do lote adicional"
-        value={quadraId}
-        onChange={(e) => {
-          setQuadraId(e.target.value);
-          setLoteId("");
-        }}
-        style={{ ...inputStyle, background: "#fff", flex: "1 1 140px" }}
-      >
-        <option value="">Quadra…</option>
-        {quadras.map((q) => (
-          <option key={q.id} value={q.id}>
-            {q.nome}
-          </option>
-        ))}
-      </select>
-      <select
         aria-label="Lote adicional"
         value={loteId}
-        disabled={!quadraId}
         onChange={(e) => setLoteId(e.target.value)}
-        style={{ ...inputStyle, background: "#fff", flex: "1 1 140px" }}
+        style={{ ...inputStyle, background: "#fff", flex: "1 1 180px" }}
       >
         <option value="">Lote…</option>
-        {disponiveis.map((l) => (
-          <option key={l.id} value={l.id}>
-            L{l.numero}
-            {meus.has(l.id) ? " (já vinculado a você)" : ""}
-          </option>
-        ))}
+        {lotes
+          .filter((l) => !excluidos.has(l.id))
+          .map((l) => (
+            <option key={l.id} value={l.id}>
+              L{l.numero}
+              {meus.has(l.id) ? " (já vinculado a você)" : ""}
+            </option>
+          ))}
       </select>
       <button
         type="button"

@@ -24,6 +24,10 @@ export function LotesAdicionais({ sol }: { sol: Sol }) {
   const principal: LoteParaConferencia = sol.lote;
   const rotuloPrincipal = `${sol.lote.quadra.nome} L${sol.lote.numero}`;
   const podeDecidir = sol.status !== "RASCUNHO";
+  // O que sobra do projeto: um lote recusado pode deixar os demais sem divisa entre si.
+  const restantes = sol.lotesAdicionais.filter((a) => a.status !== "RECUSADO");
+  const numeros = [sol.lote.numero, ...restantes.map((a) => a.lote.numero)];
+  const conferirContiguidade = pendentes > 0 || (restantes.length > 0 && restantes.length < sol.lotesAdicionais.length);
 
   return (
     <section
@@ -43,7 +47,7 @@ export function LotesAdicionais({ sol }: { sol: Sol }) {
           Projeto em {sol.lotesAdicionais.length + 1} lotes
         </div>
         <div style={{ fontSize: 11.5, color: pendentes ? "#8A5210" : "#7A7472", fontFamily: "var(--font-mono)" }}>
-          {pendentes ? `${pendentes} lote(s) ainda não vinculado(s) ao RT` : "todos os lotes conferidos"}
+          {pendentes ? `${pendentes} lote(s) a conferir` : "todos os lotes conferidos"}
         </div>
       </div>
       <div style={{ fontSize: 12.5, color: "#4A5563", lineHeight: 1.5 }}>
@@ -53,8 +57,24 @@ export function LotesAdicionais({ sol }: { sol: Sol }) {
           " Confira na matrícula anexada que os demais lotes são do mesmo proprietário e aprove ou recuse cada vínculo. O projeto só pode ser aprovado depois disso."}
       </div>
 
+      {conferirContiguidade && (
+        <div style={{ fontSize: 12.5, color: "#8A5210", background: "#FBF5EA", border: "1px solid #EAD9BC", borderRadius: 4, padding: "10px 12px", lineHeight: 1.5 }}>
+          <strong>Contiguidade a conferir:</strong> o sistema não sabe quais lotes fazem divisa, e a numeração pode ter saltos.
+          Confira na{" "}
+          <a href={`/resumo?emp=${sol.lote.empreendimentoId}`} target="_blank" rel="noreferrer" style={{ fontWeight: 600, color: "#8A5210" }}>
+            planta do loteamento
+          </a>{" "}
+          se {numeros.map((n) => `L${n}`).join(", ")} são contíguos.
+          {pendentes > 0 && " Só é possível aprovar o vínculo confirmando que o lote faz divisa com o projeto."}
+        </div>
+      )}
+
       {sol.lotesAdicionais.map((a) => {
         const conf = titularidadeEntreLotes(principal, a.lote);
+        // Quadras são separadas por rua: lote de outra quadra nunca é contíguo. Só aparece
+        // em pedido anterior à regra; hoje o RT nem consegue indicar.
+        const outraQuadra = a.lote.quadraId !== sol.lote.quadraId;
+        const bloqueado = conf.situacao === "divergente" || outraQuadra;
         const st = STATUS[a.status];
         const rotulo = `${a.lote.quadra.nome} L${a.lote.numero}`;
         // Outro profissional no lote: aprovar o substitui.
@@ -99,6 +119,11 @@ export function LotesAdicionais({ sol }: { sol: Sol }) {
                 Este lote já tem RT: <strong>{outroRT}</strong>. Aprovar substitui esse vínculo.
               </div>
             )}
+            {outraQuadra && a.status !== "RECUSADO" && (
+              <div style={{ fontSize: 12, color: "#8C2B22", lineHeight: 1.45 }}>
+                <strong>Outra quadra:</strong> este lote não é contíguo ao lote principal ({sol.lote.quadra.nome}). Recuse o vínculo.
+              </div>
+            )}
             {a.status === "RECUSADO" && a.motivoRecusa && (
               <div style={{ fontSize: 12, color: "#8C2B22", whiteSpace: "pre-line" }}>Motivo: {a.motivoRecusa}</div>
             )}
@@ -119,20 +144,35 @@ export function LotesAdicionais({ sol }: { sol: Sol }) {
                     Recusar vínculo
                   </button>
                 </form>
-                <form action={conf.situacao === "divergente" ? undefined : aprovarLoteAdicionalAction.bind(null, a.id)}>
+                <form
+                  action={bloqueado ? undefined : aprovarLoteAdicionalAction.bind(null, a.id)}
+                  style={{ display: "flex", gap: 9, alignItems: "center", flexWrap: "wrap" }}
+                >
+                  {!bloqueado && (
+                    <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#3B4653", cursor: "pointer" }}>
+                      <input type="checkbox" name="contiguidade" required />
+                      Conferi na planta: faz divisa com o projeto
+                    </label>
+                  )}
                   <button
                     type="submit"
-                    disabled={conf.situacao === "divergente"}
-                    title={conf.situacao === "divergente" ? "Resolva a divergência de proprietário antes de aprovar." : undefined}
+                    disabled={bloqueado}
+                    title={
+                      outraQuadra
+                        ? "Lote de outra quadra não é contíguo ao lote principal."
+                        : bloqueado
+                          ? "Resolva a divergência de proprietário antes de aprovar."
+                          : undefined
+                    }
                     style={{
-                      border: `1px solid ${conf.situacao === "divergente" ? "#DDD8CE" : "#24603A"}`,
-                      background: conf.situacao === "divergente" ? "#fff" : "#24603A",
-                      color: conf.situacao === "divergente" ? "#B0AAA0" : "#fff",
+                      border: `1px solid ${bloqueado ? "#DDD8CE" : "#24603A"}`,
+                      background: bloqueado ? "#fff" : "#24603A",
+                      color: bloqueado ? "#B0AAA0" : "#fff",
                       borderRadius: 4,
                       padding: "8px 14px",
                       fontSize: 12.5,
                       fontWeight: 600,
-                      cursor: conf.situacao === "divergente" ? "not-allowed" : "pointer",
+                      cursor: bloqueado ? "not-allowed" : "pointer",
                     }}
                   >
                     Aprovar vínculo

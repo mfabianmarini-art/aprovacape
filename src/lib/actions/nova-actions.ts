@@ -26,6 +26,7 @@ const rascunhoSchema = z.object({
 });
 
 const MAX_LOTES_ADICIONAIS = 10;
+const SO_LOTES_DA_QUADRA = "O projeto só pode abranger lotes contíguos: os lotes adicionais precisam ser da mesma quadra do lote principal.";
 
 export async function criarRascunhoAction(_prev: unknown, formData: FormData) {
   const session = await requireRole(RT);
@@ -36,17 +37,18 @@ export async function criarRascunhoAction(_prev: unknown, formData: FormData) {
   if (lote.rtId !== session.user.id) return { error: "Este lote não está vinculado à sua conta." };
 
   // Projeto que abrange mais de um lote: o principal (acima) já é do RT; os demais podem
-  // ainda não ser, e a CAPE confere a titularidade na análise.
-  let adicionais: { id: string; rtId: string | null }[] = [];
+  // ainda não ser, e a CAPE confere a titularidade na análise. Só lotes contíguos: quadras
+  // são separadas por rua, então a recusa aqui é certa; dentro da quadra, confere a CAPE.
+  let adicionais: { id: string }[] = [];
   if (formData.get("maisDeUmLote") === "on") {
     const ids = [...new Set(formData.getAll("lotesAdicionais").map(String))].filter((id) => id && id !== lote.id);
     if (ids.length === 0) return { error: "Indique os outros lotes que o projeto abrange." };
     if (ids.length > MAX_LOTES_ADICIONAIS) return { error: `Indique no máximo ${MAX_LOTES_ADICIONAIS} lotes adicionais.` };
     adicionais = await prisma.lote.findMany({
-      where: { id: { in: ids }, empreendimentoId: lote.empreendimentoId },
-      select: { id: true, rtId: true },
+      where: { id: { in: ids }, quadraId: lote.quadraId },
+      select: { id: true },
     });
-    if (adicionais.length !== ids.length) return { error: "Os lotes adicionais precisam ser do mesmo empreendimento do lote principal." };
+    if (adicionais.length !== ids.length) return { error: SO_LOTES_DA_QUADRA };
   }
 
   const sol = await prisma.solicitacao.create({
@@ -64,7 +66,7 @@ export async function criarRascunhoAction(_prev: unknown, formData: FormData) {
       responsavelTecnicoRegistro: "",
       responsavelTecnicoEmail: "",
       lotesAdicionais: {
-        create: adicionais.map((a) => ({ loteId: a.id, status: a.rtId === session.user.id ? "APROVADO" : "PENDENTE" })),
+        create: adicionais.map((a) => ({ loteId: a.id })),
       },
     },
   });
@@ -186,10 +188,18 @@ export async function enviarSolicitacaoAction(_prev: unknown, formData: FormData
 
   const sol = await prisma.solicitacao.findUniqueOrThrow({
     where: { id: parsed.data.solicitacaoId },
-    include: { lote: { include: { empreendimento: true } }, documentos: true },
+    include: {
+      lote: { include: { empreendimento: true } },
+      documentos: true,
+      lotesAdicionais: { select: { lote: { select: { quadraId: true } } } },
+    },
   });
   if (sol.lote.rtId !== session.user.id) return { error: "Solicitação não pertence a este usuário." };
   if (sol.status !== "RASCUNHO") return { error: "Esta solicitação já foi enviada." };
+  // Rascunho aberto antes da regra de contiguidade.
+  if (sol.lotesAdicionais.some((a) => a.lote.quadraId !== sol.lote.quadraId)) {
+    return { error: `${SO_LOTES_DA_QUADRA} Cancele este rascunho e abra outro.` };
+  }
 
   const faltando = DOC_ORDER.filter((t) => !sol.documentos.find((d) => d.tipo === t));
   if (faltando.length > 0) return { error: "Anexe todos os documentos do check-list antes de enviar." };
