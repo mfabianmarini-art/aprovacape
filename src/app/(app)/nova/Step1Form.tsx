@@ -14,6 +14,17 @@ type Lote = {
 
 type Quadra = { id: string; nome: string; lotes: { id: string; numero: string }[] };
 
+// Rascunho em andamento: o passo 1 reabre com o que já foi preenchido e salva nele.
+type RascunhoEmEdicao = {
+  id: string;
+  loteId: string;
+  tipo: string;
+  areaIntervencao: number;
+  descricao: string;
+  proprietarioEmail: string | null;
+  lotesAdicionais: string[];
+};
+
 const inputStyle: React.CSSProperties = { border: "1px solid #DDD8CE", borderRadius: 4, padding: "10px 11px", fontSize: 13.5 };
 const labelTextStyle: React.CSSProperties = { fontSize: 11, letterSpacing: ".13em", textTransform: "uppercase", color: "#7A7472" };
 
@@ -21,15 +32,17 @@ export function Step1Form({
   lotes,
   emailsSugeridos,
   quadras,
+  rascunho,
 }: {
   lotes: Lote[];
   emailsSugeridos: Record<string, string>;
   quadras: Quadra[];
+  rascunho: RascunhoEmEdicao | null;
 }) {
   const [state, formAction, pending] = useActionState(criarRascunhoAction, null as { error?: string } | null);
-  const [loteId, setLoteId] = useState(lotes[0]?.id ?? "");
-  const [maisDeUmLote, setMaisDeUmLote] = useState(false);
-  const [adicionais, setAdicionais] = useState<string[]>([]);
+  const [loteId, setLoteId] = useState(rascunho?.loteId ?? lotes[0]?.id ?? "");
+  const [maisDeUmLote, setMaisDeUmLote] = useState(!!rascunho?.lotesAdicionais.length);
+  const [adicionais, setAdicionais] = useState<string[]>(rascunho?.lotesAdicionais ?? []);
 
   if (lotes.length === 0) {
     return (
@@ -53,6 +66,7 @@ export function Step1Form({
 
   return (
     <form action={formAction} style={{ padding: 20, display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 16 }}>
+      {rascunho && <input type="hidden" name="rascunhoId" value={rascunho.id} />}
       <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         <span style={labelTextStyle}>Lote</span>
         <select name="loteId" required value={loteId} onChange={(e) => setLoteId(e.target.value)} style={{ ...inputStyle, background: "#fff" }}>
@@ -68,7 +82,7 @@ export function Step1Form({
       </label>
       <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         <span style={labelTextStyle}>Tipo de solicitação</span>
-        <select name="tipo" required style={{ ...inputStyle, background: "#fff" }}>
+        <select name="tipo" required defaultValue={rascunho?.tipo} style={{ ...inputStyle, background: "#fff" }}>
           {Object.entries(TIPO_LABEL).map(([id, label]) => (
             <option key={id} value={id}>
               {label}
@@ -78,7 +92,16 @@ export function Step1Form({
       </label>
       <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         <span style={labelTextStyle}>Área de intervenção (m²)</span>
-        <input name="areaIntervencao" required type="number" step="0.01" min="0" style={{ ...inputStyle, fontFamily: "var(--font-mono)" }} />
+        <input
+          name="areaIntervencao"
+          required
+          type="number"
+          step="0.01"
+          min="0"
+          placeholder="0,00"
+          defaultValue={rascunho?.areaIntervencao.toFixed(2)}
+          style={{ ...inputStyle, fontFamily: "var(--font-mono)" }}
+        />
       </label>
       <div style={{ gridColumn: "1/-1", display: "flex", flexDirection: "column", gap: 10, border: "1px solid #EDE9E1", borderRadius: 4, padding: "12px 14px", background: "#FAF9F6" }}>
         <label style={{ display: "flex", alignItems: "flex-start", gap: 9, fontSize: 13, cursor: "pointer" }}>
@@ -128,12 +151,12 @@ export function Step1Form({
       </div>
       <label style={{ display: "flex", flexDirection: "column", gap: 6, gridColumn: "1/-1" }}>
         <span style={labelTextStyle}>Descrição da obra</span>
-        <textarea name="descricao" required rows={4} style={{ ...inputStyle, resize: "vertical" }} />
+        <textarea name="descricao" required rows={4} defaultValue={rascunho?.descricao} style={{ ...inputStyle, resize: "vertical" }} />
       </label>
       <label style={{ display: "flex", flexDirection: "column", gap: 6, gridColumn: "1/-1", maxWidth: 460 }}>
         <span style={labelTextStyle}>E-mail do proprietário</span>
         {/* key: trocar de lote repõe a sugestão daquele lote */}
-        <input key={loteId} name="proprietarioEmail" required type="email" defaultValue={emailsSugeridos[loteId] ?? ""} style={inputStyle} />
+        <input key={loteId} name="proprietarioEmail" required type="email" defaultValue={(loteId === rascunho?.loteId && rascunho.proprietarioEmail) || emailsSugeridos[loteId] || ""} style={inputStyle} />
         <span style={{ fontSize: 11.5, color: "#7A7472", lineHeight: 1.45 }}>
           Quando a solicitação for protocolada, o proprietário recebe automaticamente neste e-mail o protocolo e a senha para
           acompanhar a aprovação — e você, uma cópia.

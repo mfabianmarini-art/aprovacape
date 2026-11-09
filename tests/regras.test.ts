@@ -130,6 +130,14 @@ test("documentos obrigatórios: projeto em mais de um lote exige os da unificaç
   }
 });
 
+test("área de intervenção sempre com duas casas decimais", async () => {
+  const { formatArea } = await import("@/lib/status");
+  assert.equal(formatArea(0), "0,00");
+  assert.equal(formatArea(150), "150,00");
+  assert.equal(formatArea(87.5), "87,50");
+  assert.equal(formatArea(1250.126), "1.250,13");
+});
+
 test("lote adicional: mesmo proprietário do lote principal", async () => {
   const { titularidadeEntreLotes } = await import("@/lib/conferencia-vinculo");
   const lote = (titularCpf: string | null, contaCpf?: string) => ({

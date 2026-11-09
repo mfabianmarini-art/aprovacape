@@ -122,6 +122,11 @@ export const CATEGORIA_DOC_TECNICO_LABEL: Record<DocumentoTecnicoCategoria, stri
 // empreendimento é o que interessa aqui, não o da máquina que renderiza.
 const FUSO_BRASIL = "America/Sao_Paulo";
 
+// Área de intervenção: sempre com duas casas decimais (1.250,00).
+export function formatArea(m2: number): string {
+  return m2.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
 export function formatDate(d: Date): string {
   return new Intl.DateTimeFormat("pt-BR", { timeZone: FUSO_BRASIL }).format(d);
 }

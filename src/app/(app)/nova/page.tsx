@@ -30,7 +30,7 @@ export default async function NovaPage({
   ]);
   const rascunhoValido = rascunho && rascunho.status === "RASCUNHO" && rascunho.lote.rtId === session.user.id ? rascunho : null;
 
-  const passo = rascunhoValido ? (passoParam === "3" ? 3 : 2) : 1;
+  const passo = rascunhoValido ? (passoParam === "3" ? 3 : passoParam === "1" ? 1 : 2) : 1;
   const emp = rascunhoValido?.lote.empreendimento ?? lotes[0]?.empreendimento;
 
   const passos = [
@@ -43,13 +43,13 @@ export default async function NovaPage({
     <>
       <ScreenHeader crumb={emp?.nome ?? "Nova solicitação"} title="Nova solicitação de obra" {...user} />
       <ScreenBody>
-        {passo === 1 && <RascunhosEmAndamento rascunhos={rascunhos} />}
+        {passo === 1 && !rascunhoValido && <RascunhosEmAndamento rascunhos={rascunhos} />}
         <div className="layout-with-aside" style={{ "--aside-w": "300px" } as React.CSSProperties}>
           <section style={{ background: "#fff", border: "1px solid #DDD8CE", borderRadius: 4 }}>
             <div style={{ display: "flex", borderBottom: "1px solid #EDE9E1" }}>
               {passos.map((p) => {
                 const disponivel = p.n === 1 || !!rascunhoValido;
-                const href = p.n === 1 ? "/nova" : `/nova?rascunho=${rascunhoValido?.id}&passo=${p.n}`;
+                const href = rascunhoValido ? `/nova?rascunho=${rascunhoValido.id}&passo=${p.n}` : "/nova";
                 const ativo = passo === p.n;
                 const content = (
                   <div style={{ display: "flex", flexDirection: "column", gap: 3, alignItems: "flex-start" }}>
@@ -79,7 +79,22 @@ export default async function NovaPage({
               })}
             </div>
 
-            {passo === 1 && <Step1Form lotes={lotes} emailsSugeridos={emailsSugeridos} quadras={quadras} />}
+            {passo === 1 && <Step1Form
+                lotes={lotes}
+                emailsSugeridos={emailsSugeridos}
+                quadras={quadras}
+                rascunho={
+                  rascunhoValido && {
+                    id: rascunhoValido.id,
+                    loteId: rascunhoValido.loteId,
+                    tipo: rascunhoValido.tipo,
+                    areaIntervencao: rascunhoValido.areaIntervencao,
+                    descricao: rascunhoValido.descricao,
+                    proprietarioEmail: rascunhoValido.proprietarioEmail,
+                    lotesAdicionais: rascunhoValido.lotesAdicionais.map((a) => a.loteId),
+                  }
+                }
+              />}
             {passo === 2 && rascunhoValido && <Step2Uploads rascunho={rascunhoValido} />}
             {passo === 3 && rascunhoValido && (
               <Step3Send

@@ -3,7 +3,7 @@
 import { VersoesAnteriores } from "@/components/VersoesAnteriores";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { formatDate, formatDateTime, STATUS_INFO, TIPO_LABEL, DOC_LABEL, IRREGULARIDADE_LABEL } from "@/lib/status";
+import { formatDate, formatDateTime, STATUS_INFO, TIPO_LABEL, DOC_LABEL, IRREGULARIDADE_LABEL, formatArea } from "@/lib/status";
 import { ROLE_LABEL } from "@/lib/nav";
 import { prazoAnaliseTexto } from "@/lib/prazo";
 import type { getResumoData } from "@/lib/queries/resumo";
@@ -493,7 +493,7 @@ export function ResumoMapa({ data, podeAnalisar }: { data: Data; podeAnalisar: b
                           <div style={{ display: "flex", flexDirection: "column", gap: 9, paddingBottom: 13 }}>
                             <Bloco titulo="Obra">
                               <Campo k="Tipo" v={TIPO_LABEL[s.tipo]} />
-                              <Campo k="Área de intervenção" v={`${s.areaIntervencao.toLocaleString("pt-BR")} m²`} />
+                              <Campo k="Área de intervenção" v={`${formatArea(s.areaIntervencao)} m²`} />
                               <Campo k="Área do lote" v={lote.areaM2 != null ? `${lote.areaM2.toLocaleString("pt-BR")} m²` : "—"} />
                               <Campo k="Endereço" v={lote.rua ?? "—"} />
                             </Bloco>

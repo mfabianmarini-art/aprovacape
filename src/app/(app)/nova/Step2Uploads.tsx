@@ -136,7 +136,7 @@ export function Step2Uploads({ rascunho }: { rascunho: Rascunho }) {
         </div>
         <div style={{ display: "flex", gap: 9 }}>
           <a
-            href="/nova"
+            href={`/nova?rascunho=${rascunho.id}&passo=1`}
             style={{ border: "1px solid #DDD8CE", background: "#fff", color: "#E01B22", borderRadius: 4, padding: "10px 16px", fontSize: 13, fontWeight: 600, textDecoration: "none" }}
           >
             Voltar

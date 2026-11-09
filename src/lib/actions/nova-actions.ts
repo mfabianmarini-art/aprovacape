@@ -9,7 +9,7 @@ import { marcarSubstituido, registrarArquivo } from "@/lib/arquivos";
 import { requireRole } from "@/lib/require-role";
 import { validarDocumentoEnviado } from "@/lib/upload-documento";
 import { descartarArquivo, lerArquivoEnviado } from "@/lib/upload-direto";
-import { docsObrigatorios } from "@/lib/status";
+import { DOC_PROJETO_CONJUNTO, docsObrigatorios } from "@/lib/status";
 import { emitirAcessoProprietario } from "@/lib/acesso-proprietario";
 import type { DocumentoTipo } from "@/generated/prisma/enums";
 
@@ -49,6 +49,47 @@ export async function criarRascunhoAction(_prev: unknown, formData: FormData) {
       select: { id: true },
     });
     if (adicionais.length !== ids.length) return { error: SO_LOTES_DA_QUADRA };
+  }
+
+  // Voltar ao passo 1 de um rascunho edita o próprio rascunho, com os documentos já anexados.
+  const rascunhoId = String(formData.get("rascunhoId") ?? "");
+  if (rascunhoId) {
+    const atual = await prisma.solicitacao.findUnique({
+      where: { id: rascunhoId },
+      include: { lote: { select: { rtId: true, empreendimentoId: true } }, documentos: { where: { tipo: { in: DOC_PROJETO_CONJUNTO } } } },
+    });
+    if (!atual || atual.lote.rtId !== session.user.id) return { error: "Solicitação não pertence a este usuário." };
+    if (atual.status !== "RASCUNHO") return { error: "Esta solicitação já foi enviada." };
+
+    const ids = adicionais.map((a) => a.id);
+    await prisma.$transaction([
+      prisma.solicitacao.update({
+        where: { id: rascunhoId, status: "RASCUNHO" },
+        data: {
+          loteId: lote.id,
+          tipo: parsed.data.tipo,
+          areaIntervencao: parsed.data.areaIntervencao,
+          descricao: parsed.data.descricao,
+          proprietarioEmail: parsed.data.proprietarioEmail,
+          prazoDias: lote.empreendimento.prazoDias,
+        },
+      }),
+      prisma.solicitacaoLoteAdicional.deleteMany({ where: { solicitacaoId: rascunhoId, loteId: { notIn: ids } } }),
+      prisma.solicitacaoLoteAdicional.createMany({ data: ids.map((loteId) => ({ solicitacaoId: rascunhoId, loteId })), skipDuplicates: true }),
+      // Deixou de ser projeto de vários lotes: os documentos da unificação não valem mais e
+      // sumiriam de vista na análise. O arquivo fica no inventário, como versão substituída.
+      ...(ids.length === 0
+        ? [
+            prisma.solicitacaoDocumento.deleteMany({ where: { id: { in: atual.documentos.map((d) => d.id) } } }),
+            ...atual.documentos.map((d) => marcarSubstituido(d.caminhoArquivo)),
+          ]
+        : []),
+      // O inventário é por empreendimento (guarda e exclusão após a rescisão do contrato).
+      ...(lote.empreendimentoId !== atual.lote.empreendimentoId
+        ? [prisma.arquivo.updateMany({ where: { solicitacaoId: rascunhoId }, data: { empreendimentoId: lote.empreendimentoId } })]
+        : []),
+    ]);
+    redirect(`/nova?rascunho=${rascunhoId}&passo=2`);
   }
 
   const sol = await prisma.solicitacao.create({

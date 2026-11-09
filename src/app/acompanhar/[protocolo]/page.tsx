@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { cookieAcompanhamento, tokenConfere } from "@/lib/acompanhamento";
 import { etapasDaSolicitacao } from "@/lib/etapas";
-import { STATUS_INFO, TIPO_LABEL, formatDate, formatDateTime, lotesAdicionaisTexto } from "@/lib/status";
+import { STATUS_INFO, TIPO_LABEL, formatDate, formatDateTime, lotesAdicionaisTexto, formatArea } from "@/lib/status";
 import { sairAcompanhamentoAction } from "@/lib/actions/acompanhamento-actions";
 import { PublicShell } from "@/components/PublicShell";
 import { EtapasStepper } from "@/components/EtapasStepper";
@@ -72,7 +72,7 @@ export default async function AcompanhamentoProtocoloPage({ params }: { params: 
         )}
         <div style={{ display: "flex", gap: 22, flexWrap: "wrap", fontSize: 12.5, color: "#4A5563" }}>
           <span>Protocolado em {formatDate(sol.createdAt)}</span>
-          <span>Área de intervenção: {sol.areaIntervencao.toLocaleString("pt-BR")} m²</span>
+          <span>Área de intervenção: {formatArea(sol.areaIntervencao)} m²</span>
           {sol.responsavelTecnicoNome && <span>Responsável técnico: {sol.responsavelTecnicoNome}</span>}
         </div>
         <div style={{ fontSize: 12.5, color: "#7A7472", lineHeight: 1.5 }}>{sol.descricao}</div>
