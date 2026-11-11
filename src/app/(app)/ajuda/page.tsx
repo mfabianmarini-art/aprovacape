@@ -2,7 +2,7 @@ import { requireRole } from "@/lib/require-role";
 import { getUserDisplay } from "@/lib/user-display";
 import { prisma } from "@/lib/prisma";
 import { labelDaTela } from "@/lib/nav";
-import { DOC_LABEL, DOC_OPCIONAIS, DOC_ORDER, DOC_PROJETO_CONJUNTO, formatosAceitos } from "@/lib/status";
+import { DOC_ARQP, DOC_LABEL, DOC_OPCIONAIS, DOC_ORDER, DOC_PROJETO_CONJUNTO, formatosAceitos } from "@/lib/status";
 import { embedDoVideo } from "@/lib/video-tutorial";
 import { tutorialAtual } from "@/lib/tutorial";
 import { TutorialGestao } from "./TutorialGestao";
@@ -329,6 +329,7 @@ function TabelaDocumentos() {
         <tbody>
           {DOC_ORDER.map((t) => linha(t, "obrigatório"))}
           {DOC_PROJETO_CONJUNTO.map((t) => linha(t, "obrigatório em projeto de mais de um lote"))}
+          {DOC_ARQP.map((t) => linha(t, "obrigatório no Quinta da Primavera, assinado pelo RT do projeto"))}
           {DOC_OPCIONAIS.map((t) => linha(t, "opcional"))}
         </tbody>
       </table>

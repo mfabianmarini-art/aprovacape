@@ -7,7 +7,7 @@ import type { DocumentoTipo } from "@/generated/prisma/enums";
 type Rascunho = {
   id: string;
   documentos: { tipo: DocumentoTipo; nomeArquivo: string }[];
-  lote: { numero: string; quadra: { nome: string } };
+  lote: { numero: string; quadra: { nome: string }; empreendimento: { nome: string } };
   lotesAdicionais: { lote: { numero: string; quadra: { nome: string } } }[];
 };
 
@@ -24,6 +24,7 @@ const DICAS: Record<DocumentoTipo, string> = {
   LEVANTAMENTO_PLANIALTIMETRICO: "Levantamento planialtimétrico cadastral do lote",
   PROJETO_APROVADO_PREFEITURA: "Projeto aprovado previamente na Prefeitura, abrangendo todos os lotes",
   ART_UNIFICACAO: "Anotação de responsabilidade técnica da unificação dos lotes",
+  TERMO_REGULAMENTO_ARQP: "Termo de ciência e concordância com o Regulamento de Obras da ARQP (item 1.53), assinado pelo responsável técnico pelo projeto",
   OUTROS: "Qualquer documento adicional relevante para a análise",
 };
 
@@ -96,7 +97,7 @@ function UploadRow({
 }
 
 export function Step2Uploads({ rascunho }: { rascunho: Rascunho }) {
-  const obrigatorios = docsObrigatorios(rascunho.lotesAdicionais.length);
+  const obrigatorios = docsObrigatorios(rascunho.lotesAdicionais.length, rascunho.lote.empreendimento.nome);
   const enviados = obrigatorios.filter((t) => rascunho.documentos.find((d) => d.tipo === t)).length;
   const pendentes = obrigatorios.length - enviados;
 

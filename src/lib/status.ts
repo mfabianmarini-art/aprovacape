@@ -1,3 +1,4 @@
+import { exigeRegulamentoArqp } from "@/lib/regulamento-arqp";
 import type { SolicitacaoStatus, DocumentoTipo, SolicitacaoTipo, DocumentoTecnicoCategoria, IrregularidadeTipo, VinculoStatus } from "@/generated/prisma/enums";
 
 export const STATUS_INFO: Record<SolicitacaoStatus, { label: string; bg: string; fg: string }> = {
@@ -27,6 +28,7 @@ export const DOC_LABEL: Record<DocumentoTipo, { nome: string }> = {
   LEVANTAMENTO_PLANIALTIMETRICO: { nome: "Levantamento planialtimétrico" },
   PROJETO_APROVADO_PREFEITURA: { nome: "Projeto aprovado na Prefeitura" },
   ART_UNIFICACAO: { nome: "ART/RRT da unificação dos lotes" },
+  TERMO_REGULAMENTO_ARQP: { nome: "Termo de ciência e concordância do Regulamento de Obras – ARQP" },
   OUTROS: { nome: "Outros documentos" },
 };
 
@@ -44,8 +46,11 @@ export const DOC_ORDER: DocumentoTipo[] = [
 // na Prefeitura.
 export const DOC_PROJETO_CONJUNTO: DocumentoTipo[] = ["PROJETO_APROVADO_PREFEITURA", "ART_UNIFICACAO"];
 
-export function docsObrigatorios(lotesAdicionais: number): DocumentoTipo[] {
-  return lotesAdicionais > 0 ? [...DOC_ORDER, ...DOC_PROJETO_CONJUNTO] : DOC_ORDER;
+// Exigido a mais no Quinta da Primavera, onde vale o Regulamento de Obras da ARQP.
+export const DOC_ARQP: DocumentoTipo[] = ["TERMO_REGULAMENTO_ARQP"];
+
+export function docsObrigatorios(lotesAdicionais: number, empreendimento: string): DocumentoTipo[] {
+  return [...DOC_ORDER, ...(lotesAdicionais > 0 ? DOC_PROJETO_CONJUNTO : []), ...(exigeRegulamentoArqp(empreendimento) ? DOC_ARQP : [])];
 }
 
 // Opcionais: anexados quando houver, ficam fora da conferência documental e não travam
@@ -68,6 +73,7 @@ export const DOC_REGRAS: Record<DocumentoTipo, { extensoes: readonly string[]; m
   LEVANTAMENTO_PLANIALTIMETRICO: { extensoes: [".pdf", ".dwg"], maxMB: 5 },
   PROJETO_APROVADO_PREFEITURA: { extensoes: [".pdf"], maxMB: 5 },
   ART_UNIFICACAO: { extensoes: [".pdf"], maxMB: 5 },
+  TERMO_REGULAMENTO_ARQP: { extensoes: [".pdf"], maxMB: 5 },
   OUTROS: { extensoes: [".pdf", ".dwg", ".jpg", ".jpeg", ".png"], maxMB: 10 },
 };
 

@@ -121,12 +121,12 @@ test("vídeo tutorial: links do YouTube e do Vimeo viram o player embutido", asy
 test("documentos obrigatórios: projeto em mais de um lote exige os da unificação", async () => {
   const { docsObrigatorios, DOC_OPCIONAIS, DOC_PROJETO_CONJUNTO } = await import("@/lib/status");
   for (const t of DOC_PROJETO_CONJUNTO) {
-    assert.ok(!docsObrigatorios(0).includes(t), `${t} não vale para um lote só`);
-    assert.ok(docsObrigatorios(2).includes(t), `${t} vale para vários lotes`);
+    assert.ok(!docsObrigatorios(0, "Outro").includes(t), `${t} não vale para um lote só`);
+    assert.ok(docsObrigatorios(2, "Outro").includes(t), `${t} vale para vários lotes`);
   }
   for (const t of ["MATRICULA", "ART_RRT_EXECUCAO", "CAPA_IPTU", "PROJETO_PAISAGISTICO"] as const) {
     assert.ok(DOC_OPCIONAIS.includes(t));
-    assert.ok(!docsObrigatorios(2).includes(t), `${t} é opcional`);
+    assert.ok(!docsObrigatorios(2, "Quinta da Primavera").includes(t), `${t} é opcional`);
   }
 });
 
@@ -145,6 +145,14 @@ test("responsável pela execução: nome, registro e e-mail válidos", async () 
   assert.ok(!rtExecucaoSchema.safeParse({ ...ok, rtExecNome: "" }).success);
   assert.ok(!rtExecucaoSchema.safeParse({ ...ok, rtExecRegistro: " " }).success);
   assert.ok(!rtExecucaoSchema.safeParse({ ...ok, rtExecEmail: "ana" }).success);
+});
+
+test("termo da ARQP obrigatório só no Quinta da Primavera", async () => {
+  const { docsObrigatorios } = await import("@/lib/status");
+  assert.ok(docsObrigatorios(0, "Quinta da Primavera").includes("TERMO_REGULAMENTO_ARQP"));
+  assert.ok(!docsObrigatorios(0, "Outro Residencial").includes("TERMO_REGULAMENTO_ARQP"));
+  assert.ok(docsObrigatorios(1, "Quinta da Primavera").includes("ART_UNIFICACAO"));
+  assert.ok(!docsObrigatorios(0, "Quinta da Primavera").includes("ART_UNIFICACAO"));
 });
 
 test("declaração da ARQP só no Quinta da Primavera", async () => {

@@ -50,7 +50,7 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
   // Aqui a seção fica como registro do que foi apontado, com o ponteiro para lá.
   const podeAcompanharObra = sol.status === "EXECUCAO" || sol.status === "CONCLUIDA";
   const irregularidadesAbertas = sol.irregularidades.filter((i) => !i.regularizadaEm).length;
-  const obrigatorios = docsObrigatorios(sol.lotesAdicionais.length);
+  const obrigatorios = docsObrigatorios(sol.lotesAdicionais.length, sol.lote.empreendimento.nome);
   const nOk = obrigatorios.filter((t) => sol.documentos.find((d) => d.tipo === t)?.validado).length;
   const allDocs = nOk === obrigatorios.length;
   const alvaraCompleto = !!sol.alvaraCaminho && !!sol.alvaraProjetoCaminho && !!sol.alvaraArtCaminho;

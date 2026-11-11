@@ -156,12 +156,12 @@ export function RequerimentoCard({
                 feito={trocados.length > 0}
                 titulo={trocados.length > 0 ? `Arquivos substituídos (${trocados.length})` : "Substitua os arquivos corrigidos"}
               >
-                <SubstituirDocumentos solicitacaoId={s.id} documentos={s.documentos} obrigatorios={docsObrigatorios(s.lotesAdicionais.length)} devolvidaNoChecklist={s.devolvidaNoChecklist} trocadosIds={trocados.map((d) => d.id)} />
+                <SubstituirDocumentos solicitacaoId={s.id} documentos={s.documentos} obrigatorios={docsObrigatorios(s.lotesAdicionais.length, s.lote.empreendimento.nome)} devolvidaNoChecklist={s.devolvidaNoChecklist} trocadosIds={trocados.map((d) => d.id)} />
               </Passo>
               <Passo n={3} feito={false} titulo="Envie a complementação para a CAPE">
                 <EnviarComplementacao
                   solicitacaoId={s.id}
-                  faltando={docsObrigatorios(s.lotesAdicionais.length).filter((t) => !s.documentos.some((d) => d.tipo === t)).map((t) => DOC_LABEL[t].nome)}
+                  faltando={docsObrigatorios(s.lotesAdicionais.length, s.lote.empreendimento.nome).filter((t) => !s.documentos.some((d) => d.tipo === t)).map((t) => DOC_LABEL[t].nome)}
                   semTroca={!!devolucao && trocados.length === 0}
                 />
               </Passo>

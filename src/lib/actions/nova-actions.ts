@@ -250,7 +250,7 @@ export async function enviarSolicitacaoAction(_prev: unknown, formData: FormData
     return { error: `${SO_LOTES_DA_QUADRA} Cancele este rascunho e abra outro.` };
   }
 
-  const faltando = docsObrigatorios(sol.lotesAdicionais.length).filter((t) => !sol.documentos.find((d) => d.tipo === t));
+  const faltando = docsObrigatorios(sol.lotesAdicionais.length, sol.lote.empreendimento.nome).filter((t) => !sol.documentos.find((d) => d.tipo === t));
   if (faltando.length > 0) return { error: "Anexe todos os documentos do check-list antes de enviar." };
   const proprietarioEmail = sol.proprietarioEmail ?? parsed.data.proprietarioEmail;
   if (!proprietarioEmail) return { error: "Informe o e-mail do proprietário." };

@@ -62,11 +62,12 @@ async function mensagemDo(evento: EventoEtapa, solicitacaoId: string, prazoDias:
     case "DOCUMENTACAO_DEVOLVIDA": {
       // O que o analista marcou na conferência: documento não validado (com a observação,
       // se houver) ou que nem chegou.
-      const [docs, lotesAdicionais] = await Promise.all([
+      const [docs, lotesAdicionais, sol] = await Promise.all([
         prisma.solicitacaoDocumento.findMany({ where: { solicitacaoId } }),
         prisma.solicitacaoLoteAdicional.count({ where: { solicitacaoId } }),
+        prisma.solicitacao.findUniqueOrThrow({ where: { id: solicitacaoId }, select: { lote: { select: { empreendimento: { select: { nome: true } } } } } }),
       ]);
-      const detalhes = docsObrigatorios(lotesAdicionais).flatMap((t) => {
+      const detalhes = docsObrigatorios(lotesAdicionais, sol.lote.empreendimento.nome).flatMap((t) => {
         const d = docs.find((x) => x.tipo === t);
         if (!d) return [`${DOC_LABEL[t].nome}: não enviado.`];
         if (d.validado) return [];

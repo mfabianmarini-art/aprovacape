@@ -104,6 +104,9 @@ enum DocumentoTipo {
   // Prefeitura (ver DOC_PROJETO_CONJUNTO).
   PROJETO_APROVADO_PREFEITURA
   ART_UNIFICACAO
+  // Só no Quinta da Primavera: termo do Regulamento de Obras da ARQP assinado pelo RT do
+  // projeto (ver exigeRegulamentoArqp).
+  TERMO_REGULAMENTO_ARQP
   // Não obrigatório, como o projeto paisagístico (ver DOC_OPCIONAIS).
   OUTROS
 }
