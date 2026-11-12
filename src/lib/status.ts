@@ -26,7 +26,7 @@ export const DOC_LABEL: Record<DocumentoTipo, { nome: string }> = {
   CAPA_IPTU: { nome: "Capa do IPTU" },
   MATRICULA: { nome: "Matrícula do lote" },
   LEVANTAMENTO_PLANIALTIMETRICO: { nome: "Levantamento planialtimétrico" },
-  PROJETO_APROVADO_PREFEITURA: { nome: "Projeto aprovado na Prefeitura" },
+  PROJETO_APROVADO_PREFEITURA: { nome: "Projeto de unificação de lote aprovado na prefeitura" },
   ART_UNIFICACAO: { nome: "ART/RRT da unificação dos lotes" },
   TERMO_REGULAMENTO_ARQP: { nome: "Termo de ciência e concordância do Regulamento de Obras – ARQP" },
   OUTROS: { nome: "Outros documentos" },
