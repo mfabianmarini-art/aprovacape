@@ -9,6 +9,7 @@ import { podeVerArquivosDaSolicitacao } from "@/lib/acesso-arquivos";
 import { fimDaGuarda } from "@/lib/contrato";
 import { ipDaRequisicao } from "@/lib/limite-taxa";
 import { formatarTamanho } from "@/lib/arquivos-formato";
+import { DOC_REGRAS } from "@/lib/status";
 
 // Empreendimentos sem regra gravada pela CAPE: vale o padrão da plataforma.
 const outro = { nome: "Outro Residencial", regrasDocumentos: [] };
@@ -33,11 +34,11 @@ test("formato conferido pelo conteúdo, não pelo nome", () => {
 
 test("documento da solicitação: formato, tamanho e conteúdo", () => {
   const pdf = { nome: "planta.pdf", tamanho: 1000, inicio: bytes("%PDF-1.4\n") };
-  assert.equal(validarDocumentoEnviado(pdf, "PROJETO_ARQUITETONICO"), null);
-  assert.match(validarDocumentoEnviado({ ...pdf, tamanho: 6 * MB }, "PROJETO_ARQUITETONICO")!, /maior que 5 MB/);
-  assert.match(validarDocumentoEnviado({ ...pdf, inicio: bytes("<html>") }, "PROJETO_ARQUITETONICO")!, /não é um PDF válido/);
-  assert.match(validarDocumentoEnviado({ ...pdf, nome: "planta.dwg" }, "PROJETO_ARQUITETONICO")!, /Formato não aceito/);
-  assert.equal(validarDocumentoEnviado({ nome: "p.dwg", tamanho: 1000, inicio: bytes("AC1027") }, "PROJETO_ARQUITETONICO_DWG"), null);
+  assert.equal(validarDocumentoEnviado(pdf, DOC_REGRAS.PROJETO_ARQUITETONICO), null);
+  assert.match(validarDocumentoEnviado({ ...pdf, tamanho: 6 * MB }, DOC_REGRAS.PROJETO_ARQUITETONICO)!, /maior que 5 MB/);
+  assert.match(validarDocumentoEnviado({ ...pdf, inicio: bytes("<html>") }, DOC_REGRAS.PROJETO_ARQUITETONICO)!, /não é um PDF válido/);
+  assert.match(validarDocumentoEnviado({ ...pdf, nome: "planta.dwg" }, DOC_REGRAS.PROJETO_ARQUITETONICO)!, /Formato não aceito/);
+  assert.equal(validarDocumentoEnviado({ nome: "p.dwg", tamanho: 1000, inicio: bytes("AC1027") }, DOC_REGRAS.PROJETO_ARQUITETONICO_DWG), null);
 });
 
 test("tipo servido sai da extensão validada", () => {
@@ -153,7 +154,7 @@ test("responsável pela execução: nome, registro e e-mail válidos", async () 
 
 test("documentos exigidos: regra da CAPE prevalece sobre o padrão", async () => {
   const { docsObrigatorios, docsOpcionais, DOC_TODOS, DOC_LABEL } = await import("@/lib/status");
-  assert.deepEqual([...DOC_TODOS].sort(), Object.keys(DOC_LABEL).sort(), "toda espécie de documento tem regra");
+  assert.deepEqual([...DOC_TODOS].sort(), Object.keys(DOC_LABEL).filter((t) => t !== "PERSONALIZADO").sort(), "todo documento padrão tem regra");
   const emp = {
     nome: "Outro Residencial",
     regrasDocumentos: [
@@ -170,6 +171,31 @@ test("documentos exigidos: regra da CAPE prevalece sobre o padrão", async () =>
   assert.ok(opc.includes("MEMORIAL_DESCRITIVO") && !opc.includes("CAPA_IPTU") && !opc.includes("MATRICULA"));
   assert.ok(docsOpcionais(0, emp, ["CAPA_IPTU"]).includes("CAPA_IPTU"), "o que já foi anexado não some");
   assert.ok(!docsOpcionais(0, outro).includes("TERMO_REGULAMENTO_ARQP"), "termo da ARQP não é pedido fora do Quinta");
+});
+
+test("documentos criados pela CAPE: exigência, regra de arquivo e exclusão", async () => {
+  const { docsObrigatorios, docsOpcionais, infoDoc, ehTipoPadrao } = await import("@/lib/status");
+  const { regraDoDestino } = await import("@/lib/upload-destino");
+  const doc = (id: string, exigencia: "OBRIGATORIO" | "OPCIONAL" | "OBRIGATORIO_MAIS_LOTES", excluidoEm: Date | null = null) => ({
+    id,
+    nome: `Doc ${id}`,
+    descricao: null,
+    extensoes: [".pdf", ".jpg", ".jpeg"],
+    maxMB: 12,
+    exigencia,
+    excluidoEm,
+  });
+  const emp = { ...outro, documentosPersonalizados: [doc("a", "OBRIGATORIO"), doc("b", "OPCIONAL"), doc("c", "OBRIGATORIO", new Date()), doc("d", "OBRIGATORIO_MAIS_LOTES")] };
+  assert.ok(docsObrigatorios(0, emp).includes("p_a"));
+  assert.ok(!docsObrigatorios(0, emp).includes("p_c"), "excluído deixa de ser pedido");
+  assert.ok(!docsObrigatorios(0, emp).includes("p_d") && docsObrigatorios(1, emp).includes("p_d"));
+  assert.ok(docsOpcionais(0, emp).includes("p_b") && !docsOpcionais(0, emp).includes("p_c"));
+  assert.ok(docsOpcionais(0, emp, ["p_c"]).includes("p_c"), "o que já foi enviado com ele continua à vista");
+  assert.equal(infoDoc("p_a", emp).maxMB, 12);
+  assert.equal(infoDoc("p_a", emp).nome, "Doc a");
+  assert.ok(!ehTipoPadrao("p_a") && !ehTipoPadrao("PERSONALIZADO") && ehTipoPadrao("MATRICULA"));
+  assert.equal(regraDoDestino({ destino: "documento", solicitacaoId: "s", tipo: "p_a", regra: infoDoc("p_a", emp) }).maxBytes, 12 * MB);
+  assert.throws(() => regraDoDestino({ destino: "documento", solicitacaoId: "s", tipo: "p_a" }), "sem a regra do banco não há envio");
 });
 
 test("termo da ARQP obrigatório só no Quinta da Primavera", async () => {

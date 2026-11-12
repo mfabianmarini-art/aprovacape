@@ -7,7 +7,7 @@ import { getUserDisplay } from "@/lib/user-display";
 import { getAnalise } from "@/lib/queries/analise";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { ScreenBody } from "@/components/ScreenBody";
-import { DOC_LABEL, docsObrigatorios, docsOpcionais, TIPO_LABEL, IRREGULARIDADE_LABEL, formatDate, formatDateTime } from "@/lib/status";
+import { docsObrigatorios, docsOpcionais, infoDoc, TIPO_LABEL, IRREGULARIDADE_LABEL, formatDate, formatDateTime } from "@/lib/status";
 import {
   toggleDocumentoAction,
   devolverDocumentacaoAction,
@@ -51,7 +51,7 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
   const podeAcompanharObra = sol.status === "EXECUCAO" || sol.status === "CONCLUIDA";
   const irregularidadesAbertas = sol.irregularidades.filter((i) => !i.regularizadaEm).length;
   const obrigatorios = docsObrigatorios(sol.lotesAdicionais.length, sol.lote.empreendimento);
-  const nOk = obrigatorios.filter((t) => sol.documentos.find((d) => d.tipo === t)?.validado).length;
+  const nOk = obrigatorios.filter((t) => sol.documentos.find((d) => d.chave === t)?.validado).length;
   const allDocs = nOk === obrigatorios.length;
   const alvaraCompleto = !!sol.alvaraCaminho && !!sol.alvaraProjetoCaminho && !!sol.alvaraArtCaminho;
   // Com tudo validado não há o que complementar: a devolução aqui é da conferência
@@ -336,7 +336,7 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
               </div>
               <div style={{ display: "flex", flexDirection: "column" }}>
                 {obrigatorios.map((tipo) => {
-                  const doc = sol.documentos.find((d) => d.tipo === tipo);
+                  const doc = sol.documentos.find((d) => d.chave === tipo);
                   const ok = !!doc?.validado;
                   const action = podeEditar && doc ? toggleDocumentoAction.bind(null, sol.id, tipo) : null;
                   return (
@@ -357,7 +357,7 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
                         <form action={action}>
                           <button
                             type="submit"
-                            aria-label={`Marcar ${DOC_LABEL[tipo].nome} como ${ok ? "não validado" : "validado"}`}
+                            aria-label={`Marcar ${infoDoc(tipo, sol.lote.empreendimento).nome} como ${ok ? "não validado" : "validado"}`}
                             style={{
                               all: "unset",
                               cursor: "pointer",
@@ -396,7 +396,7 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
                       )}
                       <span style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                         <span style={{ fontSize: 13.5, fontWeight: 600 }}>
-                          {DOC_LABEL[tipo].nome}
+                          {infoDoc(tipo, sol.lote.empreendimento).nome}
                           {doc && !ok && sol.reenvios > 0 && (
                             <span
                               style={{ marginLeft: 8, fontSize: 10.5, fontWeight: 600, letterSpacing: ".06em", textTransform: "uppercase", color: "#8A5210", background: "#F6E3C4", borderRadius: 3, padding: "2px 6px" }}
@@ -437,14 +437,14 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
                     </div>
                   );
                 })}
-                {docsOpcionais(sol.lotesAdicionais.length, sol.lote.empreendimento, sol.documentos.map((d) => d.tipo)).map((tipo) => {
-                  const doc = sol.documentos.find((d) => d.tipo === tipo);
+                {docsOpcionais(sol.lotesAdicionais.length, sol.lote.empreendimento, sol.documentos.map((d) => d.chave)).map((tipo) => {
+                  const doc = sol.documentos.find((d) => d.chave === tipo);
                   if (!doc) return null;
                   return (
                     <div key={tipo} style={{ display: "grid", gridTemplateColumns: "26px 1fr 132px", alignItems: "center", gap: 12, padding: "13px 18px", borderBottom: "1px solid #F1EEE7" }}>
                       <span />
                       <span style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                        <span style={{ fontSize: 13.5, fontWeight: 600 }}>{DOC_LABEL[tipo].nome}</span>
+                        <span style={{ fontSize: 13.5, fontWeight: 600 }}>{infoDoc(tipo, sol.lote.empreendimento).nome}</span>
                         <span style={{ fontSize: 11.5, color: "#7A7472", fontFamily: "var(--font-mono)" }}>
                           {doc.nomeArquivo} · opcional, fora da conferência acima
                         </span>

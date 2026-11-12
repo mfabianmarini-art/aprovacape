@@ -2,7 +2,7 @@ import { requireRole } from "@/lib/require-role";
 import { getUserDisplay } from "@/lib/user-display";
 import { prisma } from "@/lib/prisma";
 import { labelDaTela } from "@/lib/nav";
-import { DOC_LABEL, DOC_TODOS, EXIGENCIA_LABEL, exigenciaDe, formatosAceitos, type RegrasDoEmpreendimento } from "@/lib/status";
+import { DOC_LABEL, DOC_TODOS, EXIGENCIA_LABEL, exigenciaDe, formatosAceitos, formatosTexto, type RegrasDoEmpreendimento } from "@/lib/status";
 import { embedDoVideo } from "@/lib/video-tutorial";
 import { tutorialAtual } from "@/lib/tutorial";
 import { TutorialGestao } from "./TutorialGestao";
@@ -198,6 +198,11 @@ export default async function AjudaPage() {
         reenviosSemTaxa: true,
         prazoComplementoDias: true,
         regrasDocumentos: { select: { tipo: true, exigencia: true } },
+        documentosPersonalizados: {
+          where: { excluidoEm: null },
+          orderBy: { createdAt: "asc" },
+          select: { id: true, nome: true, descricao: true, extensoes: true, maxMB: true, exigencia: true, excluidoEm: true },
+        },
       },
     }),
     tutorialAtual(),
@@ -325,16 +330,13 @@ function TabelaDocumentos({ empreendimentos }: { empreendimentos: (RegrasDoEmpre
 }
 
 function TabelaDocumentosDe({ emp }: { emp: RegrasDoEmpreendimento }) {
-  const linha = (t: (typeof DOC_TODOS)[number]) => {
-    const exigencia = exigenciaDe(t, emp);
-    return (
-      <tr key={t} style={{ borderTop: "1px solid #EDE9E1" }}>
-        <td style={{ padding: "7px 10px 7px 0", fontSize: 13 }}>{DOC_LABEL[t].nome}</td>
-        <td style={{ padding: "7px 10px", fontSize: 12, fontFamily: "var(--font-mono)", color: "#4A5563", whiteSpace: "nowrap" }}>{formatosAceitos(t)}</td>
-        <td style={{ padding: "7px 0", fontSize: 12, color: exigencia === "OPCIONAL" ? "#7A7472" : "#8C2B22" }}>{EXIGENCIA_LABEL[exigencia].toLowerCase()}</td>
-      </tr>
-    );
-  };
+  const linha = (chave: string, nome: string, formatos: string, exigencia: keyof typeof EXIGENCIA_LABEL) => (
+    <tr key={chave} style={{ borderTop: "1px solid #EDE9E1" }}>
+      <td style={{ padding: "7px 10px 7px 0", fontSize: 13 }}>{nome}</td>
+      <td style={{ padding: "7px 10px", fontSize: 12, fontFamily: "var(--font-mono)", color: "#4A5563", whiteSpace: "nowrap" }}>{formatos}</td>
+      <td style={{ padding: "7px 0", fontSize: 12, color: exigencia === "OPCIONAL" ? "#7A7472" : "#8C2B22" }}>{EXIGENCIA_LABEL[exigencia].toLowerCase()}</td>
+    </tr>
+  );
   return (
     <div className="table-scroll">
       <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 460 }}>
@@ -348,7 +350,10 @@ function TabelaDocumentosDe({ emp }: { emp: RegrasDoEmpreendimento }) {
           </tr>
         </thead>
         <tbody>
-          {DOC_TODOS.filter((t) => exigenciaDe(t, emp) !== "NAO_SOLICITADO").map(linha)}
+          {DOC_TODOS.filter((t) => exigenciaDe(t, emp) !== "NAO_SOLICITADO").map((t) => linha(t, DOC_LABEL[t].nome, formatosAceitos(t), exigenciaDe(t, emp)))}
+          {(emp.documentosPersonalizados ?? [])
+            .filter((d) => !d.excluidoEm && d.exigencia !== "NAO_SOLICITADO")
+            .map((d) => linha(d.id, d.nome, formatosTexto(d.extensoes, d.maxMB), d.exigencia))}
         </tbody>
       </table>
     </div>

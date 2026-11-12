@@ -369,6 +369,7 @@ async function main() {
             data: {
               solicitacaoId: sol.id,
               tipo,
+              chave: tipo,
               nomeArquivo: `${tipo}.pdf`,
               caminhoArquivo: "",
               tamanhoBytes: 500_000,
@@ -531,7 +532,7 @@ async function main() {
   });
   for (const tipo of DOC_ORDER) {
     await prisma.solicitacaoDocumento.create({
-      data: { solicitacaoId: solAlto1.id, tipo, nomeArquivo: `${tipo}.pdf`, caminhoArquivo: "", tamanhoBytes: 500_000, validado: true },
+      data: { solicitacaoId: solAlto1.id, tipo, chave: tipo, nomeArquivo: `${tipo}.pdf`, caminhoArquivo: "", tamanhoBytes: 500_000, validado: true },
     });
   }
 
@@ -560,7 +561,7 @@ async function main() {
   });
   for (const tipo of DOC_ORDER) {
     await prisma.solicitacaoDocumento.create({
-      data: { solicitacaoId: solAlto2.id, tipo, nomeArquivo: `${tipo}.pdf`, caminhoArquivo: "", tamanhoBytes: 500_000, validado: false },
+      data: { solicitacaoId: solAlto2.id, tipo, chave: tipo, nomeArquivo: `${tipo}.pdf`, caminhoArquivo: "", tamanhoBytes: 500_000, validado: false },
     });
   }
 

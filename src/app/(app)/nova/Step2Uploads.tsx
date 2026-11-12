@@ -1,45 +1,30 @@
 "use client";
 
 import { useEnvioDocumento } from "@/components/useEnvioDocumento";
-import { DOC_LABEL, DOC_REGRAS, docsObrigatorios, docsOpcionais, formatosAceitos, type RegrasDoEmpreendimento } from "@/lib/status";
-import type { DocumentoTipo } from "@/generated/prisma/enums";
+import { docsObrigatorios, docsOpcionais, formatosTexto, infoDoc, type InfoDoc, type RegrasDoEmpreendimento } from "@/lib/status";
 
 type Rascunho = {
   id: string;
-  documentos: { tipo: DocumentoTipo; nomeArquivo: string }[];
+  documentos: { chave: string; nomeArquivo: string }[];
   lote: { numero: string; quadra: { nome: string }; empreendimento: RegrasDoEmpreendimento };
   lotesAdicionais: { lote: { numero: string; quadra: { nome: string } } }[];
 };
 
-const DICAS: Record<DocumentoTipo, string> = {
-  PROJETO_ARQUITETONICO: "Plantas, cortes, elevações e implantação no lote, em PDF",
-  PROJETO_ARQUITETONICO_DWG:
-    "O mesmo projeto em DWG, em qualquer versão do AutoCAD. Mais de um arquivo DWG: envie todos juntos numa pasta compactada (.zip)",
-  ART_RRT_PROJETO: "Anotação de responsabilidade técnica quitada, do autor do projeto",
-  ART_RRT_EXECUCAO: "Anotação de responsabilidade técnica quitada, de quem executa a obra",
-  MEMORIAL_DESCRITIVO: "Materiais, acabamentos e sistema construtivo",
-  PROJETO_PAISAGISTICO: "Implantação de jardins, paisagismo e áreas externas",
-  CAPA_IPTU: "Capa do carnê ou guia do IPTU do lote",
-  MATRICULA: "Matrícula atualizada do lote no cartório de registro de imóveis",
-  LEVANTAMENTO_PLANIALTIMETRICO: "Levantamento planialtimétrico cadastral do lote",
-  PROJETO_APROVADO_PREFEITURA: "Projeto aprovado previamente na Prefeitura, abrangendo todos os lotes",
-  ART_UNIFICACAO: "Anotação de responsabilidade técnica da unificação dos lotes",
-  TERMO_REGULAMENTO_ARQP: "Termo de ciência e concordância com o Regulamento de Obras da ARQP (item 1.53), assinado pelo responsável técnico pelo projeto",
-  OUTROS: "Qualquer documento adicional relevante para a análise",
-};
 
 function UploadRow({
   solicitacaoId,
   tipo,
+  info,
   existente,
   obrigatorio = true,
 }: {
   solicitacaoId: string;
-  tipo: DocumentoTipo;
+  tipo: string;
+  info: InfoDoc;
   existente?: { nomeArquivo: string };
   obrigatorio?: boolean;
 }) {
-  const { enviar, enviando, rotuloEnvio, erro, falhou } = useEnvioDocumento(solicitacaoId, tipo);
+  const { enviar, enviando, rotuloEnvio, erro, falhou } = useEnvioDocumento(solicitacaoId, tipo, info);
   const ok = !!existente && !falhou;
 
   return (
@@ -57,15 +42,15 @@ function UploadRow({
     >
       <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
         <div style={{ fontSize: 13.5, fontWeight: 600 }}>
-          {DOC_LABEL[tipo].nome}{" "}
+          {info.nome}{" "}
           <span style={{ fontSize: 11.5, fontWeight: 400, color: "#7A7472", fontFamily: "var(--font-mono)" }}>
-            {formatosAceitos(tipo)}
+            {formatosTexto(info.extensoes, info.maxMB)}
           </span>
           {!obrigatorio && (
             <span style={{ fontSize: 11, fontWeight: 400, color: "#8B939C" }}> · opcional</span>
           )}
         </div>
-        <div style={{ fontSize: 11.5, color: "#7A7472" }}>{existente ? existente.nomeArquivo : DICAS[tipo]}</div>
+        <div style={{ fontSize: 11.5, color: "#7A7472" }}>{existente ? existente.nomeArquivo : info.dica}</div>
         {erro && <div style={{ fontSize: 11.5, color: "#8C2B22" }}>{erro}</div>}
       </div>
       <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 10 }}>
@@ -75,7 +60,7 @@ function UploadRow({
         <input
           type="file"
           name="arquivo"
-          accept={DOC_REGRAS[tipo].extensoes.join(",")}
+          accept={info.extensoes.join(",")}
           disabled={enviando}
           style={{ display: "none" }}
           id={`file-${tipo}`}
@@ -98,9 +83,9 @@ function UploadRow({
 
 export function Step2Uploads({ rascunho }: { rascunho: Rascunho }) {
   const obrigatorios = docsObrigatorios(rascunho.lotesAdicionais.length, rascunho.lote.empreendimento);
-  const enviados = obrigatorios.filter((t) => rascunho.documentos.find((d) => d.tipo === t)).length;
+  const enviados = obrigatorios.filter((t) => rascunho.documentos.find((d) => d.chave === t)).length;
   const pendentes = obrigatorios.length - enviados;
-  const opcionais = docsOpcionais(rascunho.lotesAdicionais.length, rascunho.lote.empreendimento, rascunho.documentos.map((d) => d.tipo));
+  const opcionais = docsOpcionais(rascunho.lotesAdicionais.length, rascunho.lote.empreendimento, rascunho.documentos.map((d) => d.chave));
   const exigeUnificacao = obrigatorios.includes("PROJETO_APROVADO_PREFEITURA") && obrigatorios.includes("ART_UNIFICACAO");
 
   return (
@@ -121,7 +106,13 @@ export function Step2Uploads({ rascunho }: { rascunho: Rascunho }) {
       )}
       <div style={{ fontSize: 11, letterSpacing: ".13em", textTransform: "uppercase", color: "#7A7472" }}>Documentos obrigatórios</div>
       {obrigatorios.map((tipo) => (
-        <UploadRow key={tipo} solicitacaoId={rascunho.id} tipo={tipo} existente={rascunho.documentos.find((d) => d.tipo === tipo)} />
+        <UploadRow
+          key={tipo}
+          solicitacaoId={rascunho.id}
+          tipo={tipo}
+          info={infoDoc(tipo, rascunho.lote.empreendimento)}
+          existente={rascunho.documentos.find((d) => d.chave === tipo)}
+        />
       ))}
       {opcionais.length > 0 && (
         <div style={{ fontSize: 11, letterSpacing: ".13em", textTransform: "uppercase", color: "#7A7472", marginTop: 6 }}>Documentos opcionais</div>
@@ -131,7 +122,8 @@ export function Step2Uploads({ rascunho }: { rascunho: Rascunho }) {
           key={tipo}
           solicitacaoId={rascunho.id}
           tipo={tipo}
-          existente={rascunho.documentos.find((d) => d.tipo === tipo)}
+          info={infoDoc(tipo, rascunho.lote.empreendimento)}
+          existente={rascunho.documentos.find((d) => d.chave === tipo)}
           obrigatorio={false}
         />
       ))}

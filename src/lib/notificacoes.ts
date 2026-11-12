@@ -3,7 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { enviarEmail } from "@/lib/email";
 import { montarEmail } from "@/lib/email-layout";
 import { linkDoRT, urlDoApp } from "@/lib/url-app";
-import { DOC_LABEL, docsObrigatorios, IRREGULARIDADE_LABEL } from "@/lib/status";
+import { docsObrigatorios, infoDoc, IRREGULARIDADE_LABEL } from "@/lib/status";
+import { SELECT_REGRAS } from "@/lib/queries/regras-documentos";
 import type { IrregularidadeTipo } from "@/generated/prisma/enums";
 
 // Cada mudança de etapa avisa o RT por e-mail, dizendo o que aconteceu, o que ele precisa
@@ -67,14 +68,15 @@ async function mensagemDo(evento: EventoEtapa, solicitacaoId: string, prazoDias:
         prisma.solicitacaoLoteAdicional.count({ where: { solicitacaoId } }),
         prisma.solicitacao.findUniqueOrThrow({
           where: { id: solicitacaoId },
-          select: { lote: { select: { empreendimento: { select: { nome: true, regrasDocumentos: { select: { tipo: true, exigencia: true } } } } } } },
+          select: { lote: { select: { empreendimento: { select: SELECT_REGRAS } } } },
         }),
       ]);
       const detalhes = docsObrigatorios(lotesAdicionais, sol.lote.empreendimento).flatMap((t) => {
-        const d = docs.find((x) => x.tipo === t);
-        if (!d) return [`${DOC_LABEL[t].nome}: não enviado.`];
+        const d = docs.find((x) => x.chave === t);
+        const nome = infoDoc(t, sol.lote.empreendimento).nome;
+        if (!d) return [`${nome}: não enviado.`];
         if (d.validado) return [];
-        return [`${DOC_LABEL[t].nome}: ${d.observacao ?? "documento inválido ou ilegível — envie novamente."}`];
+        return [`${nome}: ${d.observacao ?? "documento inválido ou ilegível — envie novamente."}`];
       });
       return {
         assunto: "documentação devolvida para complementação",

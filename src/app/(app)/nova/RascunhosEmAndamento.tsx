@@ -20,7 +20,7 @@ export function RascunhosEmAndamento({ rascunhos }: { rascunhos: Rascunhos }) {
 
       {rascunhos.map((r) => {
         const obrigatorios = docsObrigatorios(r._count.lotesAdicionais, r.lote.empreendimento);
-        const anexados = obrigatorios.filter((t) => r.documentos.some((d) => d.tipo === t)).length;
+        const anexados = obrigatorios.filter((t) => r.documentos.some((d) => d.chave === t)).length;
         const completo = anexados === obrigatorios.length;
         return (
           <div

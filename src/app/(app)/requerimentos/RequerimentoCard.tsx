@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { STATUS_INFO, DOC_LABEL, docsObrigatorios, docsOpcionais, IRREGULARIDADE_LABEL, TIPO_LABEL, formatDate, formatDateTime, lotesAdicionaisTexto } from "@/lib/status";
+import { STATUS_INFO, docsObrigatorios, docsOpcionais, infoDoc, IRREGULARIDADE_LABEL, TIPO_LABEL, formatDate, formatDateTime, lotesAdicionaisTexto } from "@/lib/status";
 import { etapasDaSolicitacao } from "@/lib/etapas";
 import { prazoAnaliseTexto } from "@/lib/prazo";
 import { proximaAcaoDoRT } from "@/lib/proxima-acao";
@@ -66,7 +66,7 @@ export function RequerimentoCard({
   const pendencias = [
     ...s.documentos
       .filter((d) => d.observacao)
-      .map((d) => ({ titulo: DOC_LABEL[d.tipo].nome, referencia: null as string | null, texto: d.observacao! })),
+      .map((d) => ({ titulo: infoDoc(d.chave, s.lote.empreendimento).nome, referencia: null as string | null, texto: d.observacao! })),
     ...s.resultados.map((r) => ({ titulo: partesDoItem(r.item.texto).titulo, referencia: r.item.referencia, texto: r.observacao! })),
   ];
   // Histórico vem do mais novo para o mais antigo.
@@ -157,13 +157,14 @@ export function RequerimentoCard({
                 titulo={trocados.length > 0 ? `Arquivos substituídos (${trocados.length})` : "Substitua os arquivos corrigidos"}
               >
                 <SubstituirDocumentos solicitacaoId={s.id} documentos={s.documentos} obrigatorios={docsObrigatorios(s.lotesAdicionais.length, s.lote.empreendimento)}
-                  opcionais={docsOpcionais(s.lotesAdicionais.length, s.lote.empreendimento, s.documentos.map((d) => d.tipo))}
+                  opcionais={docsOpcionais(s.lotesAdicionais.length, s.lote.empreendimento, s.documentos.map((d) => d.chave))}
+                  empreendimento={s.lote.empreendimento}
                   devolvidaNoChecklist={s.devolvidaNoChecklist} trocadosIds={trocados.map((d) => d.id)} />
               </Passo>
               <Passo n={3} feito={false} titulo="Envie a complementação para a CAPE">
                 <EnviarComplementacao
                   solicitacaoId={s.id}
-                  faltando={docsObrigatorios(s.lotesAdicionais.length, s.lote.empreendimento).filter((t) => !s.documentos.some((d) => d.tipo === t)).map((t) => DOC_LABEL[t].nome)}
+                  faltando={docsObrigatorios(s.lotesAdicionais.length, s.lote.empreendimento).filter((t) => !s.documentos.some((d) => d.chave === t)).map((t) => infoDoc(t, s.lote.empreendimento).nome)}
                   semTroca={!!devolucao && trocados.length === 0}
                 />
               </Passo>

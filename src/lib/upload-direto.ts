@@ -1,11 +1,10 @@
 import { del, get } from "@vercel/blob";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { DOC_REGRAS } from "@/lib/status";
+import { ehTipoPadrao } from "@/lib/status";
 import { extensaoDoNome, regraDoDestino, type DestinoUpload } from "@/lib/upload-destino";
 import { podeGerirDocumentosTecnicos } from "@/lib/acesso-arquivos";
 import { conteudoConfere } from "@/lib/upload-documento";
-import type { DocumentoTipo } from "@/generated/prisma/enums";
 
 function lerDestino(payload: string | null): DestinoUpload {
   const d = JSON.parse(payload ?? "{}") as Record<string, unknown>;
@@ -16,8 +15,9 @@ function lerDestino(payload: string | null): DestinoUpload {
   };
   switch (d.destino) {
     case "documento":
-      if (typeof d.tipo !== "string" || !(d.tipo in DOC_REGRAS)) throw new Error("Destino inválido.");
-      return { destino: "documento", solicitacaoId: id("solicitacaoId"), tipo: d.tipo as DocumentoTipo };
+      // A regra que veio do navegador é descartada: a do servidor sai de destinoDocumento.
+      if (typeof d.tipo !== "string" || !(ehTipoPadrao(d.tipo) || /^p_[a-z0-9]{1,40}$/i.test(d.tipo))) throw new Error("Destino inválido.");
+      return { destino: "documento", solicitacaoId: id("solicitacaoId"), tipo: d.tipo };
     case "devolutiva":
     case "alvara":
     case "evidencia":
@@ -36,12 +36,23 @@ function lerDestino(payload: string | null): DestinoUpload {
 
 const CAPE = ["ADMIN_CAPE", "CAPE_ANALISTA"];
 
+// Destino de um documento da solicitação com a regra de arquivo valendo: a do tipo padrão,
+// ou a que a CAPE definiu para o documento criado no empreendimento (só se ainda ativo).
+export async function destinoDocumento(solicitacaoId: string, chave: string, empreendimentoId: string) {
+  if (ehTipoPadrao(chave)) return { destino: { destino: "documento", solicitacaoId, tipo: chave } as const, rotulo: null };
+  const p = chave.startsWith("p_")
+    ? await prisma.documentoPersonalizado.findFirst({ where: { id: chave.slice(2), empreendimentoId, excluidoEm: null } })
+    : null;
+  if (!p) return null;
+  return { destino: { destino: "documento", solicitacaoId, tipo: chave, regra: { extensoes: p.extensoes, maxMB: p.maxMB } } as const, rotulo: p.nome };
+}
+
 // Quem pode subir o quê: a mesma regra das actions que registram o arquivo depois. O
 // token só vale para o caminho pedido, e o caminho precisa estar na pasta do destino.
 export async function autorizarUpload(pathname: string, payload: string | null) {
   const session = await auth();
   if (!session) throw new Error("Não autenticado.");
-  const d = lerDestino(payload);
+  let d = lerDestino(payload);
   const { role, id } = session.user;
 
   switch (d.destino) {
@@ -64,6 +75,11 @@ export async function autorizarUpload(pathname: string, payload: string | null) 
       if (role !== "RESPONSAVEL_TECNICO" || sol.lote.rtId !== id) throw new Error("Sem permissão.");
       const aceita = d.destino === "documento" ? ["RASCUNHO", "COMPLEMENTO"] : ["APROVADA", "RESSALVAS"];
       if (!aceita.includes(sol.status)) throw new Error("Esta solicitação não aceita este arquivo agora.");
+      if (d.destino === "documento") {
+        const doc = await destinoDocumento(d.solicitacaoId, d.tipo, sol.lote.empreendimentoId);
+        if (!doc) throw new Error("Documento não encontrado.");
+        d = doc.destino;
+      }
     }
   }
 

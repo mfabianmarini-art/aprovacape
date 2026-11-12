@@ -9,12 +9,11 @@ import { Prisma } from "@/generated/prisma/client";
 import { marcarSubstituido, registrarArquivo } from "@/lib/arquivos";
 import { requireRole } from "@/lib/require-role";
 import { validarDocumentoEnviado } from "@/lib/upload-documento";
-import { descartarArquivo, lerArquivoEnviado } from "@/lib/upload-direto";
-import { DOC_PROJETO_CONJUNTO, docsObrigatorios } from "@/lib/status";
+import { descartarArquivo, destinoDocumento, lerArquivoEnviado } from "@/lib/upload-direto";
+import { DOC_PROJETO_CONJUNTO, DOC_REGRAS, docsObrigatorios, ehTipoPadrao } from "@/lib/status";
 import { emitirAcessoProprietario } from "@/lib/acesso-proprietario";
 import { rtExecucaoSchema } from "@/lib/rt-execucao";
 import { exigeRegulamentoArqp } from "@/lib/regulamento-arqp";
-import type { DocumentoTipo } from "@/generated/prisma/enums";
 
 // Só o responsável técnico abre e movimenta solicitações. O proprietário acompanha, sem
 // agir: em /acompanhar com protocolo e senha, ou — se tiver conta antiga — em modo leitura.
@@ -118,7 +117,8 @@ export async function criarRascunhoAction(_prev: unknown, formData: FormData) {
   redirect(`/nova?rascunho=${sol.id}&passo=2`);
 }
 
-export async function uploadDocumentoAction(solicitacaoId: string, tipo: DocumentoTipo, _prev: unknown, formData: FormData) {
+// chave: o tipo padrão, ou "p_<id>" para documento criado pela CAPE no empreendimento.
+export async function uploadDocumentoAction(solicitacaoId: string, chave: string, _prev: unknown, formData: FormData) {
   const session = await requireRole(RT);
   const sol = await prisma.solicitacao.findUniqueOrThrow({ where: { id: solicitacaoId }, include: { lote: true } });
   if (sol.lote.rtId !== session.user.id) return { error: "Solicitação não pertence a este usuário." };
@@ -127,12 +127,15 @@ export async function uploadDocumentoAction(solicitacaoId: string, tipo: Documen
   if (sol.status !== "RASCUNHO" && sol.status !== "COMPLEMENTO") {
     return { error: "Esta solicitação está em análise e não aceita novos arquivos." };
   }
+  const doc = await destinoDocumento(solicitacaoId, chave, sol.lote.empreendimentoId);
+  if (!doc) return { error: "Este documento não é mais pedido pela CAPE." };
+  const tipo = ehTipoPadrao(chave) ? chave : "PERSONALIZADO";
 
   // Em complementação troca-se só o que foi apontado — documento já validado pela CAPE
   // permanece. A exceção é a devolução no check-list, onde o projeto em si muda.
   if (sol.status === "COMPLEMENTO" && !sol.devolvidaNoChecklist) {
     const atual = await prisma.solicitacaoDocumento.findUnique({
-      where: { solicitacaoId_tipo: { solicitacaoId, tipo } },
+      where: { solicitacaoId_chave: { solicitacaoId, chave } },
     });
     if (atual?.validado) return { error: "Este documento já foi validado pela CAPE e não precisa ser substituído." };
   }
@@ -141,23 +144,23 @@ export async function uploadDocumentoAction(solicitacaoId: string, tipo: Documen
   // aqui ele é conferido e só então registrado. Recusado, é apagado.
   const pathname = String(formData.get("pathname") ?? "");
   const nomeArquivo = String(formData.get("nomeArquivo") ?? "").slice(0, 255);
-  const destino = { destino: "documento", solicitacaoId, tipo } as const;
-  const arq = pathname && nomeArquivo ? await lerArquivoEnviado(pathname, destino) : null;
+  const arq = pathname && nomeArquivo ? await lerArquivoEnviado(pathname, doc.destino) : null;
   if (!arq) return { error: "Arquivo não encontrado. Envie de novo." };
-  const invalido = validarDocumentoEnviado({ nome: nomeArquivo, tamanho: arq.tamanho, inicio: arq.inicio }, tipo);
+  const regra = ("regra" in doc.destino ? doc.destino.regra : undefined) ?? DOC_REGRAS[tipo];
+  const invalido = validarDocumentoEnviado({ nome: nomeArquivo, tamanho: arq.tamanho, inicio: arq.inicio }, regra);
   if (invalido) {
     await descartarArquivo(pathname);
     return { error: invalido };
   }
   const saved = { caminhoArquivo: pathname, nomeArquivo, tamanhoBytes: arq.tamanho };
-  const anterior = await prisma.solicitacaoDocumento.findUnique({ where: { solicitacaoId_tipo: { solicitacaoId, tipo } } });
+  const anterior = await prisma.solicitacaoDocumento.findUnique({ where: { solicitacaoId_chave: { solicitacaoId, chave } } });
 
   // O arquivo anterior não é apagado: vira versão substituída no inventário e continua
   // disponível (cláusula contratual de guarda de toda a documentação).
   await prisma.$transaction([
     prisma.solicitacaoDocumento.upsert({
-      where: { solicitacaoId_tipo: { solicitacaoId, tipo } },
-      create: { solicitacaoId, tipo, ...saved, validado: false },
+      where: { solicitacaoId_chave: { solicitacaoId, chave } },
+      create: { solicitacaoId, tipo, chave, rotulo: doc.rotulo, ...saved, validado: false },
       // uploadedAt não é @updatedAt: sem isto a data continuaria a do primeiro envio, e o
       // analista não veria qual arquivo é novo nesta rodada.
       update: { ...saved, validado: false, uploadedAt: new Date() },
@@ -183,11 +186,11 @@ export async function uploadDocumentoAction(solicitacaoId: string, tipo: Documen
 
 // Antes de subir: o arquivo escolhido é idêntico (mesmo SHA-256) ao documento atual deste
 // tipo? Então não há o que enviar — poupa o upload e uma versão repetida no inventário.
-export async function documentoIdenticoAction(solicitacaoId: string, tipo: DocumentoTipo, hash: string) {
+export async function documentoIdenticoAction(solicitacaoId: string, chave: string, hash: string) {
   const session = await requireRole(RT);
   if (!/^[0-9a-f]{64}$/.test(hash)) return false;
   const doc = await prisma.solicitacaoDocumento.findUnique({
-    where: { solicitacaoId_tipo: { solicitacaoId, tipo } },
+    where: { solicitacaoId_chave: { solicitacaoId, chave } },
     include: { solicitacao: { include: { lote: { select: { rtId: true } } } } },
   });
   if (!doc || doc.solicitacao.lote.rtId !== session.user.id) return false;
@@ -251,7 +254,7 @@ export async function enviarSolicitacaoAction(_prev: unknown, formData: FormData
     return { error: `${SO_LOTES_DA_QUADRA} Cancele este rascunho e abra outro.` };
   }
 
-  const faltando = docsObrigatorios(sol.lotesAdicionais.length, sol.lote.empreendimento).filter((t) => !sol.documentos.find((d) => d.tipo === t));
+  const faltando = docsObrigatorios(sol.lotesAdicionais.length, sol.lote.empreendimento).filter((t) => !sol.documentos.find((d) => d.chave === t));
   if (faltando.length > 0) return { error: "Anexe todos os documentos do check-list antes de enviar." };
   const proprietarioEmail = sol.proprietarioEmail ?? parsed.data.proprietarioEmail;
   if (!proprietarioEmail) return { error: "Informe o e-mail do proprietário." };

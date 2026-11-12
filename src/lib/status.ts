@@ -29,6 +29,7 @@ export const DOC_LABEL: Record<DocumentoTipo, { nome: string }> = {
   PROJETO_APROVADO_PREFEITURA: { nome: "Projeto de unificação de lote aprovado na prefeitura" },
   ART_UNIFICACAO: { nome: "ART/RRT da unificação dos lotes" },
   TERMO_REGULAMENTO_ARQP: { nome: "Termo de ciência e concordância do Regulamento de Obras – ARQP" },
+  PERSONALIZADO: { nome: "Documento pedido pela CAPE" },
   OUTROS: { nome: "Outros documentos" },
 };
 
@@ -73,7 +74,59 @@ export function exigenciaPadrao(tipo: DocumentoTipo, empreendimento: string): Do
   return "OPCIONAL";
 }
 
-export type RegrasDoEmpreendimento = { nome: string; regrasDocumentos: { tipo: DocumentoTipo; exigencia: DocumentoExigencia }[] };
+// Documento criado pela CAPE (DocumentoPersonalizado). Nas solicitações, os documentos são
+// identificados por uma chave: o próprio tipo nos padrão, "p_<id>" nos criados.
+export type DocChave = string;
+export type DocPersonalizado = {
+  id: string;
+  nome: string;
+  descricao: string | null;
+  extensoes: string[];
+  maxMB: number;
+  exigencia: DocumentoExigencia;
+  excluidoEm: Date | string | null;
+};
+
+export type RegrasDoEmpreendimento = {
+  nome: string;
+  regrasDocumentos: { tipo: DocumentoTipo; exigencia: DocumentoExigencia }[];
+  // Inclui os excluídos: o que já foi enviado com eles continua precisando de nome.
+  documentosPersonalizados?: DocPersonalizado[];
+};
+
+// Formatos que a CAPE pode escolher para um documento criado por ela: todos têm a
+// assinatura de conteúdo conferida no envio (upload-documento.ts).
+export const FORMATOS_PERSONALIZADOS: { id: string; rotulo: string; extensoes: string[] }[] = [
+  { id: "pdf", rotulo: "PDF", extensoes: [".pdf"] },
+  { id: "dwg", rotulo: "DWG", extensoes: [".dwg"] },
+  { id: "zip", rotulo: "ZIP", extensoes: [".zip"] },
+  { id: "jpg", rotulo: "JPG", extensoes: [".jpg", ".jpeg"] },
+  { id: "png", rotulo: "PNG", extensoes: [".png"] },
+  { id: "word", rotulo: "Word", extensoes: [".doc", ".docx"] },
+];
+export const MAX_MB_PERSONALIZADO = 50;
+
+export function chaveDoPersonalizado(id: string): DocChave {
+  return `p_${id}`;
+}
+
+export function ehTipoPadrao(chave: string): chave is DocumentoTipo {
+  return chave !== "PERSONALIZADO" && Object.hasOwn(DOC_LABEL, chave);
+}
+
+function personalizadosAtivos(emp: RegrasDoEmpreendimento) {
+  return (emp.documentosPersonalizados ?? []).filter((d) => !d.excluidoEm);
+}
+
+export type InfoDoc = { nome: string; dica: string; extensoes: readonly string[]; maxMB: number };
+
+// Nome, orientação e regra de arquivo de um documento, padrão ou criado pela CAPE.
+export function infoDoc(chave: DocChave, emp: RegrasDoEmpreendimento): InfoDoc {
+  if (ehTipoPadrao(chave)) return { nome: DOC_LABEL[chave].nome, dica: DOC_DICA[chave], ...DOC_REGRAS[chave] };
+  const p = (emp.documentosPersonalizados ?? []).find((d) => chaveDoPersonalizado(d.id) === chave);
+  if (!p) return { nome: DOC_LABEL.PERSONALIZADO.nome, dica: "", extensoes: [], maxMB: 0 };
+  return { nome: p.nome, dica: p.descricao ?? "", extensoes: p.extensoes, maxMB: p.maxMB };
+}
 
 export function exigenciaDe(tipo: DocumentoTipo, emp: RegrasDoEmpreendimento): DocumentoExigencia {
   return emp.regrasDocumentos.find((r) => r.tipo === tipo)?.exigencia ?? exigenciaPadrao(tipo, emp.nome);
@@ -81,17 +134,25 @@ export function exigenciaDe(tipo: DocumentoTipo, emp: RegrasDoEmpreendimento): D
 
 // Valem na hora, também para solicitações já enviadas: a CAPE muda a regra pensando no que
 // quer conferir daqui para frente, inclusive no que está em análise.
-export function docsObrigatorios(lotesAdicionais: number, emp: RegrasDoEmpreendimento): DocumentoTipo[] {
-  return DOC_TODOS.filter((t) => {
-    const e = exigenciaDe(t, emp);
-    return e === "OBRIGATORIO" || (e === "OBRIGATORIO_MAIS_LOTES" && lotesAdicionais > 0);
-  });
+export function docsObrigatorios(lotesAdicionais: number, emp: RegrasDoEmpreendimento): DocChave[] {
+  const exigido = (e: DocumentoExigencia) => e === "OBRIGATORIO" || (e === "OBRIGATORIO_MAIS_LOTES" && lotesAdicionais > 0);
+  return [
+    ...DOC_TODOS.filter((t) => exigido(exigenciaDe(t, emp))),
+    ...personalizadosAtivos(emp)
+      .filter((d) => exigido(d.exigencia))
+      .map((d) => chaveDoPersonalizado(d.id)),
+  ];
 }
 
-// `enviados`: o que já foi anexado continua à vista mesmo que deixe de ser pedido.
-export function docsOpcionais(lotesAdicionais: number, emp: RegrasDoEmpreendimento, enviados: DocumentoTipo[] = []): DocumentoTipo[] {
+// `enviados` (chaves): o que já foi anexado continua à vista mesmo que deixe de ser pedido.
+export function docsOpcionais(lotesAdicionais: number, emp: RegrasDoEmpreendimento, enviados: DocChave[] = []): DocChave[] {
   const obrigatorios = docsObrigatorios(lotesAdicionais, emp);
-  return DOC_TODOS.filter((t) => !obrigatorios.includes(t) && (exigenciaDe(t, emp) === "OPCIONAL" || enviados.includes(t)));
+  const padrao = DOC_TODOS.filter((t) => !obrigatorios.includes(t) && (exigenciaDe(t, emp) === "OPCIONAL" || enviados.includes(t)));
+  const criados = (emp.documentosPersonalizados ?? [])
+    .map((d) => ({ d, chave: chaveDoPersonalizado(d.id) }))
+    .filter(({ d, chave }) => !obrigatorios.includes(chave) && ((!d.excluidoEm && d.exigencia === "OPCIONAL") || enviados.includes(chave)))
+    .map(({ chave }) => chave);
+  return [...padrao, ...criados];
 }
 
 // Formato e tamanho aceitos por documento. O projeto arquitetônico vem em dois campos: PDF
@@ -111,6 +172,8 @@ export const DOC_REGRAS: Record<DocumentoTipo, { extensoes: readonly string[]; m
   PROJETO_APROVADO_PREFEITURA: { extensoes: [".pdf"], maxMB: 5 },
   ART_UNIFICACAO: { extensoes: [".pdf"], maxMB: 5 },
   TERMO_REGULAMENTO_ARQP: { extensoes: [".pdf"], maxMB: 5 },
+  // Cada documento criado pela CAPE tem a sua regra (DocumentoPersonalizado).
+  PERSONALIZADO: { extensoes: [], maxMB: 0 },
   OUTROS: { extensoes: [".pdf", ".dwg", ".jpg", ".jpeg", ".png"], maxMB: 10 },
 };
 
@@ -124,8 +187,30 @@ export const IRREGULARIDADE_LABEL: Record<IrregularidadeTipo, string> = {
   OUTRA: "Outra irregularidade",
 };
 
+// Orientação mostrada ao RT ao anexar cada documento.
+export const DOC_DICA: Record<DocumentoTipo, string> = {
+  PROJETO_ARQUITETONICO: "Plantas, cortes, elevações e implantação no lote, em PDF",
+  PROJETO_ARQUITETONICO_DWG:
+    "O mesmo projeto em DWG, em qualquer versão do AutoCAD. Mais de um arquivo DWG: envie todos juntos numa pasta compactada (.zip)",
+  ART_RRT_PROJETO: "Anotação de responsabilidade técnica quitada, do autor do projeto",
+  ART_RRT_EXECUCAO: "Anotação de responsabilidade técnica quitada, de quem executa a obra",
+  MEMORIAL_DESCRITIVO: "Materiais, acabamentos e sistema construtivo",
+  PROJETO_PAISAGISTICO: "Implantação de jardins, paisagismo e áreas externas",
+  CAPA_IPTU: "Capa do carnê ou guia do IPTU do lote",
+  MATRICULA: "Matrícula atualizada do lote no cartório de registro de imóveis",
+  LEVANTAMENTO_PLANIALTIMETRICO: "Levantamento planialtimétrico cadastral do lote",
+  PROJETO_APROVADO_PREFEITURA: "Projeto aprovado previamente na Prefeitura, abrangendo todos os lotes",
+  ART_UNIFICACAO: "Anotação de responsabilidade técnica da unificação dos lotes",
+  TERMO_REGULAMENTO_ARQP: "Termo de ciência e concordância com o Regulamento de Obras da ARQP (item 1.53), assinado pelo responsável técnico pelo projeto",
+  OUTROS: "Qualquer documento adicional relevante para a análise",
+  PERSONALIZADO: "",
+};
+
 export function formatosAceitos(tipo: DocumentoTipo) {
-  const { extensoes, maxMB } = DOC_REGRAS[tipo];
+  return formatosTexto(DOC_REGRAS[tipo].extensoes, DOC_REGRAS[tipo].maxMB);
+}
+
+export function formatosTexto(extensoes: readonly string[], maxMB: number) {
   const nomes = extensoes.map((e) => e.replace(".", "").toUpperCase()).join(" ou ");
   return `${nomes}, até ${maxMB} MB`;
 }

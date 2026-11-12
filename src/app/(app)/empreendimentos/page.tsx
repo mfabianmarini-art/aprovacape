@@ -19,8 +19,8 @@ import { DocumentoUploadForm } from "../documentos/DocumentoUploadForm";
 import { UsuariosSection } from "./UsuariosSection";
 import { EmpreendimentoTabs } from "./EmpreendimentoTabs";
 import { RegrasDocumentosForm } from "./RegrasDocumentosForm";
-import { getRegrasDocumentos } from "@/lib/queries/regras-documentos";
-import { DOC_LABEL, DOC_TODOS, exigenciaDe, exigenciaPadrao, formatosAceitos } from "@/lib/status";
+import { getDocumentosPersonalizados, getRegrasDocumentos } from "@/lib/queries/regras-documentos";
+import { chaveDoPersonalizado, DOC_LABEL, DOC_TODOS, exigenciaDe, exigenciaPadrao, formatosAceitos, formatosTexto } from "@/lib/status";
 
 export default async function EmpreendimentosPage({ searchParams }: { searchParams: Promise<{ emp?: string }> }) {
   const session = await requireRole("ADMIN_CAPE", "CAPE_ANALISTA");
@@ -31,7 +31,7 @@ export default async function EmpreendimentosPage({ searchParams }: { searchPara
   ]);
   const isAdmin = session.user.role === "ADMIN_CAPE";
 
-  const [data, documentos, usuarios, pendentes, sindicos, armazenamento, regrasDocumentos] = atual
+  const [data, documentos, usuarios, pendentes, sindicos, armazenamento, regrasDocumentos, personalizados] = atual
     ? await Promise.all([
         getEmpreendimentoConfig(atual.id),
         getDocumentosTecnicos(atual.id),
@@ -40,8 +40,9 @@ export default async function EmpreendimentosPage({ searchParams }: { searchPara
         getSindicos(),
         armazenamentoDoEmpreendimento(atual.id),
         getRegrasDocumentos(atual.id),
+        getDocumentosPersonalizados(atual.id),
       ])
-    : [null, [], [], 0, [], null, []];
+    : [null, [], [], 0, [], null, [], []];
 
   if (!data) {
     return (
@@ -135,13 +136,24 @@ export default async function EmpreendimentosPage({ searchParams }: { searchPara
               <RegrasDocumentosForm
                 key={emp.id}
                 empreendimentoId={emp.id}
-                linhas={DOC_TODOS.map((tipo) => ({
-                  tipo,
-                  nome: DOC_LABEL[tipo].nome,
-                  formatos: formatosAceitos(tipo),
-                  exigencia: exigenciaDe(tipo, comRegras),
-                  padrao: exigenciaPadrao(tipo, emp.nome),
-                }))}
+                linhas={[
+                  ...DOC_TODOS.map((tipo) => ({
+                    tipo,
+                    nome: DOC_LABEL[tipo].nome,
+                    formatos: formatosAceitos(tipo),
+                    exigencia: exigenciaDe(tipo, comRegras),
+                    padrao: exigenciaPadrao(tipo, emp.nome),
+                    personalizado: null,
+                  })),
+                  ...personalizados.map((d) => ({
+                    tipo: chaveDoPersonalizado(d.id),
+                    nome: d.nome,
+                    formatos: formatosTexto(d.extensoes, d.maxMB),
+                    exigencia: d.exigencia,
+                    padrao: null,
+                    personalizado: { id: d.id, descricao: d.descricao, criadoPor: d.criadoPor?.name ?? null },
+                  })),
+                ]}
                 ultimaAlteracao={ultimaRegra ? { nome: ultimaRegra.atualizadoPor?.name ?? null, em: ultimaRegra.atualizadoEm.toISOString() } : null}
               />
             </div>

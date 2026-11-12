@@ -16,7 +16,6 @@ import { checklistDaSolicitacao } from "@/lib/queries/checklist";
 import { partesDoItem } from "@/lib/checklist-texto";
 import { rtAposDesvinculo, titularidadeEntreLotes } from "@/lib/conferencia-vinculo";
 import { excluirVersoesDaAprovacao, marcarSubstituido, registrarArquivo } from "@/lib/arquivos";
-import type { DocumentoTipo } from "@/generated/prisma/enums";
 
 async function loadSolicitacao(solicitacaoId: string) {
   return prisma.solicitacao.findUniqueOrThrow({
@@ -33,10 +32,11 @@ function revalidateAll(protocolo: string) {
   revalidatePath("/requerimentos");
 }
 
-export async function toggleDocumentoAction(solicitacaoId: string, tipo: DocumentoTipo) {
+// chave: o tipo padrão, ou "p_<id>" para documento criado pela CAPE.
+export async function toggleDocumentoAction(solicitacaoId: string, chave: string) {
   await requireRole("ADMIN_CAPE", "CAPE_ANALISTA");
   const sol = await loadSolicitacao(solicitacaoId);
-  const doc = sol.documentos.find((d) => d.tipo === tipo);
+  const doc = sol.documentos.find((d) => d.chave === chave);
   if (!doc) return;
 
   const validado = !doc.validado;
@@ -47,7 +47,7 @@ export async function toggleDocumentoAction(solicitacaoId: string, tipo: Documen
   });
 
   const updated = await prisma.solicitacaoDocumento.findMany({ where: { solicitacaoId } });
-  const allValidados = docsObrigatorios(sol.lotesAdicionais.length, sol.lote.empreendimento).every((t) => updated.find((d) => d.tipo === t)?.validado);
+  const allValidados = docsObrigatorios(sol.lotesAdicionais.length, sol.lote.empreendimento).every((t) => updated.find((d) => d.chave === t)?.validado);
   // O prazo de análise corre da validação documental: começa quando o último documento é
   // validado e, se um deles for desmarcado antes da análise, volta a esperar.
   const prazoInicioEm = allValidados ? (sol.prazoInicioEm ?? new Date()) : sol.status === "ENVIADA" ? null : sol.prazoInicioEm;
@@ -63,10 +63,10 @@ function normalizarObservacao(texto: string, max = MAX_OBSERVACAO) {
   return limpo.length > 0 ? limpo : null;
 }
 
-export async function salvarObservacaoDocumentoAction(solicitacaoId: string, tipo: DocumentoTipo, texto: string) {
+export async function salvarObservacaoDocumentoAction(solicitacaoId: string, chave: string, texto: string) {
   await requireRole("ADMIN_CAPE", "CAPE_ANALISTA");
   const sol = await loadSolicitacao(solicitacaoId);
-  const doc = sol.documentos.find((d) => d.tipo === tipo);
+  const doc = sol.documentos.find((d) => d.chave === chave);
   if (!doc) return;
 
   await prisma.solicitacaoDocumento.update({
@@ -112,7 +112,7 @@ export async function devolverDocumentacaoAction(solicitacaoId: string) {
   // deve render outro evento no histórico.
   if (sol.status === "COMPLEMENTO") return;
   // Nada pendente na conferência documental: não há o que pedir de volta.
-  if (docsObrigatorios(sol.lotesAdicionais.length, sol.lote.empreendimento).every((t) => sol.documentos.find((d) => d.tipo === t)?.validado)) return;
+  if (docsObrigatorios(sol.lotesAdicionais.length, sol.lote.empreendimento).every((t) => sol.documentos.find((d) => d.chave === t)?.validado)) return;
 
   const ok = await umaVez(() =>
     prisma.$transaction([

@@ -1,5 +1,4 @@
-import type { DocumentoTipo } from "@/generated/prisma/enums";
-import { DOC_REGRAS, formatosAceitos } from "@/lib/status";
+import { formatosTexto } from "@/lib/status";
 
 export function extensaoDe(nome: string) {
   const i = nome.lastIndexOf(".");
@@ -28,11 +27,13 @@ export function contentTypeDe(nomeArquivo: string) {
 
 // Confere um documento pelo nome, tamanho e primeiros bytes — o arquivo já está no Blob
 // (vai direto do navegador), então a conferência é feita depois do envio.
-export function validarDocumentoEnviado(arq: { nome: string; tamanho: number; inicio: Uint8Array }, tipo: DocumentoTipo): string | null {
-  const regra = DOC_REGRAS[tipo];
+export function validarDocumentoEnviado(
+  arq: { nome: string; tamanho: number; inicio: Uint8Array },
+  regra: { extensoes: readonly string[]; maxMB: number },
+): string | null {
   const ext = extensaoDe(arq.nome);
 
-  if (!regra.extensoes.includes(ext)) return `Formato não aceito para este documento — envie ${formatosAceitos(tipo)}.`;
+  if (!regra.extensoes.includes(ext)) return `Formato não aceito para este documento — envie ${formatosTexto(regra.extensoes, regra.maxMB)}.`;
   if (arq.tamanho > regra.maxMB * 1024 * 1024) return `Arquivo maior que ${regra.maxMB} MB.`;
 
   // Qualquer versão do AutoCAD serve; só se confere que é mesmo um DWG, cujo arquivo

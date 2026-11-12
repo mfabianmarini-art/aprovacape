@@ -16,7 +16,7 @@ const INCLUDE_SOLICITACAO = {
     include: { autor: { select: { name: true, role: true } } },
   },
   criadoPor: { select: { name: true, role: true } },
-  documentos: { select: { id: true, tipo: true, nomeArquivo: true, validado: true } },
+  documentos: { select: { id: true, tipo: true, rotulo: true, nomeArquivo: true, validado: true } },
   // Só as versões substituídas — poucas, e por contrato disponíveis ao condomínio.
   arquivos: SELECT_VERSOES_ANTERIORES,
   irregularidades: {

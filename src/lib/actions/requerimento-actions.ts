@@ -6,7 +6,7 @@ import { COM_REGRAS } from "@/lib/queries/regras-documentos";
 import { Prisma } from "@/generated/prisma/client";
 import { requireRole } from "@/lib/require-role";
 import { descartarArquivo, receberArquivo } from "@/lib/upload-direto";
-import { DOC_LABEL, docsObrigatorios } from "@/lib/status";
+import { docsObrigatorios, infoDoc } from "@/lib/status";
 import { notificarEtapa } from "@/lib/notificacoes";
 import { registrarArquivo } from "@/lib/arquivos";
 import { rtExecucaoSchema } from "@/lib/rt-execucao";
@@ -32,9 +32,9 @@ export async function reenviarComplementacaoAction(solicitacaoId: string): Promi
   // não fecha nunca e o check-list fica travado (caso do SOL-2026-004, DWG que não subiu).
   const documentos = await prisma.solicitacaoDocumento.findMany({ where: { solicitacaoId: sol.id } });
   const obrigatorios = docsObrigatorios(sol.lotesAdicionais.length, sol.lote.empreendimento);
-  const faltando = obrigatorios.filter((t) => !documentos.some((d) => d.tipo === t));
+  const faltando = obrigatorios.filter((t) => !documentos.some((d) => d.chave === t));
   if (faltando.length > 0) {
-    return { error: `Envie antes os documentos obrigatórios que faltam: ${faltando.map((t) => DOC_LABEL[t].nome).join(", ")}.` };
+    return { error: `Envie antes os documentos obrigatórios que faltam: ${faltando.map((t) => infoDoc(t, sol.lote.empreendimento).nome).join(", ")}.` };
   }
 
   // Devolvida é para corrigir: reenviar sem trocar nenhum arquivo só devolveria à CAPE o
@@ -60,7 +60,7 @@ export async function reenviarComplementacaoAction(solicitacaoId: string): Promi
   // a CAPE a reconferir arquivos intactos a cada rodada.
   // OUTROS não entra na conferência documental (não é obrigatório e não tem checkbox de
   // validação), então não pode impedir `documentacaoValidada` de fechar.
-  const todosValidados = obrigatorios.every((t) => documentos.find((d) => d.tipo === t)?.validado);
+  const todosValidados = obrigatorios.every((t) => documentos.find((d) => d.chave === t)?.validado);
 
   await prisma.$transaction([
     prisma.solicitacao.update({
@@ -81,7 +81,7 @@ export async function reenviarComplementacaoAction(solicitacaoId: string): Promi
         solicitacaoId: sol.id,
         tipo: "REENVIO_RECEBIDO",
         texto: (() => {
-          const trocados = obrigatorios.filter((t) => !documentos.find((d) => d.tipo === t)?.validado).length;
+          const trocados = obrigatorios.filter((t) => !documentos.find((d) => d.chave === t)?.validado).length;
           const oQue = trocados === 0 ? "sem troca de arquivos" : `${trocados} documento(s) a reanalisar`;
           return conta
             ? `Reenvio ${reenvios} de ${emp.reenviosSemTaxa} recebido — ${oQue}.`

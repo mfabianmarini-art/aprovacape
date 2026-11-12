@@ -107,6 +107,9 @@ enum DocumentoTipo {
   // Só no Quinta da Primavera: termo do Regulamento de Obras da ARQP assinado pelo RT do
   // projeto (ver exigeRegulamentoArqp).
   TERMO_REGULAMENTO_ARQP
+  // Documento criado pela CAPE no empreendimento (DocumentoPersonalizado): a linha de
+  // SolicitacaoDocumento diz qual pela `chave`.
+  PERSONALIZADO
   // Não obrigatório, como o projeto paisagístico (ver DOC_OPCIONAIS).
   OUTROS
 }
@@ -197,6 +200,7 @@ model User {
   lotesAdicionaisRevisados   SolicitacaoLoteAdicional[] @relation("LoteAdicionalRevisadoPor")
   lotesAdicionaisRtAnterior  SolicitacaoLoteAdicional[] @relation("LoteAdicionalRtAnterior")
   regrasDocumentoAlteradas   RegraDocumento[]           @relation("RegraDocumentoAtualizadaPor")
+  documentosPersonalizadosCriados DocumentoPersonalizado[] @relation("DocumentoPersonalizadoCriadoPor")
   devolutivasTecnicas        DevolutivaTecnica[] @relation("DevolutivaTecnicaAutor")
   redefinicoesSenha          RedefinicaoSenha[]
   arquivosEnviados           Arquivo[]          @relation("ArquivoEnviadoPor")
@@ -232,6 +236,7 @@ model Empreendimento {
   documentosTecnicos DocumentoTecnico[]
   arquivos           Arquivo[]
   regrasDocumentos   RegraDocumento[]
+  documentosPersonalizados DocumentoPersonalizado[]
 
   @@index([sindicoId])
 }
@@ -249,6 +254,28 @@ model RegraDocumento {
   atualizadoPor    User?              @relation("RegraDocumentoAtualizadaPor", fields: [atualizadoPorId], references: [id], onDelete: SetNull)
 
   @@id([empreendimentoId, tipo])
+}
+
+// Documento que a CAPE criou para as solicitações de um empreendimento, além dos padrão da
+// plataforma. Nas solicitações ele é identificado pela chave "p_<id>".
+model DocumentoPersonalizado {
+  id               String             @id @default(cuid())
+  empreendimentoId String
+  empreendimento   Empreendimento     @relation(fields: [empreendimentoId], references: [id], onDelete: Cascade)
+  nome             String
+  // Orientação ao RT, mostrada no envio.
+  descricao        String?
+  // Extensões aceitas, com o ponto (".pdf"), dentre FORMATOS_PERSONALIZADOS.
+  extensoes        String[]
+  maxMB            Int
+  exigencia        DocumentoExigencia
+  criadoPorId      String?
+  criadoPor        User?              @relation("DocumentoPersonalizadoCriadoPor", fields: [criadoPorId], references: [id], onDelete: SetNull)
+  createdAt        DateTime           @default(now())
+  // Excluído pela CAPE: deixa de ser pedido, mas o que já foi enviado continua à vista.
+  excluidoEm       DateTime?
+
+  @@index([empreendimentoId])
 }
 
 model Quadra {
@@ -465,6 +492,10 @@ model SolicitacaoDocumento {
   solicitacaoId  String
   solicitacao    Solicitacao   @relation(fields: [solicitacaoId], references: [id])
   tipo           DocumentoTipo
+  // Qual documento: o próprio tipo, ou "p_<id>" para um DocumentoPersonalizado.
+  chave          String
+  // Nome do documento personalizado no envio, para as telas que não carregam o catálogo.
+  rotulo         String?
   nomeArquivo    String
   caminhoArquivo String
   tamanhoBytes   Int
@@ -474,7 +505,7 @@ model SolicitacaoDocumento {
   observacao     String?
   uploadedAt     DateTime      @default(now())
 
-  @@unique([solicitacaoId, tipo])
+  @@unique([solicitacaoId, chave])
 }
 
 model ChecklistResultado {

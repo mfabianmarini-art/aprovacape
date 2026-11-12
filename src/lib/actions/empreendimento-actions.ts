@@ -10,7 +10,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/require-role";
 import { COM_REGRAS } from "@/lib/queries/regras-documentos";
-import { DOC_LABEL, DOC_TODOS, EXIGENCIA_LABEL, exigenciaDe } from "@/lib/status";
+import { chaveDoPersonalizado, DOC_LABEL, DOC_TODOS, EXIGENCIA_LABEL, exigenciaDe, FORMATOS_PERSONALIZADOS, MAX_MB_PERSONALIZADO } from "@/lib/status";
 import type { DocumentoExigencia, DocumentoTipo } from "@/generated/prisma/enums";
 
 // Valores de taxa (taxaAnaliseCent/taxaVisitaCent) saíram de todas as telas: as colunas
@@ -253,19 +253,85 @@ export async function salvarRegrasDocumentosAction(
     novas.push({ tipo, exigencia: valor as DocumentoExigencia });
   }
   const mudadas = novas.filter((n) => exigenciaDe(n.tipo, emp) !== n.exigencia);
-  if (mudadas.length === 0) return { ok: true };
+  const personalizadas: { id: string; exigencia: DocumentoExigencia }[] = [];
+  for (const d of emp.documentosPersonalizados.filter((x) => !x.excluidoEm)) {
+    const valor = String(formData.get(`exigencia_${chaveDoPersonalizado(d.id)}`) ?? d.exigencia);
+    if (!Object.hasOwn(EXIGENCIA_LABEL, valor)) return { error: `Escolha a exigência de ${d.nome}.` };
+    if (valor !== d.exigencia) personalizadas.push({ id: d.id, exigencia: valor as DocumentoExigencia });
+  }
+  if (mudadas.length === 0 && personalizadas.length === 0) return { ok: true };
 
-  await prisma.$transaction(
-    mudadas.map((n) =>
+  await prisma.$transaction([
+    ...personalizadas.map((d) => prisma.documentoPersonalizado.update({ where: { id: d.id }, data: { exigencia: d.exigencia } })),
+    ...mudadas.map((n) =>
       prisma.regraDocumento.upsert({
         where: { empreendimentoId_tipo: { empreendimentoId, tipo: n.tipo } },
         create: { empreendimentoId, tipo: n.tipo, exigencia: n.exigencia, atualizadoPorId: session.user.id },
         update: { exigencia: n.exigencia, atualizadoPorId: session.user.id },
       }),
     ),
-  );
+  ]);
 
   // Nova solicitação, análise, requerimentos e Como usar leem estas regras.
   revalidatePath("/", "layout");
   return { ok: true };
+}
+
+const novoDocumentoSchema = z.object({
+  nome: z.string().trim().min(3, "Informe o nome do documento.").max(120, "Nome com até 120 caracteres."),
+  descricao: z.string().trim().max(300, "Orientação com até 300 caracteres."),
+  maxMB: z.coerce
+    .number()
+    .int("Informe o tamanho em MB, sem casas decimais.")
+    .min(1, "O tamanho máximo é de pelo menos 1 MB.")
+    .max(MAX_MB_PERSONALIZADO, `O tamanho máximo vai até ${MAX_MB_PERSONALIZADO} MB.`),
+  exigencia: z.enum(["OBRIGATORIO", "OBRIGATORIO_MAIS_LOTES", "OPCIONAL", "NAO_SOLICITADO"]),
+});
+
+// Documento que a CAPE passa a pedir nas solicitações do empreendimento, além dos padrão.
+export async function criarDocumentoPersonalizadoAction(
+  empreendimentoId: string,
+  _prev: RegrasDocumentosState,
+  formData: FormData,
+): Promise<RegrasDocumentosState> {
+  const session = await requireRole("ADMIN_CAPE", "CAPE_ANALISTA");
+  const parsed = novoDocumentoSchema.safeParse({
+    nome: formData.get("nome") ?? "",
+    descricao: formData.get("descricao") ?? "",
+    maxMB: formData.get("maxMB"),
+    exigencia: formData.get("exigencia"),
+  });
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
+  const escolhidos = formData.getAll("formatos").map(String);
+  const extensoes = FORMATOS_PERSONALIZADOS.filter((f) => escolhidos.includes(f.id)).flatMap((f) => f.extensoes);
+  if (extensoes.length === 0) return { error: "Escolha ao menos um formato de arquivo." };
+
+  const emp = await prisma.empreendimento.findUnique({ where: { id: empreendimentoId }, ...COM_REGRAS });
+  if (!emp) return { error: "Empreendimento não encontrado." };
+  // Dois documentos com o mesmo nome confundiriam o RT e a conferência.
+  const nome = parsed.data.nome;
+  const existentes = [...DOC_TODOS.map((t) => DOC_LABEL[t].nome), ...emp.documentosPersonalizados.filter((d) => !d.excluidoEm).map((d) => d.nome)];
+  if (existentes.some((n) => n.toLowerCase() === nome.toLowerCase())) return { error: "Já existe um documento com esse nome." };
+
+  await prisma.documentoPersonalizado.create({
+    data: {
+      empreendimentoId,
+      nome,
+      descricao: parsed.data.descricao || null,
+      extensoes,
+      maxMB: parsed.data.maxMB,
+      exigencia: parsed.data.exigencia,
+      criadoPorId: session.user.id,
+    },
+  });
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+// Excluir não apaga: o documento deixa de ser pedido e some das telas, mas o que já foi
+// enviado com ele continua à vista na análise e nos requerimentos.
+export async function excluirDocumentoPersonalizadoAction(id: string) {
+  await requireRole("ADMIN_CAPE", "CAPE_ANALISTA");
+  await prisma.documentoPersonalizado.updateMany({ where: { id, excluidoEm: null }, data: { excluidoEm: new Date() } });
+  revalidatePath("/", "layout");
 }

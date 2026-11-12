@@ -20,7 +20,7 @@ export async function getMeusRascunhos(userId: string) {
     },
     orderBy: { createdAt: "desc" },
     include: {
-      documentos: { select: { tipo: true } },
+      documentos: { select: { tipo: true, chave: true } },
       lote: { include: { quadra: true, empreendimento: COM_REGRAS } },
       _count: { select: { lotesAdicionais: true } },
     },

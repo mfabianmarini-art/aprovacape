@@ -1,12 +1,15 @@
-import type { DocumentoTipo } from "@/generated/prisma/enums";
-import { DOC_REGRAS } from "@/lib/status";
+import { DOC_REGRAS, ehTipoPadrao } from "@/lib/status";
+
+export type RegraArquivo = { extensoes: readonly string[]; maxMB: number };
 
 // Para onde vai um arquivo enviado direto do navegador ao Blob. Compartilhado entre o
 // navegador (pasta, checagem rápida de formato/tamanho) e o servidor (autorização e
 // registro), para os dois nunca divergirem. Todo upload do app passa por aqui: o corpo de
 // uma requisição à função da Vercel não passa de 4,5 MB.
 export type DestinoUpload =
-  | { destino: "documento"; solicitacaoId: string; tipo: DocumentoTipo }
+  // tipo: chave do documento (tipo padrão ou "p_<id>"). A regra de um documento criado pela
+  // CAPE vem do banco no servidor (destinoDocumento); no navegador, das props da tela.
+  | { destino: "documento"; solicitacaoId: string; tipo: string; regra?: RegraArquivo }
   | { destino: "devolutiva"; solicitacaoId: string }
   | { destino: "alvara"; solicitacaoId: string }
   | { destino: "evidencia"; solicitacaoId: string }
@@ -21,8 +24,11 @@ const WORD = [".doc", ".docx"] as const;
 
 export function regraDoDestino(d: DestinoUpload): { pasta: string; extensoes: readonly string[]; maxBytes: number } {
   switch (d.destino) {
-    case "documento":
-      return { pasta: `documentos/${d.solicitacaoId}/`, extensoes: DOC_REGRAS[d.tipo].extensoes, maxBytes: DOC_REGRAS[d.tipo].maxMB * MB };
+    case "documento": {
+      const regra = d.regra ?? (ehTipoPadrao(d.tipo) ? DOC_REGRAS[d.tipo] : null);
+      if (!regra) throw new Error("Documento sem regra de arquivo.");
+      return { pasta: `documentos/${d.solicitacaoId}/`, extensoes: regra.extensoes, maxBytes: regra.maxMB * MB };
+    }
     case "devolutiva":
       return { pasta: `documentos/devolutivas/${d.solicitacaoId}/`, extensoes: [".dwg", ".zip", ".pdf"], maxBytes: 15 * MB };
     case "alvara":

@@ -549,7 +549,7 @@ export function ResumoMapa({ data, podeAnalisar }: { data: Data; podeAnalisar: b
                               ) : (
                                 s.documentos.map((d) => (
                                   <div key={d.id} style={{ display: "flex", alignItems: "baseline", gap: 7, flexWrap: "wrap" }}>
-                                    <span style={{ fontSize: 11.5, fontWeight: 600 }}>{DOC_LABEL[d.tipo].nome}</span>
+                                    <span style={{ fontSize: 11.5, fontWeight: 600 }}>{d.rotulo ?? DOC_LABEL[d.tipo].nome}</span>
                                     <a
                                       href={`/api/files/${d.id}`}
                                       target="_blank"
