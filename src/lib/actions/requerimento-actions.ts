@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { COM_REGRAS } from "@/lib/queries/regras-documentos";
 import { Prisma } from "@/generated/prisma/client";
 import { requireRole } from "@/lib/require-role";
 import { descartarArquivo, receberArquivo } from "@/lib/upload-direto";
@@ -14,7 +15,7 @@ import { rtExecucaoSchema } from "@/lib/rt-execucao";
 async function loadOwnedSolicitacao(session: Awaited<ReturnType<typeof requireRole>>, solicitacaoId: string) {
   const sol = await prisma.solicitacao.findUniqueOrThrow({
     where: { id: solicitacaoId },
-    include: { lote: { include: { empreendimento: { select: { nome: true } } } }, lotesAdicionais: { select: { id: true } } },
+    include: { lote: { include: { empreendimento: COM_REGRAS } }, lotesAdicionais: { select: { id: true } } },
   });
   if (sol.lote.rtId !== session.user.id) throw new Error("Solicitação não pertence a este usuário.");
   return sol;
@@ -30,7 +31,7 @@ export async function reenviarComplementacaoAction(solicitacaoId: string): Promi
   // Sem isto a devolução voltava à CAPE com obrigatório faltando — a validação documental
   // não fecha nunca e o check-list fica travado (caso do SOL-2026-004, DWG que não subiu).
   const documentos = await prisma.solicitacaoDocumento.findMany({ where: { solicitacaoId: sol.id } });
-  const obrigatorios = docsObrigatorios(sol.lotesAdicionais.length, sol.lote.empreendimento.nome);
+  const obrigatorios = docsObrigatorios(sol.lotesAdicionais.length, sol.lote.empreendimento);
   const faltando = obrigatorios.filter((t) => !documentos.some((d) => d.tipo === t));
   if (faltando.length > 0) {
     return { error: `Envie antes os documentos obrigatórios que faltam: ${faltando.map((t) => DOC_LABEL[t].nome).join(", ")}.` };

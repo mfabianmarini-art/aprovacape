@@ -9,6 +9,9 @@ import { marcarSubstituido, registrarArquivo } from "@/lib/arquivos";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/require-role";
+import { COM_REGRAS } from "@/lib/queries/regras-documentos";
+import { DOC_LABEL, DOC_TODOS, EXIGENCIA_LABEL, exigenciaDe } from "@/lib/status";
+import type { DocumentoExigencia, DocumentoTipo } from "@/generated/prisma/enums";
 
 // Valores de taxa (taxaAnaliseCent/taxaVisitaCent) saíram de todas as telas: as colunas
 // ficam no banco com o que já estava gravado, mas nenhum formulário as edita mais.
@@ -229,4 +232,40 @@ export async function excluirArquivosAposRescisaoAction(empreendimentoId: string
   console.log(JSON.stringify({ evento: "arquivos_excluidos_pos_rescisao", empreendimentoId, quantidade: arquivos.length, por: session.user.id }));
   revalidatePath("/empreendimentos");
   return { ok: `${arquivos.length} arquivo(s) excluídos.` };
+}
+
+export type RegrasDocumentosState = { error?: string; ok?: boolean } | null;
+
+// Grava só o que difere do que já vale: cada linha guarda quem decidiu aquela regra.
+export async function salvarRegrasDocumentosAction(
+  empreendimentoId: string,
+  _prev: RegrasDocumentosState,
+  formData: FormData,
+): Promise<RegrasDocumentosState> {
+  const session = await requireRole("ADMIN_CAPE", "CAPE_ANALISTA");
+  const emp = await prisma.empreendimento.findUnique({ where: { id: empreendimentoId }, ...COM_REGRAS });
+  if (!emp) return { error: "Empreendimento não encontrado." };
+
+  const novas: { tipo: DocumentoTipo; exigencia: DocumentoExigencia }[] = [];
+  for (const tipo of DOC_TODOS) {
+    const valor = String(formData.get(`exigencia_${tipo}`) ?? "");
+    if (!Object.hasOwn(EXIGENCIA_LABEL, valor)) return { error: `Escolha a exigência de ${DOC_LABEL[tipo].nome}.` };
+    novas.push({ tipo, exigencia: valor as DocumentoExigencia });
+  }
+  const mudadas = novas.filter((n) => exigenciaDe(n.tipo, emp) !== n.exigencia);
+  if (mudadas.length === 0) return { ok: true };
+
+  await prisma.$transaction(
+    mudadas.map((n) =>
+      prisma.regraDocumento.upsert({
+        where: { empreendimentoId_tipo: { empreendimentoId, tipo: n.tipo } },
+        create: { empreendimentoId, tipo: n.tipo, exigencia: n.exigencia, atualizadoPorId: session.user.id },
+        update: { exigencia: n.exigencia, atualizadoPorId: session.user.id },
+      }),
+    ),
+  );
+
+  // Nova solicitação, análise, requerimentos e Como usar leem estas regras.
+  revalidatePath("/", "layout");
+  return { ok: true };
 }

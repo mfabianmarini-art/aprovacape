@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { COM_REGRAS } from "@/lib/queries/regras-documentos";
 import { Prisma } from "@/generated/prisma/client";
 import { marcarSubstituido, registrarArquivo } from "@/lib/arquivos";
 import { requireRole } from "@/lib/require-role";
@@ -236,7 +237,7 @@ export async function enviarSolicitacaoAction(_prev: unknown, formData: FormData
   const sol = await prisma.solicitacao.findUniqueOrThrow({
     where: { id: parsed.data.solicitacaoId },
     include: {
-      lote: { include: { empreendimento: true } },
+      lote: { include: { empreendimento: COM_REGRAS } },
       documentos: true,
       lotesAdicionais: { select: { lote: { select: { quadraId: true } } } },
     },
@@ -250,7 +251,7 @@ export async function enviarSolicitacaoAction(_prev: unknown, formData: FormData
     return { error: `${SO_LOTES_DA_QUADRA} Cancele este rascunho e abra outro.` };
   }
 
-  const faltando = docsObrigatorios(sol.lotesAdicionais.length, sol.lote.empreendimento.nome).filter((t) => !sol.documentos.find((d) => d.tipo === t));
+  const faltando = docsObrigatorios(sol.lotesAdicionais.length, sol.lote.empreendimento).filter((t) => !sol.documentos.find((d) => d.tipo === t));
   if (faltando.length > 0) return { error: "Anexe todos os documentos do check-list antes de enviar." };
   const proprietarioEmail = sol.proprietarioEmail ?? parsed.data.proprietarioEmail;
   if (!proprietarioEmail) return { error: "Informe o e-mail do proprietário." };

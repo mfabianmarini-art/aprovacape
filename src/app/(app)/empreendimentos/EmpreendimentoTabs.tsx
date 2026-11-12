@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 
-type TabId = "config" | "quadras" | "usuarios" | "documentos";
+type TabId = "config" | "exigidos" | "quadras" | "usuarios" | "documentos";
 
 const TABS: { id: TabId; label: string }[] = [
   { id: "config", label: "Configuração" },
+  { id: "exigidos", label: "Documentos exigidos" },
   { id: "quadras", label: "Quadras e lotes" },
   { id: "usuarios", label: "Usuários" },
   { id: "documentos", label: "Documentos técnicos" },
@@ -14,18 +15,20 @@ const TABS: { id: TabId; label: string }[] = [
 export function EmpreendimentoTabs({
   contagens,
   config,
+  exigidos,
   quadras,
   usuarios,
   documentos,
 }: {
   contagens: Partial<Record<TabId, number>>;
   config: React.ReactNode;
+  exigidos: React.ReactNode;
   quadras: React.ReactNode;
   usuarios: React.ReactNode;
   documentos: React.ReactNode;
 }) {
   const [aba, setAba] = useState<TabId>("config");
-  const conteudo: Record<TabId, React.ReactNode> = { config, quadras, usuarios, documentos };
+  const conteudo: Record<TabId, React.ReactNode> = { config, exigidos, quadras, usuarios, documentos };
 
   return (
     <section style={{ background: "#fff", border: "1px solid #DDD8CE", borderRadius: 4 }}>

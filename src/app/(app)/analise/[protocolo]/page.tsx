@@ -7,7 +7,7 @@ import { getUserDisplay } from "@/lib/user-display";
 import { getAnalise } from "@/lib/queries/analise";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { ScreenBody } from "@/components/ScreenBody";
-import { DOC_LABEL, DOC_OPCIONAIS, docsObrigatorios, TIPO_LABEL, IRREGULARIDADE_LABEL, formatDate, formatDateTime } from "@/lib/status";
+import { DOC_LABEL, docsObrigatorios, docsOpcionais, TIPO_LABEL, IRREGULARIDADE_LABEL, formatDate, formatDateTime } from "@/lib/status";
 import {
   toggleDocumentoAction,
   devolverDocumentacaoAction,
@@ -50,7 +50,7 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
   // Aqui a seção fica como registro do que foi apontado, com o ponteiro para lá.
   const podeAcompanharObra = sol.status === "EXECUCAO" || sol.status === "CONCLUIDA";
   const irregularidadesAbertas = sol.irregularidades.filter((i) => !i.regularizadaEm).length;
-  const obrigatorios = docsObrigatorios(sol.lotesAdicionais.length, sol.lote.empreendimento.nome);
+  const obrigatorios = docsObrigatorios(sol.lotesAdicionais.length, sol.lote.empreendimento);
   const nOk = obrigatorios.filter((t) => sol.documentos.find((d) => d.tipo === t)?.validado).length;
   const allDocs = nOk === obrigatorios.length;
   const alvaraCompleto = !!sol.alvaraCaminho && !!sol.alvaraProjetoCaminho && !!sol.alvaraArtCaminho;
@@ -437,7 +437,7 @@ export default async function AnalisePage({ params }: { params: Promise<{ protoc
                     </div>
                   );
                 })}
-                {DOC_OPCIONAIS.map((tipo) => {
+                {docsOpcionais(sol.lotesAdicionais.length, sol.lote.empreendimento, sol.documentos.map((d) => d.tipo)).map((tipo) => {
                   const doc = sol.documentos.find((d) => d.tipo === tipo);
                   if (!doc) return null;
                   return (

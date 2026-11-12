@@ -10,6 +10,10 @@ import { fimDaGuarda } from "@/lib/contrato";
 import { ipDaRequisicao } from "@/lib/limite-taxa";
 import { formatarTamanho } from "@/lib/arquivos-formato";
 
+// Empreendimentos sem regra gravada pela CAPE: vale o padrão da plataforma.
+const outro = { nome: "Outro Residencial", regrasDocumentos: [] };
+const quinta = { nome: "Quinta da Primavera", regrasDocumentos: [] };
+
 const bytes = (s: string | number[]) => (typeof s === "string" ? new TextEncoder().encode(s) : new Uint8Array(s));
 const MB = 1024 * 1024;
 
@@ -121,12 +125,12 @@ test("vídeo tutorial: links do YouTube e do Vimeo viram o player embutido", asy
 test("documentos obrigatórios: projeto em mais de um lote exige os da unificação", async () => {
   const { docsObrigatorios, DOC_OPCIONAIS, DOC_PROJETO_CONJUNTO } = await import("@/lib/status");
   for (const t of DOC_PROJETO_CONJUNTO) {
-    assert.ok(!docsObrigatorios(0, "Outro").includes(t), `${t} não vale para um lote só`);
-    assert.ok(docsObrigatorios(2, "Outro").includes(t), `${t} vale para vários lotes`);
+    assert.ok(!docsObrigatorios(0, outro).includes(t), `${t} não vale para um lote só`);
+    assert.ok(docsObrigatorios(2, outro).includes(t), `${t} vale para vários lotes`);
   }
   for (const t of ["MATRICULA", "ART_RRT_EXECUCAO", "CAPA_IPTU", "PROJETO_PAISAGISTICO"] as const) {
     assert.ok(DOC_OPCIONAIS.includes(t));
-    assert.ok(!docsObrigatorios(2, "Quinta da Primavera").includes(t), `${t} é opcional`);
+    assert.ok(!docsObrigatorios(2, quinta).includes(t), `${t} é opcional`);
   }
 });
 
@@ -147,12 +151,33 @@ test("responsável pela execução: nome, registro e e-mail válidos", async () 
   assert.ok(!rtExecucaoSchema.safeParse({ ...ok, rtExecEmail: "ana" }).success);
 });
 
+test("documentos exigidos: regra da CAPE prevalece sobre o padrão", async () => {
+  const { docsObrigatorios, docsOpcionais, DOC_TODOS, DOC_LABEL } = await import("@/lib/status");
+  assert.deepEqual([...DOC_TODOS].sort(), Object.keys(DOC_LABEL).sort(), "toda espécie de documento tem regra");
+  const emp = {
+    nome: "Outro Residencial",
+    regrasDocumentos: [
+      { tipo: "MATRICULA" as const, exigencia: "OBRIGATORIO" as const },
+      { tipo: "MEMORIAL_DESCRITIVO" as const, exigencia: "OPCIONAL" as const },
+      { tipo: "CAPA_IPTU" as const, exigencia: "NAO_SOLICITADO" as const },
+      { tipo: "ART_UNIFICACAO" as const, exigencia: "OBRIGATORIO" as const },
+    ],
+  };
+  const obrig = docsObrigatorios(0, emp);
+  assert.ok(obrig.includes("MATRICULA") && obrig.includes("ART_UNIFICACAO"));
+  assert.ok(!obrig.includes("MEMORIAL_DESCRITIVO") && !obrig.includes("PROJETO_APROVADO_PREFEITURA"));
+  const opc = docsOpcionais(0, emp);
+  assert.ok(opc.includes("MEMORIAL_DESCRITIVO") && !opc.includes("CAPA_IPTU") && !opc.includes("MATRICULA"));
+  assert.ok(docsOpcionais(0, emp, ["CAPA_IPTU"]).includes("CAPA_IPTU"), "o que já foi anexado não some");
+  assert.ok(!docsOpcionais(0, outro).includes("TERMO_REGULAMENTO_ARQP"), "termo da ARQP não é pedido fora do Quinta");
+});
+
 test("termo da ARQP obrigatório só no Quinta da Primavera", async () => {
   const { docsObrigatorios } = await import("@/lib/status");
-  assert.ok(docsObrigatorios(0, "Quinta da Primavera").includes("TERMO_REGULAMENTO_ARQP"));
-  assert.ok(!docsObrigatorios(0, "Outro Residencial").includes("TERMO_REGULAMENTO_ARQP"));
-  assert.ok(docsObrigatorios(1, "Quinta da Primavera").includes("ART_UNIFICACAO"));
-  assert.ok(!docsObrigatorios(0, "Quinta da Primavera").includes("ART_UNIFICACAO"));
+  assert.ok(docsObrigatorios(0, quinta).includes("TERMO_REGULAMENTO_ARQP"));
+  assert.ok(!docsObrigatorios(0, outro).includes("TERMO_REGULAMENTO_ARQP"));
+  assert.ok(docsObrigatorios(1, quinta).includes("ART_UNIFICACAO"));
+  assert.ok(!docsObrigatorios(0, quinta).includes("ART_UNIFICACAO"));
 });
 
 test("declaração da ARQP só no Quinta da Primavera", async () => {

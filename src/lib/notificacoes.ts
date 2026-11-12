@@ -65,9 +65,12 @@ async function mensagemDo(evento: EventoEtapa, solicitacaoId: string, prazoDias:
       const [docs, lotesAdicionais, sol] = await Promise.all([
         prisma.solicitacaoDocumento.findMany({ where: { solicitacaoId } }),
         prisma.solicitacaoLoteAdicional.count({ where: { solicitacaoId } }),
-        prisma.solicitacao.findUniqueOrThrow({ where: { id: solicitacaoId }, select: { lote: { select: { empreendimento: { select: { nome: true } } } } } }),
+        prisma.solicitacao.findUniqueOrThrow({
+          where: { id: solicitacaoId },
+          select: { lote: { select: { empreendimento: { select: { nome: true, regrasDocumentos: { select: { tipo: true, exigencia: true } } } } } } },
+        }),
       ]);
-      const detalhes = docsObrigatorios(lotesAdicionais, sol.lote.empreendimento.nome).flatMap((t) => {
+      const detalhes = docsObrigatorios(lotesAdicionais, sol.lote.empreendimento).flatMap((t) => {
         const d = docs.find((x) => x.tipo === t);
         if (!d) return [`${DOC_LABEL[t].nome}: não enviado.`];
         if (d.validado) return [];

@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { COM_REGRAS } from "@/lib/queries/regras-documentos";
 import { SELECT_VERSOES_ANTERIORES } from "@/components/VersoesAnteriores";
 import { checklistDaSolicitacao } from "@/lib/queries/checklist";
 
@@ -6,7 +7,7 @@ export async function getAnalise(protocolo: string) {
   const solicitacao = await prisma.solicitacao.findUnique({
     where: { protocolo },
     include: {
-      lote: { include: { quadra: true, empreendimento: true, proprietario: true, rt: true } },
+      lote: { include: { quadra: true, empreendimento: COM_REGRAS, proprietario: true, rt: true } },
       documentos: true,
       resultados: { include: { item: true } },
       historico: { orderBy: { createdAt: "desc" } },

@@ -1,13 +1,13 @@
 "use client";
 
 import { useEnvioDocumento } from "@/components/useEnvioDocumento";
-import { DOC_LABEL, DOC_OPCIONAIS, DOC_REGRAS, docsObrigatorios, formatosAceitos } from "@/lib/status";
+import { DOC_LABEL, DOC_REGRAS, docsObrigatorios, docsOpcionais, formatosAceitos, type RegrasDoEmpreendimento } from "@/lib/status";
 import type { DocumentoTipo } from "@/generated/prisma/enums";
 
 type Rascunho = {
   id: string;
   documentos: { tipo: DocumentoTipo; nomeArquivo: string }[];
-  lote: { numero: string; quadra: { nome: string }; empreendimento: { nome: string } };
+  lote: { numero: string; quadra: { nome: string }; empreendimento: RegrasDoEmpreendimento };
   lotesAdicionais: { lote: { numero: string; quadra: { nome: string } } }[];
 };
 
@@ -97,9 +97,11 @@ function UploadRow({
 }
 
 export function Step2Uploads({ rascunho }: { rascunho: Rascunho }) {
-  const obrigatorios = docsObrigatorios(rascunho.lotesAdicionais.length, rascunho.lote.empreendimento.nome);
+  const obrigatorios = docsObrigatorios(rascunho.lotesAdicionais.length, rascunho.lote.empreendimento);
   const enviados = obrigatorios.filter((t) => rascunho.documentos.find((d) => d.tipo === t)).length;
   const pendentes = obrigatorios.length - enviados;
+  const opcionais = docsOpcionais(rascunho.lotesAdicionais.length, rascunho.lote.empreendimento, rascunho.documentos.map((d) => d.tipo));
+  const exigeUnificacao = obrigatorios.includes("PROJETO_APROVADO_PREFEITURA") && obrigatorios.includes("ART_UNIFICACAO");
 
   return (
     <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 12 }}>
@@ -113,7 +115,7 @@ export function Step2Uploads({ rascunho }: { rascunho: Rascunho }) {
           <strong>
             {[rascunho.lote, ...rascunho.lotesAdicionais.map((a) => a.lote)].map((l) => `${l.quadra.nome} L${l.numero}`).join(", ")}
           </strong>
-          . A aprovação prévia na Prefeitura é obrigatória: anexe o projeto aprovado e a ART/RRT da unificação. Se anexar a
+          .{exigeUnificacao && " A aprovação prévia na Prefeitura é obrigatória: anexe o projeto aprovado e a ART/RRT da unificação."} Se anexar a
           matrícula ou a capa do IPTU, junte as de todos os lotes num único PDF.
         </div>
       )}
@@ -121,8 +123,10 @@ export function Step2Uploads({ rascunho }: { rascunho: Rascunho }) {
       {obrigatorios.map((tipo) => (
         <UploadRow key={tipo} solicitacaoId={rascunho.id} tipo={tipo} existente={rascunho.documentos.find((d) => d.tipo === tipo)} />
       ))}
-      <div style={{ fontSize: 11, letterSpacing: ".13em", textTransform: "uppercase", color: "#7A7472", marginTop: 6 }}>Documentos opcionais</div>
-      {DOC_OPCIONAIS.map((tipo) => (
+      {opcionais.length > 0 && (
+        <div style={{ fontSize: 11, letterSpacing: ".13em", textTransform: "uppercase", color: "#7A7472", marginTop: 6 }}>Documentos opcionais</div>
+      )}
+      {opcionais.map((tipo) => (
         <UploadRow
           key={tipo}
           solicitacaoId={rascunho.id}

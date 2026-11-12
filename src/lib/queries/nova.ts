@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { COM_REGRAS } from "@/lib/queries/regras-documentos";
 
 // Só o RT abre solicitação, então só os lotes em que ele é o responsável técnico.
 export async function getMeusLotes(userId: string) {
@@ -20,7 +21,7 @@ export async function getMeusRascunhos(userId: string) {
     orderBy: { createdAt: "desc" },
     include: {
       documentos: { select: { tipo: true } },
-      lote: { include: { quadra: true, empreendimento: true } },
+      lote: { include: { quadra: true, empreendimento: COM_REGRAS } },
       _count: { select: { lotesAdicionais: true } },
     },
   });
@@ -64,7 +65,7 @@ export async function getRascunho(id: string) {
     where: { id },
     include: {
       documentos: true,
-      lote: { include: { quadra: true, empreendimento: true, proprietario: { select: { name: true } } } },
+      lote: { include: { quadra: true, empreendimento: COM_REGRAS, proprietario: { select: { name: true } } } },
       lotesAdicionais: { include: { lote: { include: { quadra: true } } }, orderBy: { createdAt: "asc" } },
     },
   });

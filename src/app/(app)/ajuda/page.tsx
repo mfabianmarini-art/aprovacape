@@ -2,7 +2,7 @@ import { requireRole } from "@/lib/require-role";
 import { getUserDisplay } from "@/lib/user-display";
 import { prisma } from "@/lib/prisma";
 import { labelDaTela } from "@/lib/nav";
-import { DOC_ARQP, DOC_LABEL, DOC_OPCIONAIS, DOC_ORDER, DOC_PROJETO_CONJUNTO, formatosAceitos } from "@/lib/status";
+import { DOC_LABEL, DOC_TODOS, EXIGENCIA_LABEL, exigenciaDe, formatosAceitos, type RegrasDoEmpreendimento } from "@/lib/status";
 import { embedDoVideo } from "@/lib/video-tutorial";
 import { tutorialAtual } from "@/lib/tutorial";
 import { TutorialGestao } from "./TutorialGestao";
@@ -191,7 +191,14 @@ export default async function AjudaPage() {
     prisma.empreendimento.findMany({
       where: ehCape ? {} : { lotes: { some: { rtId: session.user.id } } },
       orderBy: { nome: "asc" },
-      select: { id: true, nome: true, prazoDias: true, reenviosSemTaxa: true, prazoComplementoDias: true },
+      select: {
+        id: true,
+        nome: true,
+        prazoDias: true,
+        reenviosSemTaxa: true,
+        prazoComplementoDias: true,
+        regrasDocumentos: { select: { tipo: true, exigencia: true } },
+      },
     }),
     tutorialAtual(),
   ]);
@@ -281,7 +288,7 @@ export default async function AjudaPage() {
                     )}
                   </div>
                   {p.corpo}
-                  {p.id === "solicitacao" && <TabelaDocumentos />}
+                  {p.id === "solicitacao" && <TabelaDocumentos empreendimentos={empreendimentos} />}
                   {p.id === "devolucao" && <RegrasDosEmpreendimentos empreendimentos={empreendimentos} />}
                 </div>
               </div>
@@ -306,14 +313,28 @@ export default async function AjudaPage() {
   );
 }
 
-function TabelaDocumentos() {
-  const linha = (t: (typeof DOC_ORDER)[number], situacao: string) => (
-    <tr key={t} style={{ borderTop: "1px solid #EDE9E1" }}>
-      <td style={{ padding: "7px 10px 7px 0", fontSize: 13 }}>{DOC_LABEL[t].nome}</td>
-      <td style={{ padding: "7px 10px", fontSize: 12, fontFamily: "var(--font-mono)", color: "#4A5563", whiteSpace: "nowrap" }}>{formatosAceitos(t)}</td>
-      <td style={{ padding: "7px 0", fontSize: 12, color: situacao === "opcional" ? "#7A7472" : "#8C2B22" }}>{situacao}</td>
-    </tr>
-  );
+// A CAPE define o que cada empreendimento exige; sem empreendimento ainda, mostra o padrão.
+function TabelaDocumentos({ empreendimentos }: { empreendimentos: (RegrasDoEmpreendimento & { id: string })[] }) {
+  const lista = empreendimentos.length ? empreendimentos : [{ id: "padrao", nome: "", regrasDocumentos: [] }];
+  return lista.map((emp) => (
+    <div key={emp.id} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      {lista.length > 1 && <div style={{ fontSize: 12.5, fontWeight: 600 }}>{emp.nome}</div>}
+      <TabelaDocumentosDe emp={emp} />
+    </div>
+  ));
+}
+
+function TabelaDocumentosDe({ emp }: { emp: RegrasDoEmpreendimento }) {
+  const linha = (t: (typeof DOC_TODOS)[number]) => {
+    const exigencia = exigenciaDe(t, emp);
+    return (
+      <tr key={t} style={{ borderTop: "1px solid #EDE9E1" }}>
+        <td style={{ padding: "7px 10px 7px 0", fontSize: 13 }}>{DOC_LABEL[t].nome}</td>
+        <td style={{ padding: "7px 10px", fontSize: 12, fontFamily: "var(--font-mono)", color: "#4A5563", whiteSpace: "nowrap" }}>{formatosAceitos(t)}</td>
+        <td style={{ padding: "7px 0", fontSize: 12, color: exigencia === "OPCIONAL" ? "#7A7472" : "#8C2B22" }}>{EXIGENCIA_LABEL[exigencia].toLowerCase()}</td>
+      </tr>
+    );
+  };
   return (
     <div className="table-scroll">
       <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 460 }}>
@@ -327,10 +348,7 @@ function TabelaDocumentos() {
           </tr>
         </thead>
         <tbody>
-          {DOC_ORDER.map((t) => linha(t, "obrigatório"))}
-          {DOC_PROJETO_CONJUNTO.map((t) => linha(t, "obrigatório em projeto de mais de um lote"))}
-          {DOC_ARQP.map((t) => linha(t, "obrigatório no Quinta da Primavera, assinado pelo RT do projeto"))}
-          {DOC_OPCIONAIS.map((t) => linha(t, "opcional"))}
+          {DOC_TODOS.filter((t) => exigenciaDe(t, emp) !== "NAO_SOLICITADO").map(linha)}
         </tbody>
       </table>
     </div>

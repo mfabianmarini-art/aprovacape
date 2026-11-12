@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { STATUS_INFO, DOC_LABEL, docsObrigatorios, IRREGULARIDADE_LABEL, TIPO_LABEL, formatDate, formatDateTime, lotesAdicionaisTexto } from "@/lib/status";
+import { STATUS_INFO, DOC_LABEL, docsObrigatorios, docsOpcionais, IRREGULARIDADE_LABEL, TIPO_LABEL, formatDate, formatDateTime, lotesAdicionaisTexto } from "@/lib/status";
 import { etapasDaSolicitacao } from "@/lib/etapas";
 import { prazoAnaliseTexto } from "@/lib/prazo";
 import { proximaAcaoDoRT } from "@/lib/proxima-acao";
@@ -156,12 +156,14 @@ export function RequerimentoCard({
                 feito={trocados.length > 0}
                 titulo={trocados.length > 0 ? `Arquivos substituídos (${trocados.length})` : "Substitua os arquivos corrigidos"}
               >
-                <SubstituirDocumentos solicitacaoId={s.id} documentos={s.documentos} obrigatorios={docsObrigatorios(s.lotesAdicionais.length, s.lote.empreendimento.nome)} devolvidaNoChecklist={s.devolvidaNoChecklist} trocadosIds={trocados.map((d) => d.id)} />
+                <SubstituirDocumentos solicitacaoId={s.id} documentos={s.documentos} obrigatorios={docsObrigatorios(s.lotesAdicionais.length, s.lote.empreendimento)}
+                  opcionais={docsOpcionais(s.lotesAdicionais.length, s.lote.empreendimento, s.documentos.map((d) => d.tipo))}
+                  devolvidaNoChecklist={s.devolvidaNoChecklist} trocadosIds={trocados.map((d) => d.id)} />
               </Passo>
               <Passo n={3} feito={false} titulo="Envie a complementação para a CAPE">
                 <EnviarComplementacao
                   solicitacaoId={s.id}
-                  faltando={docsObrigatorios(s.lotesAdicionais.length, s.lote.empreendimento.nome).filter((t) => !s.documentos.some((d) => d.tipo === t)).map((t) => DOC_LABEL[t].nome)}
+                  faltando={docsObrigatorios(s.lotesAdicionais.length, s.lote.empreendimento).filter((t) => !s.documentos.some((d) => d.tipo === t)).map((t) => DOC_LABEL[t].nome)}
                   semTroca={!!devolucao && trocados.length === 0}
                 />
               </Passo>

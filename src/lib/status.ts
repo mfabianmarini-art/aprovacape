@@ -1,5 +1,5 @@
 import { exigeRegulamentoArqp } from "@/lib/regulamento-arqp";
-import type { SolicitacaoStatus, DocumentoTipo, SolicitacaoTipo, DocumentoTecnicoCategoria, IrregularidadeTipo, VinculoStatus } from "@/generated/prisma/enums";
+import type { DocumentoExigencia, SolicitacaoStatus, DocumentoTipo, SolicitacaoTipo, DocumentoTecnicoCategoria, IrregularidadeTipo, VinculoStatus } from "@/generated/prisma/enums";
 
 export const STATUS_INFO: Record<SolicitacaoStatus, { label: string; bg: string; fg: string }> = {
   RASCUNHO: { label: "Rascunho", bg: "#E7E5DF", fg: "#5A6270" },
@@ -32,8 +32,11 @@ export const DOC_LABEL: Record<DocumentoTipo, { nome: string }> = {
   OUTROS: { nome: "Outros documentos" },
 };
 
+// Padrão da plataforma, que a CAPE pode mudar por empreendimento (RegraDocumento). Para
+// saber o que uma solicitação exige, use docsObrigatorios / docsOpcionais.
+//
 // Obrigatórios em toda solicitação: entram na conferência documental e travam o envio
-// enquanto faltarem. Para saber o que uma solicitação exige, use docsObrigatorios.
+// enquanto faltarem.
 export const DOC_ORDER: DocumentoTipo[] = [
   "PROJETO_ARQUITETONICO",
   "PROJETO_ARQUITETONICO_DWG",
@@ -49,13 +52,47 @@ export const DOC_PROJETO_CONJUNTO: DocumentoTipo[] = ["PROJETO_APROVADO_PREFEITU
 // Exigido a mais no Quinta da Primavera, onde vale o Regulamento de Obras da ARQP.
 export const DOC_ARQP: DocumentoTipo[] = ["TERMO_REGULAMENTO_ARQP"];
 
-export function docsObrigatorios(lotesAdicionais: number, empreendimento: string): DocumentoTipo[] {
-  return [...DOC_ORDER, ...(lotesAdicionais > 0 ? DOC_PROJETO_CONJUNTO : []), ...(exigeRegulamentoArqp(empreendimento) ? DOC_ARQP : [])];
-}
-
 // Opcionais: anexados quando houver, ficam fora da conferência documental e não travam
 // nada — a CAPE só os consulta.
 export const DOC_OPCIONAIS: DocumentoTipo[] = ["ART_RRT_EXECUCAO", "CAPA_IPTU", "MATRICULA", "PROJETO_PAISAGISTICO", "OUTROS"];
+
+// Todos os documentos, na ordem em que aparecem nas telas.
+export const DOC_TODOS: DocumentoTipo[] = [...DOC_ORDER, ...DOC_PROJETO_CONJUNTO, ...DOC_ARQP, ...DOC_OPCIONAIS];
+
+export const EXIGENCIA_LABEL: Record<DocumentoExigencia, string> = {
+  OBRIGATORIO: "Obrigatório",
+  OBRIGATORIO_MAIS_LOTES: "Obrigatório em projeto de mais de um lote",
+  OPCIONAL: "Opcional",
+  NAO_SOLICITADO: "Não pedido",
+};
+
+export function exigenciaPadrao(tipo: DocumentoTipo, empreendimento: string): DocumentoExigencia {
+  if (DOC_ORDER.includes(tipo)) return "OBRIGATORIO";
+  if (DOC_PROJETO_CONJUNTO.includes(tipo)) return "OBRIGATORIO_MAIS_LOTES";
+  if (DOC_ARQP.includes(tipo)) return exigeRegulamentoArqp(empreendimento) ? "OBRIGATORIO" : "NAO_SOLICITADO";
+  return "OPCIONAL";
+}
+
+export type RegrasDoEmpreendimento = { nome: string; regrasDocumentos: { tipo: DocumentoTipo; exigencia: DocumentoExigencia }[] };
+
+export function exigenciaDe(tipo: DocumentoTipo, emp: RegrasDoEmpreendimento): DocumentoExigencia {
+  return emp.regrasDocumentos.find((r) => r.tipo === tipo)?.exigencia ?? exigenciaPadrao(tipo, emp.nome);
+}
+
+// Valem na hora, também para solicitações já enviadas: a CAPE muda a regra pensando no que
+// quer conferir daqui para frente, inclusive no que está em análise.
+export function docsObrigatorios(lotesAdicionais: number, emp: RegrasDoEmpreendimento): DocumentoTipo[] {
+  return DOC_TODOS.filter((t) => {
+    const e = exigenciaDe(t, emp);
+    return e === "OBRIGATORIO" || (e === "OBRIGATORIO_MAIS_LOTES" && lotesAdicionais > 0);
+  });
+}
+
+// `enviados`: o que já foi anexado continua à vista mesmo que deixe de ser pedido.
+export function docsOpcionais(lotesAdicionais: number, emp: RegrasDoEmpreendimento, enviados: DocumentoTipo[] = []): DocumentoTipo[] {
+  const obrigatorios = docsObrigatorios(lotesAdicionais, emp);
+  return DOC_TODOS.filter((t) => !obrigatorios.includes(t) && (exigenciaDe(t, emp) === "OPCIONAL" || enviados.includes(t)));
+}
 
 // Formato e tamanho aceitos por documento. O projeto arquitetônico vem em dois campos: PDF
 // para leitura e DWG para a CAPE conferir no CAD — vários DWG vão juntos num .zip, daí o

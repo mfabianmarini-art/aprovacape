@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { COM_REGRAS } from "@/lib/queries/regras-documentos";
 import { Prisma } from "@/generated/prisma/client";
 import { requireRole } from "@/lib/require-role";
 import { ehZip, extensaoDe } from "@/lib/upload-documento";
@@ -20,7 +21,7 @@ import type { DocumentoTipo } from "@/generated/prisma/enums";
 async function loadSolicitacao(solicitacaoId: string) {
   return prisma.solicitacao.findUniqueOrThrow({
     where: { id: solicitacaoId },
-    include: { documentos: true, lote: { include: { empreendimento: true } }, lotesAdicionais: { select: { id: true } } },
+    include: { documentos: true, lote: { include: { empreendimento: COM_REGRAS } }, lotesAdicionais: { select: { id: true } } },
   });
 }
 
@@ -46,7 +47,7 @@ export async function toggleDocumentoAction(solicitacaoId: string, tipo: Documen
   });
 
   const updated = await prisma.solicitacaoDocumento.findMany({ where: { solicitacaoId } });
-  const allValidados = docsObrigatorios(sol.lotesAdicionais.length, sol.lote.empreendimento.nome).every((t) => updated.find((d) => d.tipo === t)?.validado);
+  const allValidados = docsObrigatorios(sol.lotesAdicionais.length, sol.lote.empreendimento).every((t) => updated.find((d) => d.tipo === t)?.validado);
   // O prazo de análise corre da validação documental: começa quando o último documento é
   // validado e, se um deles for desmarcado antes da análise, volta a esperar.
   const prazoInicioEm = allValidados ? (sol.prazoInicioEm ?? new Date()) : sol.status === "ENVIADA" ? null : sol.prazoInicioEm;
@@ -111,7 +112,7 @@ export async function devolverDocumentacaoAction(solicitacaoId: string) {
   // deve render outro evento no histórico.
   if (sol.status === "COMPLEMENTO") return;
   // Nada pendente na conferência documental: não há o que pedir de volta.
-  if (docsObrigatorios(sol.lotesAdicionais.length, sol.lote.empreendimento.nome).every((t) => sol.documentos.find((d) => d.tipo === t)?.validado)) return;
+  if (docsObrigatorios(sol.lotesAdicionais.length, sol.lote.empreendimento).every((t) => sol.documentos.find((d) => d.tipo === t)?.validado)) return;
 
   const ok = await umaVez(() =>
     prisma.$transaction([

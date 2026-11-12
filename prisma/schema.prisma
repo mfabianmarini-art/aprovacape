@@ -111,6 +111,16 @@ enum DocumentoTipo {
   OUTROS
 }
 
+// O quanto cada documento é exigido nas solicitações de um empreendimento (RegraDocumento).
+enum DocumentoExigencia {
+  OBRIGATORIO
+  // Só em projeto de mais de um lote.
+  OBRIGATORIO_MAIS_LOTES
+  OPCIONAL
+  // Não aparece para o RT.
+  NAO_SOLICITADO
+}
+
 enum ChecklistItemStatus {
   PENDENTE
   APROVADO
@@ -186,6 +196,7 @@ model User {
   lotesTitularAtualizados    Lote[]             @relation("LoteTitularAtualizadoPor")
   lotesAdicionaisRevisados   SolicitacaoLoteAdicional[] @relation("LoteAdicionalRevisadoPor")
   lotesAdicionaisRtAnterior  SolicitacaoLoteAdicional[] @relation("LoteAdicionalRtAnterior")
+  regrasDocumentoAlteradas   RegraDocumento[]           @relation("RegraDocumentoAtualizadaPor")
   devolutivasTecnicas        DevolutivaTecnica[] @relation("DevolutivaTecnicaAutor")
   redefinicoesSenha          RedefinicaoSenha[]
   arquivosEnviados           Arquivo[]          @relation("ArquivoEnviadoPor")
@@ -220,8 +231,24 @@ model Empreendimento {
   categorias ChecklistCategoria[]
   documentosTecnicos DocumentoTecnico[]
   arquivos           Arquivo[]
+  regrasDocumentos   RegraDocumento[]
 
   @@index([sindicoId])
+}
+
+// Exigência de um documento nas solicitações do empreendimento, definida pela CAPE em
+// Empreendimentos. Sem linha, vale o padrão da plataforma (exigenciaPadrao em status.ts):
+// só o que a CAPE mudou fica gravado.
+model RegraDocumento {
+  empreendimentoId String
+  empreendimento   Empreendimento     @relation(fields: [empreendimentoId], references: [id], onDelete: Cascade)
+  tipo             DocumentoTipo
+  exigencia        DocumentoExigencia
+  atualizadoEm     DateTime           @updatedAt
+  atualizadoPorId  String?
+  atualizadoPor    User?              @relation("RegraDocumentoAtualizadaPor", fields: [atualizadoPorId], references: [id], onDelete: SetNull)
+
+  @@id([empreendimentoId, tipo])
 }
 
 model Quadra {

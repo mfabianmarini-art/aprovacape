@@ -18,6 +18,9 @@ import { DocumentosList } from "../documentos/DocumentosList";
 import { DocumentoUploadForm } from "../documentos/DocumentoUploadForm";
 import { UsuariosSection } from "./UsuariosSection";
 import { EmpreendimentoTabs } from "./EmpreendimentoTabs";
+import { RegrasDocumentosForm } from "./RegrasDocumentosForm";
+import { getRegrasDocumentos } from "@/lib/queries/regras-documentos";
+import { DOC_LABEL, DOC_TODOS, exigenciaDe, exigenciaPadrao, formatosAceitos } from "@/lib/status";
 
 export default async function EmpreendimentosPage({ searchParams }: { searchParams: Promise<{ emp?: string }> }) {
   const session = await requireRole("ADMIN_CAPE", "CAPE_ANALISTA");
@@ -28,7 +31,7 @@ export default async function EmpreendimentosPage({ searchParams }: { searchPara
   ]);
   const isAdmin = session.user.role === "ADMIN_CAPE";
 
-  const [data, documentos, usuarios, pendentes, sindicos, armazenamento] = atual
+  const [data, documentos, usuarios, pendentes, sindicos, armazenamento, regrasDocumentos] = atual
     ? await Promise.all([
         getEmpreendimentoConfig(atual.id),
         getDocumentosTecnicos(atual.id),
@@ -36,8 +39,9 @@ export default async function EmpreendimentosPage({ searchParams }: { searchPara
         countVinculosPendentesDoEmpreendimento(atual.id),
         getSindicos(),
         armazenamentoDoEmpreendimento(atual.id),
+        getRegrasDocumentos(atual.id),
       ])
-    : [null, [], [], 0, [], null];
+    : [null, [], [], 0, [], null, []];
 
   if (!data) {
     return (
@@ -53,6 +57,8 @@ export default async function EmpreendimentosPage({ searchParams }: { searchPara
 
   const { empreendimento: emp, quadrasCfg } = data;
   const totalLotes = emp.quadras.reduce((a, q) => a + q.totalLotes, 0);
+  const comRegras = { nome: emp.nome, regrasDocumentos };
+  const ultimaRegra = regrasDocumentos[0];
 
   return (
     <>
@@ -122,6 +128,22 @@ export default async function EmpreendimentosPage({ searchParams }: { searchPara
                   />
                 )}
               </aside>
+            </div>
+          }
+          exigidos={
+            <div style={{ padding: 20 }}>
+              <RegrasDocumentosForm
+                key={emp.id}
+                empreendimentoId={emp.id}
+                linhas={DOC_TODOS.map((tipo) => ({
+                  tipo,
+                  nome: DOC_LABEL[tipo].nome,
+                  formatos: formatosAceitos(tipo),
+                  exigencia: exigenciaDe(tipo, comRegras),
+                  padrao: exigenciaPadrao(tipo, emp.nome),
+                }))}
+                ultimaAlteracao={ultimaRegra ? { nome: ultimaRegra.atualizadoPor?.name ?? null, em: ultimaRegra.atualizadoEm.toISOString() } : null}
+              />
             </div>
           }
           quadras={

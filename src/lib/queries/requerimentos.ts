@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { COM_REGRAS } from "@/lib/queries/regras-documentos";
 import { SELECT_VERSOES_ANTERIORES } from "@/components/VersoesAnteriores";
 
 export async function getMeusRequerimentos(userId: string) {
@@ -14,7 +15,7 @@ export async function getMeusRequerimentos(userId: string) {
     },
     orderBy: { createdAt: "desc" },
     include: {
-      lote: { include: { quadra: true, empreendimento: true } },
+      lote: { include: { quadra: true, empreendimento: COM_REGRAS } },
       lotesAdicionais: { orderBy: { createdAt: "asc" }, select: { status: true, lote: { select: { numero: true, quadra: { select: { nome: true } } } } } },
       // Histórico completo: o card minimizado expande para mostrar tanto o andamento da
       // solicitação quanto o da análise, que vivem no mesmo stream de eventos.

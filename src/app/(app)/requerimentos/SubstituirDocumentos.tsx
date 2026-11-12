@@ -1,7 +1,7 @@
 "use client";
 
 import { useEnvioDocumento } from "@/components/useEnvioDocumento";
-import { DOC_LABEL, DOC_OPCIONAIS, DOC_REGRAS, formatosAceitos } from "@/lib/status";
+import { DOC_LABEL, DOC_REGRAS, formatosAceitos } from "@/lib/status";
 import type { DocumentoTipo } from "@/generated/prisma/enums";
 
 type Documento = {
@@ -105,12 +105,14 @@ export function SubstituirDocumentos({
   solicitacaoId,
   documentos,
   obrigatorios,
+  opcionais,
   devolvidaNoChecklist,
   trocadosIds = [],
 }: {
   solicitacaoId: string;
   documentos: Documento[];
   obrigatorios: DocumentoTipo[];
+  opcionais: DocumentoTipo[];
   devolvidaNoChecklist: boolean;
   // Documentos enviados depois da devolução (já substituídos nesta rodada).
   trocadosIds?: string[];
@@ -128,7 +130,7 @@ export function SubstituirDocumentos({
           ? "Envie as pranchas e documentos corrigidos. Os que não mudaram podem ficar como estão."
           : `Substitua ${alvos.length === 1 ? "o documento apontado" : `os ${alvos.length} documentos apontados`}. Os já validados pela CAPE ficam como estão.`}
       </div>
-      {[...obrigatorios, ...DOC_OPCIONAIS].map((tipo) => {
+      {[...obrigatorios, ...opcionais].map((tipo) => {
         const doc = documentos.find((d) => d.tipo === tipo);
         return (
           <Linha
@@ -138,7 +140,7 @@ export function SubstituirDocumentos({
             doc={doc}
             liberado={liberado(doc)}
             trocado={!!doc && trocadosIds.includes(doc.id)}
-            opcional={DOC_OPCIONAIS.includes(tipo)}
+            opcional={!obrigatorios.includes(tipo)}
           />
         );
       })}
