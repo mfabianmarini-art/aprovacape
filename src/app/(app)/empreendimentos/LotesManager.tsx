@@ -21,6 +21,9 @@ export type LoteCfg = {
   posY: number | null;
   titularNome: string | null;
   titularCpf: string | null;
+  titularCnpj: string | null;
+  titularRepresentanteNome: string | null;
+  titularRepresentanteCpf: string | null;
   titularAtualizadoEm: Date | null;
   proprietarioNome: string | null;
   proprietarioCpf: string | null;
@@ -102,6 +105,9 @@ export function LotesManager({
               loteId={l.id}
               titularNome={l.titularNome}
               titularCpf={l.titularCpf}
+              titularCnpj={l.titularCnpj}
+              titularRepresentanteNome={l.titularRepresentanteNome}
+              titularRepresentanteCpf={l.titularRepresentanteCpf}
               titularAtualizadoEm={l.titularAtualizadoEm}
               proprietarioNome={l.proprietarioNome}
               proprietarioCpf={l.proprietarioCpf}

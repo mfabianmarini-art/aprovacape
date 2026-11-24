@@ -33,6 +33,10 @@ const PASSOS: { id: string; titulo: string; onde?: { href: string; rotulo: strin
           a quadra e o lote, os dados do proprietário, a <strong>procuração assinada por ele</strong> e os documentos de identidade (RG ou CNH) dele e seu.
           O modelo da procuração está em <strong>Normas para aprovação</strong>, liberado antes mesmo do vínculo.
         </p>
+        <p style={texto}>
+          Se o proprietário for <strong>pessoa jurídica</strong>, informe a razão social, o CNPJ e o responsável legal que assinou a
+          procuração, anexe o RG ou CNH dele e o <strong>contrato social</strong> (ou a última alteração) ou o cartão CNPJ da empresa.
+        </p>
         <p style={texto}>A CAPE confere o pedido e você recebe um e-mail com a resposta. Aprovado, o lote passa a aparecer em Nova solicitação.</p>
       </>
     ),

@@ -3,8 +3,8 @@
 import { useActionState, useState, useTransition } from "react";
 import { enviarVarios, mensagemDeFalhaNoEnvio, ProblemaNoArquivo } from "@/lib/upload-cliente";
 import { solicitarVinculoAction, type VinculoState } from "@/lib/actions/vinculo-actions";
-import { ACCEPT_DOCUMENTO_IDENTIDADE, ACCEPT_PROCURACAO } from "@/lib/vinculo-comprovacao";
-import { ProprietarioDeclaradoFields } from "@/components/ProprietarioDeclaradoFields";
+import { ACCEPT_DOCUMENTO_EMPRESA, ACCEPT_DOCUMENTO_IDENTIDADE, ACCEPT_PROCURACAO } from "@/lib/vinculo-comprovacao";
+import { ProprietarioDeclaradoFields, type TipoPessoa } from "@/components/ProprietarioDeclaradoFields";
 import type { getEmpreendimentosParaVinculo } from "@/lib/queries/vinculo";
 
 type Empreendimentos = Awaited<ReturnType<typeof getEmpreendimentosParaVinculo>>;
@@ -37,12 +37,32 @@ const ARQUIVOS = [
   },
 ] as const;
 
+// Só quando o proprietário é empresa: mostra quem a representa e pode assinar a procuração.
+const DOC_EMPRESA = {
+  campo: "docEmpresa",
+  titulo: "Contrato social ou cartão CNPJ",
+  rotulo: "o contrato social (ou a última alteração) ou o cartão CNPJ da empresa",
+  accept: ACCEPT_DOCUMENTO_EMPRESA,
+  ajuda: "Contrato social ou última alteração contratual que mostre o responsável legal, ou cartão CNPJ — PDF ou foto, até 10 MB.",
+} as const;
+
 export function SolicitarVinculoForm({ empreendimentos, ehRT, usuarioId }: { empreendimentos: Empreendimentos; ehRT: boolean; usuarioId: string }) {
   const [state, formAction, salvando] = useActionState<VinculoState, FormData>(solicitarVinculoAction, null);
   const [progresso, setProgresso] = useState<number | null>(null);
   const [erroEnvio, setErroEnvio] = useState<string | null>(null);
   const [, startTransition] = useTransition();
   const pending = salvando || progresso !== null;
+  const [tipoProp, setTipoProp] = useState<TipoPessoa>("PF");
+  // Empresa proprietária: quem assina a procuração, e cujo documento vai anexo, é o
+  // responsável legal — e o contrato social mostra que ele responde pela empresa.
+  const arquivos = [
+    ...ARQUIVOS.map((a) =>
+      a.campo === "docProprietario" && tipoProp === "PJ"
+        ? { ...a, titulo: "RG ou CNH do responsável legal da empresa", rotulo: "o RG ou a CNH do responsável legal da empresa" }
+        : a,
+    ),
+    ...(tipoProp === "PJ" ? [DOC_EMPRESA] : []),
+  ];
 
   // Os arquivos sobem direto ao Blob antes da action (limite de 4,5 MB por requisição na
   // Vercel); a action recebe só os caminhos e confere cada arquivo. Fotos de documento são
@@ -53,14 +73,14 @@ export function SolicitarVinculoForm({ empreendimentos, ehRT, usuarioId }: { emp
     const fd = new FormData(e.currentTarget);
     setErroEnvio(null);
     if (ehRT) {
-      const files = ARQUIVOS.map((a) => fd.get(a.campo));
-      ARQUIVOS.forEach((a) => fd.delete(a.campo));
-      const faltando = ARQUIVOS.find((_, i) => !(files[i] instanceof File) || (files[i] as File).size === 0);
+      const files = arquivos.map((a) => fd.get(a.campo));
+      arquivos.forEach((a) => fd.delete(a.campo));
+      const faltando = arquivos.find((_, i) => !(files[i] instanceof File) || (files[i] as File).size === 0);
       if (faltando) return setErroEnvio(`Anexe ${faltando.rotulo}.`);
       setProgresso(0);
       try {
         const enviados = await enviarVarios(files as File[], { destino: "vinculo", usuarioId }, setProgresso);
-        ARQUIVOS.forEach((a, i) => {
+        arquivos.forEach((a, i) => {
           fd.set(`${a.campo}Pathname`, enviados[i].pathname);
           fd.set(`${a.campo}Nome`, enviados[i].nomeArquivo);
           fd.set(`${a.campo}Hash`, enviados[i].hash);
@@ -137,7 +157,7 @@ export function SolicitarVinculoForm({ empreendimentos, ehRT, usuarioId }: { emp
 
       {ehRT ? (
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          {ARQUIVOS.map((a) => (
+          {arquivos.map((a) => (
             <label key={a.campo} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               <span style={labelTextStyle}>{a.titulo}</span>
               <input name={a.campo} type="file" required accept={a.accept} style={{ ...inputStyle, fontSize: 12.5 }} />
@@ -164,7 +184,7 @@ export function SolicitarVinculoForm({ empreendimentos, ehRT, usuarioId }: { emp
         </label>
       )}
 
-      {ehRT && <ProprietarioDeclaradoFields inputStyle={inputStyle} labelStyle={labelTextStyle} />}
+      {ehRT && <ProprietarioDeclaradoFields inputStyle={inputStyle} labelStyle={labelTextStyle} tipo={tipoProp} onTipo={setTipoProp} />}
 
       {(erroEnvio ?? state?.error) && !pending && <div style={{ fontSize: 12.5, color: "#8C2B22" }}>{erroEnvio ?? state?.error}</div>}
 

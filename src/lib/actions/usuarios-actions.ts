@@ -31,7 +31,7 @@ export async function aprovarVinculoAction(userId: string) {
   // Trava do servidor, não só do botão: quem pede não bate com o proprietário cadastrado
   // no lote, então não há como conferir o pedido. Resolver é decisão humana — recusar,
   // ou atualizar o cadastro do lote se o imóvel realmente mudou de dono.
-  if (divergenciaDeTitular(lote, { ehRT, cpf: user.cpf, vinculoPropNome: user.vinculoPropNome, vinculoPropCpf: user.vinculoPropCpf }, user.name)) {
+  if (divergenciaDeTitular(lote, { ehRT, cpf: user.cpf, vinculoPropNome: user.vinculoPropNome, vinculoPropCpf: user.vinculoPropCpf, vinculoPropCnpj: user.vinculoPropCnpj }, user.name)) {
     return;
   }
   // O lote guarda um único RT e um único proprietário: aprovar sobre lote ocupado
@@ -49,7 +49,7 @@ export async function aprovarVinculoAction(userId: string) {
   // Lote sem proprietário na matrícula: aprovar um proprietário é a primeira notícia
   // confiável de quem é o dono, então o cadastro passa a existir a partir daqui.
   const preencheTitular =
-    !ehRT && !lote.titularCpf && digitosCpf(user.cpf).length === 11
+    !ehRT && !lote.titularCpf && !lote.titularCnpj && digitosCpf(user.cpf).length === 11
       ? {
           titularNome: user.name,
           titularCpf: digitosCpf(user.cpf),

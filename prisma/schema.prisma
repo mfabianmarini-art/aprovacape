@@ -175,12 +175,22 @@ model User {
   vinculoDocRtNome       String?
   vinculoDocRtCaminho    String?
   vinculoDocRtTamanho    Int?
+  // Proprietário pessoa jurídica: contrato social (ou última alteração) ou cartão CNPJ,
+  // que mostra quem responde pela empresa e pode assinar a procuração.
+  vinculoDocEmpresaNome     String?
+  vinculoDocEmpresaCaminho  String?
+  vinculoDocEmpresaTamanho  Int?
   // Dados do proprietário, declarados pelo RT ao pedir vínculo. A autorização é um
   // arquivo assinado; sem saber quem assinou, a CAPE não tem contra quem conferi-lo.
   vinculoPropNome        String?
   vinculoPropCpf         String?
   vinculoPropEmail       String?
   vinculoPropTelefone    String?
+  // Proprietário pessoa jurídica: vinculoPropNome guarda a razão social e o CPF fica nulo;
+  // a procuração é assinada pelo responsável legal da empresa, que vem aqui.
+  vinculoPropCnpj               String?
+  vinculoPropRepresentanteNome  String?
+  vinculoPropRepresentanteCpf   String?
   // Quando o pedido atual foi feito. Usuário já cadastrado pede vínculo com outro lote
   // reaproveitando estes campos (um pedido por vez), então createdAt não serve mais.
   vinculoSolicitadoEm    DateTime?
@@ -311,6 +321,11 @@ model Lote {
   // responde outra pergunta — qual conta acessa a plataforma por este lote.
   titularNome            String?
   titularCpf             String?
+  // Pessoa jurídica: titularNome é a razão social, titularCpf fica nulo e o CNPJ é a chave
+  // da conferência. O responsável legal é quem assina pela empresa.
+  titularCnpj              String?
+  titularRepresentanteNome String?
+  titularRepresentanteCpf  String?
   titularAtualizadoEm    DateTime?
   titularAtualizadoPorId String?
   titularAtualizadoPor   User?     @relation("LoteTitularAtualizadoPor", fields: [titularAtualizadoPorId], references: [id])

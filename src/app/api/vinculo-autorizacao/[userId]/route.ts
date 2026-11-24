@@ -4,7 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { servirArquivo } from "@/lib/servir-arquivo";
 
 // Documentos do pedido de vínculo — procuração (padrão), ?doc=proprietario (RG/CNH do
-// proprietário) e ?doc=rt (RG/CNH do RT). São de análise do vínculo: só a equipe CAPE,
+// proprietário), ?doc=rt (RG/CNH do RT) e ?doc=empresa (contrato social ou cartão CNPJ,
+// quando o proprietário é pessoa jurídica). São de análise do vínculo: só a equipe CAPE,
 // que aprova ou recusa, e o próprio autor do envio podem abrir.
 export async function GET(req: Request, { params }: { params: Promise<{ userId: string }> }) {
   const session = await auth();
@@ -22,7 +23,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ userId: 
       ? [user.vinculoDocPropCaminho, user.vinculoDocPropNome ?? "documento-proprietario"]
       : doc === "rt"
         ? [user.vinculoDocRtCaminho, user.vinculoDocRtNome ?? "documento-rt"]
-        : [user.vinculoArquivoCaminho, user.vinculoArquivoNome ?? "procuracao"];
+        : doc === "empresa"
+          ? [user.vinculoDocEmpresaCaminho, user.vinculoDocEmpresaNome ?? "documento-empresa"]
+          : [user.vinculoArquivoCaminho, user.vinculoArquivoNome ?? "procuracao"];
   if (!caminho) return new NextResponse("Não encontrado.", { status: 404 });
 
   return servirArquivo(req, { caminho, nome, usuarioId: session.user.id });

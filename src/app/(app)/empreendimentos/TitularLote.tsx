@@ -1,8 +1,10 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { Fragment, useActionState, useState } from "react";
 import { atualizarTitularLoteAction, desvincularContaLoteAction, type TitularState } from "@/lib/actions/lote-actions";
-import { formatarCpf, mesmoCpf } from "@/lib/cpf";
+import { formatarCpf } from "@/lib/cpf";
+import { formatarCnpj } from "@/lib/cnpj";
+import { pessoaRespondePeloTitular, referenciaDoLote } from "@/lib/conferencia-vinculo";
 import { formatDate } from "@/lib/status";
 
 const input: React.CSSProperties = {
@@ -20,6 +22,9 @@ export function TitularLote({
   loteId,
   titularNome,
   titularCpf,
+  titularCnpj,
+  titularRepresentanteNome,
+  titularRepresentanteCpf,
   titularAtualizadoEm,
   proprietarioNome,
   proprietarioCpf,
@@ -27,11 +32,15 @@ export function TitularLote({
   loteId: string;
   titularNome: string | null;
   titularCpf: string | null;
+  titularCnpj: string | null;
+  titularRepresentanteNome: string | null;
+  titularRepresentanteCpf: string | null;
   titularAtualizadoEm: Date | null;
   proprietarioNome: string | null;
   proprietarioCpf: string | null;
 }) {
   const [aberto, setAberto] = useState(false);
+  const [tipo, setTipo] = useState<"PF" | "PJ">(titularCnpj ? "PJ" : "PF");
   const [state, formAction, pending] = useActionState<TitularState, FormData>(
     atualizarTitularLoteAction.bind(null, loteId),
     null,
@@ -39,14 +48,18 @@ export function TitularLote({
 
   // A conta vinculada continua sendo a do dono anterior depois de uma venda: ela enxerga
   // o lote inteiro até alguém desvincular.
-  const contaDesatualizada = !!titularCpf && !!proprietarioCpf && !mesmoCpf(titularCpf, proprietarioCpf);
+  // Empresa: a conta confere se for do responsável legal.
+  const titular = referenciaDoLote({ titularNome, titularCpf, titularCnpj, titularRepresentanteNome, titularRepresentanteCpf, proprietario: null });
+  const contaDesatualizada = !!titular && !!proprietarioCpf && !pessoaRespondePeloTitular(titular, proprietarioCpf);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6, borderTop: "1px dashed #EDE9E1", paddingTop: 6 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8, flexWrap: "wrap", fontSize: 11 }}>
         <span style={{ color: titularNome ? "#4A5563" : "#8B939C", fontStyle: titularNome ? "normal" : "italic" }}>
           {titularNome
-            ? `Proprietário na matrícula: ${titularNome} · ${formatarCpf(titularCpf ?? "")}`
+            ? titularCnpj
+              ? `Proprietário na matrícula: ${titularNome} · CNPJ ${formatarCnpj(titularCnpj)} · responsável legal ${titularRepresentanteNome ?? "não informado"}${titularRepresentanteCpf ? ` (${formatarCpf(titularRepresentanteCpf)})` : ""}`
+              : `Proprietário na matrícula: ${titularNome} · ${formatarCpf(titularCpf ?? "")}`
             : "proprietário da matrícula não cadastrado"}
           {titularAtualizadoEm && ` · atualizado em ${formatDate(titularAtualizadoEm)}`}
         </span>
@@ -77,9 +90,28 @@ export function TitularLote({
       )}
 
       {aberto && (
-        <form action={formAction} style={{ display: "grid", gridTemplateColumns: "1fr 130px auto", gap: 6, alignItems: "start" }}>
-          <input name="nome" defaultValue={titularNome ?? ""} placeholder="Nome como consta na matrícula" required style={input} />
-          <input name="cpf" defaultValue={titularCpf ? formatarCpf(titularCpf) : ""} placeholder="000.000.000-00" required style={{ ...input, fontFamily: "var(--font-mono)" }} />
+        <form action={formAction} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 6, alignItems: "start" }}>
+          <div style={{ gridColumn: "1/-1", display: "flex", gap: 14, fontSize: 11.5 }}>
+            {(["PF", "PJ"] as const).map((t) => (
+              <label key={t} style={{ display: "flex", alignItems: "center", gap: 5, cursor: "pointer" }}>
+                <input type="radio" name="tipo" value={t} checked={tipo === t} onChange={() => setTipo(t)} />
+                {t === "PF" ? "Pessoa física" : "Pessoa jurídica"}
+              </label>
+            ))}
+          </div>
+          {tipo === "PJ" ? (
+            <Fragment key="pj">
+              <input name="nome" defaultValue={titularCnpj ? (titularNome ?? "") : ""} placeholder="Razão social" required style={input} />
+              <input name="cnpj" defaultValue={titularCnpj ? formatarCnpj(titularCnpj) : ""} placeholder="CNPJ 00.000.000/0000-00" required style={{ ...input, fontFamily: "var(--font-mono)" }} />
+              <input name="repNome" defaultValue={titularRepresentanteNome ?? ""} placeholder="Responsável legal" required style={input} />
+              <input name="repCpf" defaultValue={titularRepresentanteCpf ? formatarCpf(titularRepresentanteCpf) : ""} placeholder="CPF do responsável legal" required style={{ ...input, fontFamily: "var(--font-mono)" }} />
+            </Fragment>
+          ) : (
+            <Fragment key="pf">
+              <input name="nome" defaultValue={titularCnpj ? "" : (titularNome ?? "")} placeholder="Nome como consta na matrícula" required style={input} />
+              <input name="cpf" defaultValue={titularCpf ? formatarCpf(titularCpf) : ""} placeholder="000.000.000-00" required style={{ ...input, fontFamily: "var(--font-mono)" }} />
+            </Fragment>
+          )}
           <button
             type="submit"
             disabled={pending}

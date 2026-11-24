@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ROLE_LABEL, ROLE_COLOR } from "@/lib/nav";
 import { formatDate, formatDataPura } from "@/lib/status";
 import { formatarCpf } from "@/lib/cpf";
+import { formatarCnpj, formatarDocumento } from "@/lib/cnpj";
 import { divergenciaDeTitular } from "@/lib/conferencia-vinculo";
 import { formatRegistro } from "@/lib/registro-profissional";
 import { aprovarVinculoAction, recusarVinculoAction } from "@/lib/actions/usuarios-actions";
@@ -58,7 +59,7 @@ export function VinculosTable({ pendentes }: { pendentes: Pendentes }) {
         const divergencia = p.vinculoLote
           ? divergenciaDeTitular(
               p.vinculoLote,
-              { ehRT, cpf: p.cpf, vinculoPropNome: p.vinculoPropNome, vinculoPropCpf: p.vinculoPropCpf },
+              { ehRT, cpf: p.cpf, vinculoPropNome: p.vinculoPropNome, vinculoPropCpf: p.vinculoPropCpf, vinculoPropCnpj: p.vinculoPropCnpj },
               p.name,
             )
           : null;
@@ -151,14 +152,24 @@ export function VinculosTable({ pendentes }: { pendentes: Pendentes }) {
                       ],
                       // Declarados pelo RT: é contra estes dados que a procuração e o
                       // documento do proprietário precisam bater.
-                      ...(p.vinculoPropNome
+                      // Pessoa jurídica: a procuração é assinada pelo responsável legal.
+                      ...(p.vinculoPropNome && p.vinculoPropCnpj
                         ? ([
-                            ["Proprietário declarado", p.vinculoPropNome],
-                            ["CPF do proprietário", p.vinculoPropCpf ? formatarCpf(p.vinculoPropCpf) : "—"],
+                            ["Proprietário (empresa)", p.vinculoPropNome],
+                            ["CNPJ", formatarCnpj(p.vinculoPropCnpj)],
+                            ["Responsável legal", p.vinculoPropRepresentanteNome ?? "—"],
+                            ["CPF do responsável", p.vinculoPropRepresentanteCpf ? formatarCpf(p.vinculoPropRepresentanteCpf) : "—"],
                             ["E-mail do proprietário", p.vinculoPropEmail ?? "—"],
                             ["Telefone do proprietário", p.vinculoPropTelefone ?? "—"],
                           ] as const)
-                        : []),
+                        : p.vinculoPropNome
+                          ? ([
+                              ["Proprietário declarado", p.vinculoPropNome],
+                              ["CPF do proprietário", p.vinculoPropCpf ? formatarCpf(p.vinculoPropCpf) : "—"],
+                              ["E-mail do proprietário", p.vinculoPropEmail ?? "—"],
+                              ["Telefone do proprietário", p.vinculoPropTelefone ?? "—"],
+                            ] as const)
+                          : []),
                     ] as const
                   ).map(([k, v]) => (
                     <div key={k} style={{ display: "grid", gridTemplateColumns: "140px 1fr", gap: 10, fontSize: 12.5 }}>
@@ -172,8 +183,11 @@ export function VinculosTable({ pendentes }: { pendentes: Pendentes }) {
                     (
                       [
                         ["Procuração do proprietário", "", p.vinculoArquivoCaminho, p.vinculoArquivoNome],
-                        ["RG ou CNH do proprietário", "?doc=proprietario", p.vinculoDocPropCaminho, p.vinculoDocPropNome],
+                        [p.vinculoPropCnpj ? "RG ou CNH do responsável legal" : "RG ou CNH do proprietário", "?doc=proprietario", p.vinculoDocPropCaminho, p.vinculoDocPropNome],
                         ["RG ou CNH do RT", "?doc=rt", p.vinculoDocRtCaminho, p.vinculoDocRtNome],
+                        ...(p.vinculoPropCnpj
+                          ? ([["Contrato social / cartão CNPJ", "?doc=empresa", p.vinculoDocEmpresaCaminho, p.vinculoDocEmpresaNome]] as const)
+                          : []),
                       ] as const
                     ).map(([rotulo, sufixo, caminho, nome]) => (
                       <div key={rotulo} style={{ display: "grid", gridTemplateColumns: "140px 1fr", gap: 10, fontSize: 12.5 }}>
@@ -229,11 +243,11 @@ export function VinculosTable({ pendentes }: { pendentes: Pendentes }) {
                           : "Quem pede não é o proprietário cadastrado no lote."}
                       </strong>
                       <span>
-                        Cadastrado no lote: {divergencia.esperadoNome} · {formatarCpf(divergencia.esperadoCpf)}
+                        Cadastrado no lote: {divergencia.esperadoNome} · {formatarDocumento(divergencia.esperadoDocumento)}
                       </span>
                       <span>
                         {ehRT ? "Declarado no pedido" : "Solicitante"}: {divergencia.informadoNome} ·{" "}
-                        {formatarCpf(divergencia.informadoCpf)}
+                        {formatarDocumento(divergencia.informadoDocumento)}
                       </span>
                       <span>
                         Recuse o pedido, ou atualize o proprietário no cadastro do lote, em Empreendimentos, se o

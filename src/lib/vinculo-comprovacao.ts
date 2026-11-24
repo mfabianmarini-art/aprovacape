@@ -4,3 +4,5 @@
 // servidor (upload-direto.ts, receberArquivo).
 export const ACCEPT_PROCURACAO = ".pdf,.doc,.docx,image/png,image/jpeg,image/webp";
 export const ACCEPT_DOCUMENTO_IDENTIDADE = ".pdf,image/png,image/jpeg,image/webp";
+// Proprietário pessoa jurídica: contrato social (ou última alteração) ou cartão CNPJ.
+export const ACCEPT_DOCUMENTO_EMPRESA = ".pdf,image/png,image/jpeg,image/webp";

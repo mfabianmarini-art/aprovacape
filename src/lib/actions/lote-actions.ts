@@ -5,6 +5,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/require-role";
 import { cpfValido, digitosCpf } from "@/lib/cpf";
+import { cnpjValido, normalizarCnpj } from "@/lib/cnpj";
 
 // O gestor CAPE cadastra só a quadra e o número do lote (e, opcionalmente, sua posição no
 // mapa). Endereço e área são preenchidos pelo proprietário/RT na primeira solicitação de
@@ -88,10 +89,22 @@ export async function deleteLoteAction(loteId: string) {
   revalidatePath("/login");
 }
 
-const titularSchema = z.object({
-  nome: z.string().trim().min(3, "Informe o nome do proprietário"),
-  cpf: z.string().trim().transform(digitosCpf).refine(cpfValido, "CPF inválido"),
-});
+// Pessoa física: nome e CPF. Pessoa jurídica: razão social (no mesmo campo nome), CNPJ e o
+// responsável legal, que é quem assina procurações pela empresa.
+const titularSchema = z.discriminatedUnion("tipo", [
+  z.object({
+    tipo: z.literal("PF"),
+    nome: z.string().trim().min(3, "Informe o nome do proprietário"),
+    cpf: z.string().trim().transform(digitosCpf).refine(cpfValido, "CPF inválido"),
+  }),
+  z.object({
+    tipo: z.literal("PJ"),
+    nome: z.string().trim().min(3, "Informe a razão social"),
+    cnpj: z.string().trim().transform(normalizarCnpj).refine(cnpjValido, "CNPJ inválido"),
+    repNome: z.string().trim().min(3, "Informe o nome do responsável legal"),
+    repCpf: z.string().trim().transform(digitosCpf).refine(cpfValido, "CPF do responsável legal inválido"),
+  }),
+]);
 
 export type TitularState = { error?: string; ok?: boolean } | null;
 
@@ -104,19 +117,34 @@ export async function atualizarTitularLoteAction(
   formData: FormData,
 ): Promise<TitularState> {
   const session = await requireRole("ADMIN_CAPE", "CAPE_ANALISTA");
-  const parsed = titularSchema.safeParse(Object.fromEntries(formData.entries()));
+  const parsed = titularSchema.safeParse({ tipo: "PF", ...Object.fromEntries(formData.entries()) });
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
   const d = parsed.data;
+  // Grava só os campos do tipo escolhido: virar empresa apaga o CPF, e vice-versa.
+  const dados =
+    d.tipo === "PJ"
+      ? { titularNome: d.nome, titularCpf: null, titularCnpj: d.cnpj, titularRepresentanteNome: d.repNome, titularRepresentanteCpf: d.repCpf }
+      : { titularNome: d.nome, titularCpf: d.cpf, titularCnpj: null, titularRepresentanteNome: null, titularRepresentanteCpf: null };
 
   const lote = await prisma.lote.findUniqueOrThrow({
     where: { id: loteId },
     include: { quadra: { select: { nome: true } } },
   });
-  if (lote.titularCpf === d.cpf && lote.titularNome === d.nome) return { ok: true };
+  if (
+    lote.titularNome === dados.titularNome &&
+    lote.titularCpf === dados.titularCpf &&
+    lote.titularCnpj === dados.titularCnpj &&
+    lote.titularRepresentanteNome === dados.titularRepresentanteNome &&
+    lote.titularRepresentanteCpf === dados.titularRepresentanteCpf
+  ) {
+    return { ok: true };
+  }
 
   // Troca de dono é fato do lote, e o lote não tem histórico próprio: o registro vai para
   // as solicitações vivas dele, que é onde alguém vai reparar.
-  const trocouDePessoa = !!lote.titularCpf && lote.titularCpf !== d.cpf;
+  // Trocar só o responsável legal não muda o dono: a empresa continua a mesma.
+  const documentoAnterior = lote.titularCnpj ?? lote.titularCpf;
+  const trocouDePessoa = !!documentoAnterior && documentoAnterior !== (dados.titularCnpj ?? dados.titularCpf);
   const solicitacoes = trocouDePessoa
     ? await prisma.solicitacao.findMany({
         where: { loteId, status: { not: "RASCUNHO" } },
@@ -128,8 +156,7 @@ export async function atualizarTitularLoteAction(
     prisma.lote.update({
       where: { id: loteId },
       data: {
-        titularNome: d.nome,
-        titularCpf: d.cpf,
+        ...dados,
         titularAtualizadoEm: new Date(),
         titularAtualizadoPorId: session.user.id,
       },

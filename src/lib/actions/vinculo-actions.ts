@@ -29,8 +29,10 @@ export type VinculoState = { error?: string; ok?: boolean } | null;
 // campos que o navegador manda depois do upload direto (…Pathname, …Nome, …Hash).
 const ARQUIVOS_DO_PEDIDO = [
   { campo: "procuracao", rotulo: "a procuração do proprietário", rotuloCurto: "Procuração do proprietário" },
-  { campo: "docProprietario", rotulo: "o RG ou a CNH do proprietário", rotuloCurto: "RG ou CNH do proprietário" },
+  { campo: "docProprietario", rotulo: "o RG ou a CNH do proprietário (ou do responsável legal, se for empresa)", rotuloCurto: "RG ou CNH do proprietário" },
   { campo: "docRT", rotulo: "o seu RG ou CNH", rotuloCurto: "RG ou CNH do responsável técnico" },
+  // Só quando o proprietário é pessoa jurídica.
+  { campo: "docEmpresa", rotulo: "o contrato social ou o cartão CNPJ da empresa", rotuloCurto: "Contrato social / cartão CNPJ" },
 ] as const;
 
 export async function solicitarVinculoAction(_prev: VinculoState, formData: FormData): Promise<VinculoState> {
@@ -74,9 +76,13 @@ export async function solicitarVinculoAction(_prev: VinculoState, formData: Form
   if (ehRT) {
     const semProprietario = proprietarioDeclaradoInvalido(d);
     if (semProprietario) return recusar(semProprietario);
-    const faltando = arquivos.find((a) => !a.pathname);
+    const pj = d.propTipo === "PJ";
+    const exigidos = arquivos.filter((a) => a.campo !== "docEmpresa" || pj);
+    // Pessoa física não tem contrato social: se algo chegou nesse campo, é descartado.
+    if (!pj) await Promise.all(arquivos.filter((a) => a.campo === "docEmpresa" && a.pathname).map((a) => descartarArquivo(a.pathname)));
+    const faltando = exigidos.find((a) => !a.pathname);
     if (faltando) return recusar(`Anexe ${faltando.rotulo}.`);
-    for (const a of arquivos) {
+    for (const a of exigidos) {
       const r = await receberArquivo(a.pathname, a.nome, { destino: "vinculo", usuarioId: user.id });
       if ("erro" in r) return recusar(`${a.rotuloCurto}: ${r.erro}`);
       recebidos.push({ ...a, tamanho: r.tamanho });
@@ -84,7 +90,8 @@ export async function solicitarVinculoAction(_prev: VinculoState, formData: Form
   } else if (!d.comprovacao) {
     return recusar("Informe a matrícula do lote.");
   }
-  const [procuracao, docProp, docRt] = recebidos;
+  const doc = (campo: (typeof ARQUIVOS_DO_PEDIDO)[number]["campo"]) => recebidos.find((a) => a.campo === campo);
+  const [procuracao, docProp, docRt, docEmpresa] = [doc("procuracao"), doc("docProprietario"), doc("docRT"), doc("docEmpresa")];
 
   // Os arquivos de um pedido anterior não são apagados: ficam no inventário como versões
   // substituídas.
@@ -94,6 +101,7 @@ export async function solicitarVinculoAction(_prev: VinculoState, formData: Form
           marcarSubstituido(user.vinculoArquivoCaminho),
           marcarSubstituido(user.vinculoDocPropCaminho),
           marcarSubstituido(user.vinculoDocRtCaminho),
+          marcarSubstituido(user.vinculoDocEmpresaCaminho),
           ...recebidos.map((a) =>
             registrarArquivo({
               caminho: a.pathname,
@@ -124,6 +132,9 @@ export async function solicitarVinculoAction(_prev: VinculoState, formData: Form
         vinculoDocRtNome: docRt?.nome ?? null,
         vinculoDocRtCaminho: docRt?.pathname ?? null,
         vinculoDocRtTamanho: docRt?.tamanho ?? null,
+        vinculoDocEmpresaNome: docEmpresa?.nome ?? null,
+        vinculoDocEmpresaCaminho: docEmpresa?.pathname ?? null,
+        vinculoDocEmpresaTamanho: docEmpresa?.tamanho ?? null,
         ...dadosProprietarioParaGravar(d, ehRT),
         // A revisão gravada era do pedido anterior.
         vinculoRevisadoPorId: null,

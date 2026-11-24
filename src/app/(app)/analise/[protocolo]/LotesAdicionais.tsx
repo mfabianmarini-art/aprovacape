@@ -1,6 +1,7 @@
 import { formatarCpf } from "@/lib/cpf";
+import { formatarDocumento } from "@/lib/cnpj";
 import { formatDateTime } from "@/lib/status";
-import { referenciaDoLote, titularidadeEntreLotes, type LoteParaConferencia } from "@/lib/conferencia-vinculo";
+import { referenciaDoLote, titularidadeEntreLotes, type LoteParaConferencia, type TitularReferencia } from "@/lib/conferencia-vinculo";
 import { aprovarLoteAdicionalAction, desvincularLoteAdicionalAction, recusarLoteAdicionalAction } from "@/lib/actions/analise-actions";
 import type { getAnalise } from "@/lib/queries/analise";
 
@@ -12,8 +13,10 @@ const STATUS: Record<string, { rotulo: string; cor: string; bg: string }> = {
   RECUSADO: { rotulo: "Recusado", cor: "#8C2B22", bg: "#FDF6F5" },
 };
 
-function titular(ref: { nome: string; cpf: string } | null) {
-  return ref ? `${ref.nome} · ${formatarCpf(ref.cpf)}` : "sem proprietário cadastrado";
+function titular(ref: TitularReferencia | null) {
+  if (!ref) return "sem proprietário cadastrado";
+  const rep = ref.representante ? ` (resp. legal ${ref.representante.nome} · ${formatarCpf(ref.representante.cpf)})` : "";
+  return `${ref.nome} · ${formatarDocumento(ref.documento)}${rep}`;
 }
 
 // Projeto que abrange mais de um lote. Fica no topo da análise enquanto houver lote a

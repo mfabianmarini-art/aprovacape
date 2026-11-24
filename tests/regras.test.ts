@@ -237,3 +237,42 @@ test("lote adicional: mesmo proprietário do lote principal", async () => {
   assert.equal(titularidadeEntreLotes(lote("52998224725"), lote("11144477735")).situacao, "divergente");
   assert.equal(titularidadeEntreLotes(lote("52998224725"), lote(null)).situacao, "sem-referencia", "lote sem dono registrado: confere pela matrícula");
 });
+
+test("CNPJ numérico e alfanumérico (Receita, a partir de julho de 2026)", async () => {
+  const { cnpjValido, formatarCnpj, mesmoDocumento, normalizarCnpj } = await import("@/lib/cnpj");
+  assert.ok(cnpjValido("11.222.333/0001-81"));
+  assert.ok(cnpjValido("11222333000181"), "sem máscara");
+  assert.ok(!cnpjValido("11.222.333/0001-82"), "dígito verificador errado");
+  assert.ok(!cnpjValido("00.000.000/0000-00"), "sequência repetida");
+  assert.ok(cnpjValido("12.ABC.345/01DE-35"), "exemplo oficial do CNPJ alfanumérico");
+  assert.ok(cnpjValido("12.abc.345/01de-35"), "letras minúsculas valem");
+  assert.ok(!cnpjValido("12.ABC.345/01DE-36"));
+  assert.ok(!cnpjValido("12.ABC.345/01DE-3A"), "os verificadores são sempre números");
+  assert.equal(normalizarCnpj("12.abc.345/01de-35"), "12ABC34501DE35");
+  assert.equal(formatarCnpj("12ABC34501DE35"), "12.ABC.345/01DE-35");
+  assert.ok(mesmoDocumento("11.222.333/0001-81", "11222333000181"));
+  assert.ok(mesmoDocumento("529.982.247-25", "52998224725"));
+  assert.ok(!mesmoDocumento("52998224725", "11222333000181"), "CPF nunca bate com CNPJ");
+});
+
+test("proprietário pessoa jurídica: conferência pelo CNPJ e pelo responsável legal", async () => {
+  const { divergenciaDeTitular, titularidadeEntreLotes } = await import("@/lib/conferencia-vinculo");
+  const empresa = {
+    titularNome: "Construtora X Ltda",
+    titularCpf: null,
+    titularCnpj: "11222333000181",
+    titularRepresentanteNome: "Ana",
+    titularRepresentanteCpf: "52998224725",
+    proprietario: null,
+  };
+  const rt = (cnpj: string | null, cpf: string | null) => ({ ehRT: true, cpf: "11144477735", vinculoPropNome: "X", vinculoPropCpf: cpf, vinculoPropCnpj: cnpj });
+  assert.equal(divergenciaDeTitular(empresa, rt("11.222.333/0001-81", null), "RT"), null, "RT declarou o mesmo CNPJ");
+  assert.ok(divergenciaDeTitular(empresa, rt(null, "52998224725"), "RT"), "declarar o CPF do responsável não basta: o dono é a empresa");
+  assert.ok(divergenciaDeTitular(empresa, rt("12ABC34501DE35", null), "RT"), "outra empresa");
+  const proprio = (cpf: string) => ({ ehRT: false, cpf, vinculoPropNome: null, vinculoPropCpf: null });
+  assert.equal(divergenciaDeTitular(empresa, proprio("529.982.247-25"), "Ana"), null, "responsável legal pede como proprietário");
+  assert.ok(divergenciaDeTitular(empresa, proprio("11144477735"), "Outro"));
+  const pf = { titularNome: "Ana", titularCpf: "52998224725", proprietario: null };
+  assert.equal(titularidadeEntreLotes(empresa, { ...empresa }).situacao, "confere");
+  assert.equal(titularidadeEntreLotes(empresa, pf).situacao, "divergente", "empresa e sócio são proprietários diferentes");
+});
