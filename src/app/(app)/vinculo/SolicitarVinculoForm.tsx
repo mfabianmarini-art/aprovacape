@@ -141,7 +141,19 @@ export function SolicitarVinculoForm({ empreendimentos, ehRT, usuarioId }: { emp
             <label key={a.campo} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               <span style={labelTextStyle}>{a.titulo}</span>
               <input name={a.campo} type="file" required accept={a.accept} style={{ ...inputStyle, fontSize: 12.5 }} />
-              <span style={{ fontSize: 11.5, color: "#7A7472" }}>{a.ajuda}</span>
+              <span style={{ fontSize: 11.5, color: "#7A7472" }}>
+                {a.ajuda}
+                {a.campo === "procuracao" && emp && (
+                  <>
+                    {" "}
+                    O modelo está em{" "}
+                    <a href={`/documentos?emp=${emp.id}`} target="_blank" rel="noreferrer" style={{ color: "#E01B22", fontWeight: 600 }}>
+                      Normas para aprovação
+                    </a>
+                    .
+                  </>
+                )}
+              </span>
             </label>
           ))}
         </div>

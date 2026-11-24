@@ -31,6 +31,7 @@ const PASSOS: { id: string; titulo: string; onde?: { href: string; rotulo: strin
         <p style={texto}>
           Antes de abrir uma solicitação, o lote precisa estar vinculado à sua conta. Peça o vínculo informando o empreendimento,
           a quadra e o lote, os dados do proprietário, a <strong>procuração assinada por ele</strong> e os documentos de identidade (RG ou CNH) dele e seu.
+          O modelo da procuração está em <strong>Normas para aprovação</strong>, liberado antes mesmo do vínculo.
         </p>
         <p style={texto}>A CAPE confere o pedido e você recebe um e-mail com a resposta. Aprovado, o lote passa a aparecer em Nova solicitação.</p>
       </>

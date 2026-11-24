@@ -49,6 +49,14 @@ export async function podeVerArquivosDoEmpreendimento(u: Usuario, empreendimento
   return false;
 }
 
+// Documentos técnicos: a regra acima, mais o RT em qualquer empreendimento — ele precisa do
+// modelo da procuração antes de pedir o vínculo (ver resolveEmpreendimentoDocumentos). A
+// planta do loteamento continua só com a regra acima.
+export async function podeVerDocumentosTecnicos(u: Usuario, empreendimentoId: string) {
+  if (u.role === "RESPONSAVEL_TECNICO") return true;
+  return podeVerArquivosDoEmpreendimento(u, empreendimentoId);
+}
+
 // Gerir (enviar/retirar) documentos técnicos: CAPE em qualquer empreendimento, síndico só
 // no que administra.
 export async function podeGerirDocumentosTecnicos(u: Usuario, empreendimentoId: string) {
@@ -66,7 +74,10 @@ export async function podeVerArquivo(u: Usuario, a: Pick<Arquivo, "categoria" | 
     const sol = await prisma.solicitacao.findUnique({ where: { id: a.solicitacaoId }, include: INCLUI_LOTE_E_SINDICO });
     return !!sol && podeVerArquivosDaSolicitacao(u, sol);
   }
-  if ((a.categoria === "DOCUMENTO_TECNICO" || a.categoria === "PLANTA") && a.empreendimentoId) {
+  if (a.categoria === "DOCUMENTO_TECNICO" && a.empreendimentoId) {
+    return podeVerDocumentosTecnicos(u, a.empreendimentoId);
+  }
+  if (a.categoria === "PLANTA" && a.empreendimentoId) {
     return podeVerArquivosDoEmpreendimento(u, a.empreendimentoId);
   }
   // Sem solicitação (rascunho cancelado) ou adotado sem metadados: só a CAPE.

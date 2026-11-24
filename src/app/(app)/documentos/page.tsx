@@ -1,7 +1,7 @@
 import { requireSession } from "@/lib/require-role";
 import { getUserDisplay } from "@/lib/user-display";
 import { getDocumentosTecnicos } from "@/lib/queries/documentos-tecnicos";
-import { resolveEmpreendimentoAtual } from "@/lib/queries/empreendimentos-acesso";
+import { resolveEmpreendimentoDocumentos } from "@/lib/queries/empreendimentos-acesso";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { ScreenBody } from "@/components/ScreenBody";
 import { EmpreendimentoSwitcher } from "@/components/EmpreendimentoSwitcher";
@@ -14,7 +14,7 @@ export default async function DocumentosPage({ searchParams }: { searchParams: P
   const { emp: empParam } = await searchParams;
   const [user, { atual, opcoes }] = await Promise.all([
     getUserDisplay(session.user.id, session.user.role),
-    resolveEmpreendimentoAtual(session.user.id, session.user.role, empParam),
+    resolveEmpreendimentoDocumentos(session.user.id, session.user.role, empParam),
   ]);
 
   const titulo = labelDaTela("documentos", session.user.role);
@@ -27,7 +27,7 @@ export default async function DocumentosPage({ searchParams }: { searchParams: P
         <ScreenHeader crumb="Referência" title={titulo} {...user} />
         <ScreenBody>
           <div style={{ fontSize: 13.5, color: "#7A7472" }}>
-            {ehConsulta
+            {session.user.role === "PROPRIETARIO"
               ? "Nenhum lote vinculado à sua conta ainda. Peça o vínculo com o seu lote em Meus requerimentos para consultar as normas do empreendimento."
               : "Nenhum empreendimento cadastrado ainda."}
           </div>
@@ -49,6 +49,8 @@ export default async function DocumentosPage({ searchParams }: { searchParams: P
         {ehConsulta && (
           <div style={{ fontSize: 13.5, color: "#3B4653", lineHeight: 1.5 }}>
             Consulte aqui todas as regras e documentação técnica para elaborar o projeto.
+            {session.user.role === "RESPONSAVEL_TECNICO" &&
+              " O modelo da procuração exigida no pedido de vínculo com o lote também fica aqui — escolha o empreendimento acima."}
           </div>
         )}
         <div className={podeGerenciar ? "layout-with-aside" : undefined} style={podeGerenciar ? undefined : { display: "grid", gridTemplateColumns: "1fr" }}>

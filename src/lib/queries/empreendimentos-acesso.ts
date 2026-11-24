@@ -43,6 +43,23 @@ export async function listEmpreendimentosAcessiveis(userId: string, role: Role):
 // senão o primeiro da lista acessível ao usuário.
 export async function resolveEmpreendimentoAtual(userId: string, role: Role, solicitado?: string) {
   const opcoes = await listEmpreendimentosAcessiveis(userId, role);
+  return escolher(opcoes, solicitado);
+}
+
+// Documentos técnicos (Normas para aprovação): o RT consulta os de qualquer empreendimento,
+// mesmo sem vínculo. É ali que está o modelo da procuração que ele precisa anexar para
+// pedir o vínculo — exigir o vínculo antes era um ciclo sem saída. O pedido de vínculo já
+// lista todos os empreendimentos, então não há o que esconder. Os empreendimentos onde ele
+// já tem lote (ou vínculo em análise) vêm primeiro, para continuarem sendo o padrão.
+export async function resolveEmpreendimentoDocumentos(userId: string, role: Role, solicitado?: string) {
+  const proprios = await listEmpreendimentosAcessiveis(userId, role);
+  if (role !== "RESPONSAVEL_TECNICO") return escolher(proprios, solicitado);
+  const todos = await prisma.empreendimento.findMany({ orderBy: { nome: "asc" }, select: { id: true, nome: true } });
+  const idsProprios = new Set(proprios.map((o) => o.id));
+  return escolher([...proprios, ...todos.filter((o) => !idsProprios.has(o.id))], solicitado);
+}
+
+function escolher(opcoes: EmpreendimentoOpcao[], solicitado?: string) {
   const atual = (solicitado && opcoes.find((o) => o.id === solicitado)) || opcoes[0] || null;
   return { atual, opcoes };
 }
